@@ -96,15 +96,16 @@
                     <!-- Modul C: Pengungsi & Kesehatan (Shalman) -->
                     @if (Auth::user()->canAccessModule('modul_c'))
                         <a 
-                            href="#" 
-                            class="flex items-center space-x-3 px-3 py-2.5 rounded-xl text-sm font-medium text-slate-600 hover:bg-slate-50 hover:text-slate-900 transition duration-150 group"
+                            href="{{ route('admin.refugees') }}" 
+                            wire:navigate
+                            class="flex items-center space-x-3 px-3 py-2.5 rounded-xl text-sm font-medium transition duration-150 group {{ request()->routeIs('admin.refugees*') ? 'bg-blue-50 text-blue-700 font-semibold shadow-xs' : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900' }}"
                             title="Modul C - Pengungsi & Kesehatan"
                         >
-                            <svg class="w-5 h-5 text-slate-400 group-hover:text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <svg class="w-5 h-5 {{ request()->routeIs('admin.refugees*') ? 'text-blue-600' : 'text-slate-400 group-hover:text-slate-600' }}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
                             </svg>
                             <span class="flex-1">Pengungsi</span>
-                            <span class="text-[10px] bg-slate-100 text-slate-500 px-1.5 py-0.5 rounded font-mono">Modul C</span>
+                            <span class="text-[10px] {{ request()->routeIs('admin.refugees*') ? 'bg-blue-100 text-blue-700' : 'bg-slate-100 text-slate-500' }} px-1.5 py-0.5 rounded font-mono">Modul C</span>
                         </a>
                     @endif
 
