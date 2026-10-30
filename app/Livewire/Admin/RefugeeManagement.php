@@ -14,7 +14,7 @@ use Livewire\Component;
 use Livewire\WithPagination;
 
 #[Layout('layouts.admin')]
-#[Title('Manajemen Data Pengungsi - ResQHub')]
+#[Title('Data Pengungsi - ResQHub')]
 class RefugeeManagement extends Component
 {
     use WithPagination;
@@ -25,8 +25,10 @@ class RefugeeManagement extends Component
     public string $shelterFilter = '';
     public string $search = '';
     public string $statusFilter = '';
+    public string $sortFilter = 'latest';
 
-    // Modals state
+    // Panel & Modals state
+    public string $panelMode = 'create'; // 'create' | 'edit' | 'detail'
     public bool $showCreateModal = false;
     public bool $showDetailModal = false;
     public bool $showEditModal = false;
@@ -44,8 +46,9 @@ class RefugeeManagement extends Component
     public int $elderly = 0;
     public int $pregnant = 0;
     public int $disabled = 0;
+    public string $statusAction = 'tetap'; // 'tetap' | 'pindah' | 'pulang'
     public string|int $to_shelter_id = '';
-    public string $delete_reason = '';
+    public string $delete_reason = 'Data ganda / salah input';
 
     // Detail & Warnings
     public ?Refugee $selectedRefugee = null;
@@ -66,6 +69,8 @@ class RefugeeManagement extends Component
             if ($shelters->count() === 1) {
                 $this->shelterFilter = (string) $shelters->first()->id;
             }
+        } elseif ($shelters->isNotEmpty()) {
+            $this->shelter_id = (int) $shelters->first()->id;
         }
     }
 
@@ -80,6 +85,11 @@ class RefugeeManagement extends Component
     }
 
     public function updatingShelterFilter(): void
+    {
+        $this->resetPage();
+    }
+
+    public function updatingSortFilter(): void
     {
         $this->resetPage();
     }
@@ -136,8 +146,11 @@ class RefugeeManagement extends Component
         if ($this->shelterFilter !== '') {
             $this->shelter_id = (int) $this->shelterFilter;
         }
-        $this->refreshFormWarnings();
+        $this->panelMode = 'create';
         $this->showCreateModal = true;
+        $this->showEditModal = false;
+        $this->showDetailModal = false;
+        $this->refreshFormWarnings();
     }
 
     public function closeCreateModal(): void
@@ -171,19 +184,26 @@ class RefugeeManagement extends Component
     public function openDetailModal(int $id, RefugeeService $refugeeService): void
     {
         $this->selectedRefugee = $refugeeService->getRefugeeDetail($this->currentUser(), $id);
+        $this->refugeeId = $this->selectedRefugee->id;
+        $this->panelMode = 'detail';
         $this->showDetailModal = true;
+        $this->showEditModal = false;
+        $this->showCreateModal = false;
     }
 
     public function closeDetailModal(): void
     {
         $this->showDetailModal = false;
         $this->selectedRefugee = null;
+        $this->refugeeId = null;
+        $this->panelMode = 'create';
     }
 
     public function openEditModal(int $id, RefugeeService $refugeeService): void
     {
         $refugee = $refugeeService->getRefugeeDetail($this->currentUser(), $id);
 
+        $this->selectedRefugee = $refugee;
         $this->refugeeId = $refugee->id;
         $this->shelter_id = $refugee->shelter_id;
         $this->head_name = $refugee->head_name;
@@ -193,20 +213,31 @@ class RefugeeManagement extends Component
         $this->elderly = (int) $refugee->elderly;
         $this->pregnant = (int) $refugee->pregnant;
         $this->disabled = (int) $refugee->disabled;
+        $this->statusAction = 'tetap';
+        $this->to_shelter_id = '';
+
+        $destinations = $refugeeService->getDestinationShelters($refugee->shelter_id);
+        if ($destinations->isNotEmpty()) {
+            $this->to_shelter_id = (int) $destinations->first()->id;
+        }
 
         $this->refreshFormWarnings();
+        $this->panelMode = 'edit';
         $this->showEditModal = true;
+        $this->showDetailModal = false;
+        $this->showCreateModal = false;
     }
 
     public function closeEditModal(): void
     {
         $this->showEditModal = false;
+        $this->panelMode = 'create';
         $this->resetForm();
     }
 
     public function updateRefugee(RefugeeService $refugeeService): void
     {
-        $validated = $this->validate([
+        $rules = [
             'head_name' => ['required', 'string', 'max:100'],
             'nik' => ['nullable', 'string', 'digits:16'],
             'members' => ['required', 'integer', 'min:1'],
@@ -214,16 +245,35 @@ class RefugeeManagement extends Component
             'elderly' => ['nullable', 'integer', 'min:0'],
             'pregnant' => ['nullable', 'integer', 'min:0'],
             'disabled' => ['nullable', 'integer', 'min:0'],
-        ]);
+            'statusAction' => ['nullable', 'in:tetap,pindah,pulang'],
+        ];
 
+        if ($this->statusAction === 'pindah') {
+            $rules['to_shelter_id'] = ['required', 'integer', 'exists:shelters,id'];
+        }
+
+        $validated = $this->validate($rules);
+
+        $user = $this->currentUser();
         $refugee = Refugee::findOrFail($this->refugeeId);
-        $result = $refugeeService->updateFamilyData($this->currentUser(), $refugee, $validated);
+
+        $result = $refugeeService->updateFamilyData($user, $refugee, $validated);
+        $warningMessages = array_column($result['warnings'], 'message');
+        $message = 'Data keluarga pengungsi berhasil diperbarui.';
+
+        if ($this->statusAction === 'pindah') {
+            $updated = $refugeeService->transferShelter($user, $result['refugee'], (int) $this->to_shelter_id);
+            $message = "Data diperbarui & perpindahan keluarga {$updated->head_name} ke {$updated->shelter->name} berhasil dicatat.";
+        } elseif ($this->statusAction === 'pulang') {
+            $updated = $refugeeService->checkOut($user, $result['refugee']);
+            $message = "Data diperbarui & kepulangan keluarga {$updated->head_name} berhasil dicatat.";
+        }
 
         $this->showEditModal = false;
+        $this->panelMode = 'create';
         $this->resetForm();
 
-        $warningMessages = array_column($result['warnings'], 'message');
-        $this->notify('Data keluarga pengungsi berhasil diperbarui.', 'success', $warningMessages);
+        $this->notify($message, 'success', $warningMessages);
     }
 
     public function openCheckoutModal(int $id, RefugeeService $refugeeService): void
@@ -284,7 +334,7 @@ class RefugeeManagement extends Component
     {
         $this->selectedRefugee = $refugeeService->getRefugeeDetail($this->currentUser(), $id);
         $this->refugeeId = $this->selectedRefugee->id;
-        $this->delete_reason = '';
+        $this->delete_reason = 'Data ganda / salah input';
         $this->resetErrorBag();
         $this->showDeleteModal = true;
     }
@@ -292,9 +342,7 @@ class RefugeeManagement extends Component
     public function closeDeleteModal(): void
     {
         $this->showDeleteModal = false;
-        $this->selectedRefugee = null;
-        $this->refugeeId = null;
-        $this->delete_reason = '';
+        $this->delete_reason = 'Data ganda / salah input';
         $this->resetErrorBag();
     }
 
@@ -309,6 +357,10 @@ class RefugeeManagement extends Component
         try {
             $deleted = $refugeeService->deleteRefugee($this->currentUser(), $refugee, $this->delete_reason);
             $this->closeDeleteModal();
+            if ($this->panelMode !== 'create') {
+                $this->panelMode = 'create';
+                $this->resetForm();
+            }
             $this->notify("Data pengungsi {$deleted->head_name} berhasil dihapus dan okupansi posko telah dikoreksi.");
         } catch (ValidationException $e) {
             throw $e;
@@ -318,6 +370,7 @@ class RefugeeManagement extends Component
     protected function resetForm(): void
     {
         $this->refugeeId = null;
+        $this->selectedRefugee = null;
         $this->head_name = '';
         $this->nik = '';
         $this->members = 1;
@@ -325,8 +378,9 @@ class RefugeeManagement extends Component
         $this->elderly = 0;
         $this->pregnant = 0;
         $this->disabled = 0;
+        $this->statusAction = 'tetap';
         $this->to_shelter_id = '';
-        $this->delete_reason = '';
+        $this->delete_reason = 'Data ganda / salah input';
         $this->formWarnings = [];
         $this->resetErrorBag();
     }
@@ -366,27 +420,35 @@ class RefugeeManagement extends Component
     public function render(RefugeeService $refugeeService)
     {
         $user = $this->currentUser();
+        $selectedShelterId = $this->shelterFilter !== '' ? (int) $this->shelterFilter : null;
+
         $filters = [
-            'shelter_id' => $this->shelterFilter !== '' ? (int) $this->shelterFilter : null,
+            'shelter_id' => $selectedShelterId,
             'search' => $this->search,
             'status' => $this->statusFilter,
+            'sort' => $this->sortFilter,
         ];
 
         $refugees = $refugeeService->listRefugees($user, $filters, 10);
         $accessibleShelters = $refugeeService->getAccessibleShelters($user);
+
+        $currentShelter = $selectedShelterId
+            ? $accessibleShelters->firstWhere('id', $selectedShelterId)
+            : $accessibleShelters->first();
+
         $destinationShelters = $refugeeService->getDestinationShelters(
-            $this->selectedRefugee?->shelter_id
+            $this->selectedRefugee?->shelter_id ?? ($this->shelter_id ? (int) $this->shelter_id : null)
         );
-        $statistics = $refugeeService->getSummaryStatistics(
-            $user,
-            $this->shelterFilter !== '' ? (int) $this->shelterFilter : null
-        );
+
+        $statistics = $refugeeService->getSummaryStatistics($user, $selectedShelterId);
 
         return view('livewire.admin.refugee-management', [
             'refugees' => $refugees,
             'accessibleShelters' => $accessibleShelters,
+            'currentShelter' => $currentShelter,
             'destinationShelters' => $destinationShelters,
             'statistics' => $statistics,
+            'canManage' => $user->isAdmin() || $user->isKoordinator(),
         ]);
     }
 }

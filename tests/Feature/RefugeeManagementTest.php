@@ -277,11 +277,15 @@ class RefugeeManagementTest extends TestCase
     {
         $koordinatorBudi = User::where('email', 'koordinator.budi@resqhub.id')->firstOrFail();
         $shelter1 = Shelter::findOrFail(1);
-        $initialOccupancy = $shelter1->occupancy;
+        $shelter2 = Shelter::findOrFail(2);
+        $initialOccupancy1 = $shelter1->occupancy;
+        $initialOccupancy2 = $shelter2->occupancy;
 
+        // 1. Check-in pengungsi baru via panel Livewire
         Livewire::actingAs($koordinatorBudi)
             ->test(RefugeeManagement::class)
             ->assertStatus(200)
+            ->assertSee('Data Pengungsi')
             ->assertSee('Ahmad Fauzi')
             ->assertSee('3204********0001')
             ->set('shelter_id', $shelter1->id)
@@ -292,7 +296,26 @@ class RefugeeManagementTest extends TestCase
             ->call('checkIn')
             ->assertHasNoErrors();
 
-        $this->assertEquals($initialOccupancy + 3, $shelter1->fresh()->occupancy);
+        $this->assertEquals($initialOccupancy1 + 3, $shelter1->fresh()->occupancy);
+
+        $newRefugee = Refugee::where('head_name', 'Rahmat Hidayat')->firstOrFail();
+
+        // 2. Ubah data & pilih Perubahan Status = Pindah Posko via panel kanan
+        Livewire::actingAs($koordinatorBudi)
+            ->test(RefugeeManagement::class)
+            ->call('openEditModal', $newRefugee->id)
+            ->assertSet('panelMode', 'edit')
+            ->assertSee('Ubah data: Rahmat Hidayat')
+            ->set('members', 4)
+            ->set('statusAction', 'pindah')
+            ->set('to_shelter_id', $shelter2->id)
+            ->call('updateRefugee')
+            ->assertHasNoErrors();
+
+        $this->assertEquals('pindah', $newRefugee->fresh()->status);
+        $this->assertEquals($shelter2->id, $newRefugee->fresh()->shelter_id);
+        $this->assertEquals($initialOccupancy1, $shelter1->fresh()->occupancy);
+        $this->assertEquals($initialOccupancy2 + 4, $shelter2->fresh()->occupancy);
     }
 }
 

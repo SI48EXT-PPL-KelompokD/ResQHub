@@ -69,9 +69,15 @@ class RefugeeService
         }
 
         $query->search($filters['search'] ?? null)
-            ->byStatus($filters['status'] ?? null)
-            ->orderBy('checked_in_at', 'desc')
-            ->orderBy('id', 'desc');
+            ->byStatus($filters['status'] ?? null);
+
+        $sort = $filters['sort'] ?? 'latest';
+        match ($sort) {
+            'oldest' => $query->orderBy('checked_in_at', 'asc')->orderBy('id', 'asc'),
+            'members_desc' => $query->orderBy('members', 'desc')->orderBy('checked_in_at', 'desc'),
+            'name_asc' => $query->orderBy('head_name', 'asc'),
+            default => $query->orderBy('checked_in_at', 'desc')->orderBy('id', 'desc'),
+        };
 
         return $query->paginate($perPage);
     }
