@@ -111,7 +111,8 @@
                     <!-- Modul D: Kebutuhan Bantuan (Fadli) -->
                     @if (Auth::user()->canAccessModule('modul_d'))
                         <a 
-                            href="#" 
+                            href="{{ Auth::user()->isAdmin() ? route('admin.items.create') : '#' }}" 
+                            @if (Auth::user()->isAdmin()) wire:navigate @endif
                             class="flex items-center space-x-3 px-3 py-2.5 rounded-xl text-sm font-medium text-slate-600 hover:bg-slate-50 hover:text-slate-900 transition duration-150 group"
                             title="Modul D - Kebutuhan Bantuan"
                         >

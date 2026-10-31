@@ -5,6 +5,7 @@ use App\Http\Controllers\Auth\LoginController;
 use App\Livewire\Auth\Register;
 use App\Livewire\Admin\Dashboard;
 use App\Livewire\Admin\UserManagement;
+use App\Http\Controllers\Admin\ItemController;
 
 // Root redirect
 Route::get('/', function () {
@@ -24,4 +25,6 @@ Route::post('/logout', [LoginController::class, 'logout'])->name('logout');
 Route::middleware(['auth'])->prefix('admin')->name('admin.')->group(function () {
     Route::get('/dashboard', Dashboard::class)->name('dashboard');
     Route::get('/users', UserManagement::class)->name('users');
+    Route::get('/items/create', [ItemController::class, 'create'])->name('items.create');
+    Route::post('/items', [ItemController::class, 'store'])->name('items.store');
 });
