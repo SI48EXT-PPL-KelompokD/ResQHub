@@ -16,4 +16,9 @@ class ItemPolicy
     {
         return $user->isAdmin();
     }
+
+    public function update(User $user, Item $item): bool
+    {
+        return $user->isAdmin();
+    }
 }

@@ -4,7 +4,9 @@ namespace Tests\Feature;
 
 use App\Models\Item;
 use App\Models\User;
+use App\Models\Stock;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\DB;
 use Tests\TestCase;
 
 class ItemCatalogTest extends TestCase
@@ -40,5 +42,58 @@ class ItemCatalogTest extends TestCase
         $user = User::factory()->create(['role' => 'relawan']);
         $this->actingAs($user)->get(route('admin.items.create'))->assertForbidden();
         $this->actingAs($user)->post(route('admin.items.store'), [])->assertForbidden();
+    }
+
+    public function test_admin_can_update_item(): void
+    {
+        $admin = User::factory()->create(['role' => 'admin']);
+        $item = Item::create(['name' => 'Beras', 'category' => 'pangan', 'unit' => 'kg', 'min_threshold' => 10]);
+
+        $this->actingAs($admin)->put(route('admin.items.update', $item), [
+            'name' => 'Beras Premium', 'category' => 'pangan', 'unit' => 'kg', 'min_threshold' => 25,
+        ])->assertRedirect(route('admin.items.index'))->assertSessionHas('success');
+
+        $this->assertDatabaseHas('items', ['id' => $item->id, 'name' => 'Beras Premium', 'min_threshold' => 25]);
+    }
+
+    public function test_unit_cannot_be_changed_when_item_has_stock(): void
+    {
+        $admin = User::factory()->create(['role' => 'admin']);
+        $item = Item::create(['name' => 'Beras', 'category' => 'pangan', 'unit' => 'kg', 'min_threshold' => 10]);
+        $eventId = DB::table('disaster_events')->insertGetId([
+            'name' => 'Banjir', 'disaster_type' => 'banjir', 'severity' => 'sedang', 'status' => 'aktif',
+            'regency' => 'Bandung', 'lat' => 0, 'lng' => 0, 'started_at' => now(), 'created_at' => now(), 'updated_at' => now(),
+        ]);
+        $shelterId = DB::table('shelters')->insertGetId([
+            'disaster_event_id' => $eventId, 'coordinator_id' => $admin->id, 'name' => 'Posko', 'address' => 'Alamat',
+            'lat' => 0, 'lng' => 0, 'capacity' => 100, 'contact' => '000', 'status' => 'aktif', 'created_at' => now(), 'updated_at' => now(),
+        ]);
+        DB::table('stocks')->insert(['shelter_id' => $shelterId, 'item_id' => $item->id, 'quantity' => 5, 'created_at' => now(), 'updated_at' => now()]);
+
+        $this->actingAs($admin)->from(route('admin.items.edit', $item))->put(route('admin.items.update', $item), [
+            'name' => 'Beras', 'category' => 'pangan', 'unit' => 'dus', 'min_threshold' => 20,
+        ])->assertRedirect(route('admin.items.edit', $item))->assertSessionHasErrors('unit');
+
+        $this->assertDatabaseHas('items', ['id' => $item->id, 'unit' => 'kg', 'min_threshold' => 10]);
+    }
+
+    public function test_duplicate_name_and_unit_is_rejected_when_updating(): void
+    {
+        $admin = User::factory()->create(['role' => 'admin']);
+        Item::create(['name' => 'Beras', 'category' => 'pangan', 'unit' => 'kg', 'min_threshold' => 10]);
+        $item = Item::create(['name' => 'Gula', 'category' => 'pangan', 'unit' => 'kg', 'min_threshold' => 10]);
+
+        $this->actingAs($admin)->from(route('admin.items.edit', $item))->put(route('admin.items.update', $item), [
+            'name' => 'Beras', 'category' => 'pangan', 'unit' => 'kg', 'min_threshold' => 20,
+        ])->assertRedirect(route('admin.items.edit', $item))->assertSessionHasErrors('name');
+    }
+
+    public function test_non_admin_cannot_update_item(): void
+    {
+        $user = User::factory()->create(['role' => 'relawan']);
+        $item = Item::create(['name' => 'Beras', 'category' => 'pangan', 'unit' => 'kg', 'min_threshold' => 10]);
+
+        $this->actingAs($user)->get(route('admin.items.edit', $item))->assertForbidden();
+        $this->actingAs($user)->put(route('admin.items.update', $item), [])->assertForbidden();
     }
 }
