@@ -331,7 +331,7 @@ class HealthCheckManagement extends Component
             $user,
             $selectedShelterId,
             $this->refugeeSearch !== '' ? $this->refugeeSearch : null,
-            15
+            100
         );
 
         $chosenRefugee = ! empty($this->refugee_id)

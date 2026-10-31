@@ -51,70 +51,122 @@
 
         <div class="flex items-center space-x-3">
             @if ($accessibleShelters->count() > 1)
-                <div class="relative w-64" x-data="{ openShelterSearch: false }" @click.outside="openShelterSearch = false">
+                @php
+                    $headerShelterOptions = $accessibleShelters->map(fn ($s) => [
+                        'id' => (string) $s->id,
+                        'name' => $s->name,
+                        'address' => $s->address ?? '',
+                        'available' => $s->availableCapacity(),
+                    ])->values()->all();
+                @endphp
+                <div 
+                    x-data="{
+                        open: false,
+                        search: '',
+                        options: @js($headerShelterOptions),
+                        get selectedId() { return String($wire.shelterFilter ?? ''); },
+                        get selectedOption() {
+                            return this.options.find(o => o.id === this.selectedId) || null;
+                        },
+                        get filteredOptions() {
+                            const q = this.search.trim().toLowerCase();
+                            if (!q) return this.options;
+                            return this.options.filter(o =>
+                                o.name.toLowerCase().includes(q) ||
+                                (o.address && o.address.toLowerCase().includes(q))
+                            );
+                        },
+                        selectShelter(id) {
+                            $wire.call('selectShelter', id ? parseInt(id) : null);
+                            this.search = '';
+                            this.open = false;
+                        }
+                    }"
+                    @click.outside="open = false; search = ''"
+                    @keydown.escape.window="open = false; search = ''"
+                    class="relative w-full sm:w-72 md:w-80"
+                >
                     <div class="relative">
-                        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
+                        <span class="absolute inset-y-0 left-0 flex items-center pl-3.5 text-slate-400 pointer-events-none">
                             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-4.35-4.35m0 0A7.5 7.5 0 103.5 10.5a7.5 7.5 0 0013.15 6.15z" />
                             </svg>
-                        </div>
-                        <input 
+                        </span>
+                        <input
                             type="text"
-                            wire:model.live.debounce.250ms="shelterSearch"
-                            @focus="openShelterSearch = true"
-                            @input="openShelterSearch = true"
-                            placeholder="{{ $currentShelter ? $currentShelter->name : 'Cari nama posko...' }}"
-                            class="w-full pl-9 pr-8 py-2.5 text-xs sm:text-sm bg-white text-slate-700 font-medium rounded-xl border border-slate-200 shadow-2xs focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-transparent transition"
+                            x-model="search"
+                            @focus="open = true"
+                            @input="open = true"
+                            :placeholder="selectedOption ? selectedOption.name : 'Semua Posko (Cari posko...)'"
+                            :class="selectedOption && !open ? 'placeholder:text-slate-800 placeholder:font-semibold' : 'placeholder:text-slate-500'"
+                            class="w-full py-2.5 pl-9 pr-9 text-xs sm:text-sm bg-white text-slate-800 font-medium rounded-xl border border-slate-200 shadow-2xs focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-transparent transition"
                         />
-                        @if ($shelterFilter !== '' || $shelterSearch !== '')
-                            <button 
-                                type="button"
-                                wire:click="selectShelter(null)"
-                                @click="openShelterSearch = false"
-                                title="Tampilkan Semua Posko"
-                                class="absolute inset-y-0 right-0 pr-2.5 flex items-center text-slate-400 hover:text-slate-600 cursor-pointer"
-                            >
-                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-                                </svg>
-                            </button>
-                        @endif
+                        <div class="absolute inset-y-0 right-0 flex items-center pr-2.5">
+                            <template x-if="selectedId !== ''">
+                                <button
+                                    type="button"
+                                    @click.stop="selectShelter('')"
+                                    title="Kembali ke Semua Posko"
+                                    class="p-1 text-slate-400 hover:text-slate-600 rounded-lg hover:bg-slate-100 transition cursor-pointer"
+                                >
+                                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                                    </svg>
+                                </button>
+                            </template>
+                            <template x-if="selectedId === ''">
+                                <button
+                                    type="button"
+                                    @click="open = !open"
+                                    class="p-1 text-slate-400 hover:text-slate-600 transition cursor-pointer"
+                                >
+                                    <svg class="w-4 h-4 transition-transform duration-150" :class="open ? 'rotate-180' : ''" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                                    </svg>
+                                </button>
+                            </template>
+                        </div>
                     </div>
 
-                    <!-- Hasil Pencarian Posko -->
-                    <div 
-                        x-show="openShelterSearch" 
-                        x-cloak
-                        class="absolute right-0 mt-1.5 w-72 bg-white rounded-xl shadow-lg border border-slate-200 z-40 max-h-60 overflow-y-auto divide-y divide-slate-100 text-xs"
+                    <!-- Search Results Dropdown -->
+                    <div
+                        x-show="open"
+                        x-transition.opacity.duration.150ms
+                        style="display: none;"
+                        class="absolute z-40 mt-1.5 w-full bg-white rounded-xl border border-slate-200 shadow-lg max-h-72 overflow-y-auto divide-y divide-slate-100"
                     >
-                        <button 
+                        <button
                             type="button"
-                            wire:click="selectShelter(null)"
-                            @click="openShelterSearch = false"
-                            class="w-full text-left px-3.5 py-2.5 hover:bg-slate-50 flex items-center justify-between {{ $shelterFilter === '' ? 'bg-blue-50/70 text-blue-700 font-semibold' : 'text-slate-700' }}"
+                            @click="selectShelter('')"
+                            class="w-full px-3.5 py-2.5 text-left hover:bg-slate-50 transition flex items-center justify-between cursor-pointer"
+                            :class="selectedId === '' ? 'bg-blue-50/70 text-blue-700 font-semibold' : 'text-slate-700'"
                         >
-                            <span>Semua Posko</span>
-                            @if ($shelterFilter === '')
-                                <span class="text-[10px] text-blue-600">Aktif</span>
-                            @endif
-                        </button>
-                        @forelse ($filteredShelters as $s)
-                            <button 
-                                type="button"
-                                wire:click="selectShelter({{ $s->id }})"
-                                @click="openShelterSearch = false"
-                                class="w-full text-left px-3.5 py-2.5 hover:bg-slate-50 flex items-center justify-between {{ (int) $shelterFilter === (int) $s->id ? 'bg-blue-50/70 text-blue-700 font-semibold' : 'text-slate-700' }}"
-                            >
-                                <span class="truncate">{{ $s->name }}</span>
-                                @if ((int) $shelterFilter === (int) $s->id)
-                                    <span class="text-[10px] text-blue-600 shrink-0 ml-2">Dipilih</span>
-                                @endif
-                            </button>
-                        @empty
-                            <div class="px-3.5 py-3 text-slate-400 text-center">
-                                Posko "{{ $shelterSearch }}" tidak ditemukan.
+                            <div>
+                                <span class="text-xs sm:text-sm block">Semua Posko</span>
+                                <span class="text-[11px] text-slate-400 block">Tampilkan gabungan seluruh posko</span>
                             </div>
-                        @endforelse
+                            <template x-if="selectedId === ''">
+                                <span class="text-[10px] font-semibold text-blue-600">Dipilih</span>
+                            </template>
+                        </button>
+
+                        <template x-for="item in filteredOptions" :key="item.id">
+                            <button
+                                type="button"
+                                @click="selectShelter(item.id)"
+                                class="w-full px-3.5 py-2.5 text-left hover:bg-slate-50 transition flex items-start justify-between gap-2 cursor-pointer"
+                                :class="selectedId === item.id ? 'bg-blue-50/70' : ''"
+                            >
+                                <div class="min-w-0 flex-1">
+                                    <span class="text-xs sm:text-sm font-medium block truncate" :class="selectedId === item.id ? 'text-blue-700 font-semibold' : 'text-slate-800'" x-text="item.name"></span>
+                                    <span class="text-[11px] text-slate-400 block truncate" x-text="item.address"></span>
+                                </div>
+                            </button>
+                        </template>
+
+                        <div x-show="filteredOptions.length === 0" class="px-3.5 py-4 text-center text-xs text-slate-400">
+                            Posko tidak ditemukan untuk "<span class="font-medium text-slate-600" x-text="search"></span>"
+                        </div>
                     </div>
                 </div>
             @endif
@@ -527,78 +579,119 @@
 
                     <form wire:submit.prevent="storeHealthCheck" class="space-y-4">
                         
-                        <!-- Pencarian Pengungsi -->
-                        <div x-data="{ openRefugeeList: false }" @click.outside="openRefugeeList = false">
+                        <!-- Pengungsi Searchable Combobox (Sesuai Style Refugee Management) -->
+                        @php
+                            $refugeeOptions = $selectableRefugees->map(fn ($r) => [
+                                'id' => (string) $r->id,
+                                'head_name' => $r->head_name,
+                                'members' => (int) $r->members,
+                                'nik' => $r->masked_nik,
+                                'shelter_name' => $r->shelter ? str_replace(['Posko Utama ', 'Posko Evakuasi ', 'Posko Darurat '], '', $r->shelter->name) : '',
+                                'label' => $r->head_name . ' (' . $r->members . ' jiwa)',
+                            ])->values()->all();
+                        @endphp
+                        <div
+                            x-data="{
+                                open: false,
+                                search: '',
+                                options: @js($refugeeOptions),
+                                get selectedId() { return String($wire.refugee_id ?? ''); },
+                                get selectedOption() {
+                                    return this.options.find(o => o.id === this.selectedId) || null;
+                                },
+                                get filteredOptions() {
+                                    const q = this.search.trim().toLowerCase();
+                                    if (!q) return this.options;
+                                    return this.options.filter(o =>
+                                        o.head_name.toLowerCase().includes(q) ||
+                                        (o.nik && o.nik.toLowerCase().includes(q))
+                                    );
+                                },
+                                selectRefugee(id) {
+                                    $wire.call('selectRefugee', parseInt(id));
+                                    this.search = '';
+                                    this.open = false;
+                                },
+                                clearRefugee() {
+                                    $wire.call('clearSelectedRefugee');
+                                    this.search = '';
+                                    this.open = false;
+                                }
+                            }"
+                            @click.outside="open = false; search = ''"
+                            @keydown.escape.window="open = false; search = ''"
+                            class="relative"
+                        >
                             <label class="block text-xs font-medium text-slate-600 mb-1.5">Pengungsi</label>
+                            <div class="relative">
+                                <span class="absolute inset-y-0 left-0 flex items-center pl-3 text-slate-400 pointer-events-none">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-4.35-4.35m0 0A7.5 7.5 0 103.5 10.5a7.5 7.5 0 0013.15 6.15z" />
+                                    </svg>
+                                </span>
+                                <input
+                                    type="text"
+                                    x-model="search"
+                                    @focus="open = true"
+                                    @input="open = true"
+                                    :placeholder="selectedOption ? selectedOption.label : 'Cari nama kepala keluarga atau NIK...'"
+                                    :class="selectedOption && !open ? 'placeholder:text-slate-800 placeholder:font-medium' : 'placeholder:text-slate-400'"
+                                    class="w-full py-2 pl-9 pr-9 text-xs sm:text-sm bg-slate-50/70 focus:bg-white text-slate-800 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-transparent transition"
+                                />
+                                <div class="absolute inset-y-0 right-0 flex items-center pr-2.5">
+                                    <template x-if="selectedId !== ''">
+                                        <button
+                                            type="button"
+                                            @click.stop="clearRefugee()"
+                                            title="Hapus pilihan pengungsi"
+                                            class="p-1 text-slate-400 hover:text-slate-600 rounded-lg hover:bg-slate-100 transition cursor-pointer"
+                                        >
+                                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                                            </svg>
+                                        </button>
+                                    </template>
+                                    <template x-if="selectedId === ''">
+                                        <button
+                                            type="button"
+                                            @click="open = !open"
+                                            class="p-1 text-slate-400 hover:text-slate-600 transition cursor-pointer"
+                                        >
+                                            <svg class="w-4 h-4 transition-transform duration-150" :class="open ? 'rotate-180' : ''" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                                            </svg>
+                                        </button>
+                                    </template>
+                                </div>
+                            </div>
 
-                            @if ($chosenRefugee)
-                                <div class="w-full py-2 px-3 text-xs sm:text-sm bg-blue-50/60 text-slate-800 rounded-xl border border-blue-200 flex items-center justify-between gap-2">
-                                    <div class="min-w-0">
-                                        <span class="font-semibold text-slate-900 block truncate">
-                                            {{ $chosenRefugee->head_name }} ({{ $chosenRefugee->members }} jiwa)
-                                        </span>
-                                        <span class="text-[11px] text-slate-500 font-mono block truncate">
-                                            {{ $chosenRefugee->masked_nik }} · {{ $chosenRefugee->shelter ? str_replace(['Posko Utama ', 'Posko Evakuasi ', 'Posko Darurat '], '', $chosenRefugee->shelter->name) : '-' }}
-                                        </span>
-                                    </div>
-                                    <button 
+                            <div
+                                x-show="open"
+                                x-transition.opacity.duration.150ms
+                                style="display: none;"
+                                class="absolute z-40 mt-1.5 w-full bg-white rounded-xl border border-slate-200 shadow-lg max-h-60 overflow-y-auto divide-y divide-slate-100"
+                            >
+                                <template x-for="item in filteredOptions" :key="item.id">
+                                    <button
                                         type="button"
-                                        wire:click="clearSelectedRefugee"
-                                        class="px-2.5 py-1 bg-white hover:bg-slate-50 text-slate-600 hover:text-slate-900 text-xs font-semibold rounded-lg border border-slate-200 shrink-0 transition cursor-pointer"
+                                        @click="selectRefugee(item.id)"
+                                        class="w-full px-3.5 py-2.5 text-left hover:bg-slate-50 transition flex items-start justify-between gap-2 cursor-pointer"
+                                        :class="selectedId === item.id ? 'bg-blue-50/70' : ''"
                                     >
-                                        Ganti
+                                        <div class="min-w-0 flex-1">
+                                            <span class="text-xs sm:text-sm font-medium block truncate" :class="selectedId === item.id ? 'text-blue-700 font-semibold' : 'text-slate-800'" x-text="item.head_name + ' (' + item.members + ' jiwa)'"></span>
+                                            <span class="text-[11px] text-slate-400 font-mono block truncate" x-text="item.nik + (item.shelter_name ? ' · ' + item.shelter_name : '')"></span>
+                                        </div>
+                                        <template x-if="selectedId === item.id">
+                                            <span class="text-[10px] font-semibold text-blue-600 shrink-0">Dipilih</span>
+                                        </template>
                                     </button>
-                                </div>
-                            @else
-                                <div class="relative">
-                                    <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
-                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                                        </svg>
-                                    </div>
-                                    <input 
-                                        type="text"
-                                        wire:model.live.debounce.250ms="refugeeSearch"
-                                        @focus="openRefugeeList = true"
-                                        @input="openRefugeeList = true"
-                                        placeholder="Cari nama kepala keluarga atau NIK..."
-                                        class="w-full pl-9 pr-3 py-2.5 text-xs sm:text-sm bg-slate-50/70 focus:bg-white text-slate-800 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-transparent transition"
-                                    />
+                                </template>
 
-                                    <!-- Daftar Hasil Pencarian Pengungsi -->
-                                    <div 
-                                        x-show="openRefugeeList" 
-                                        x-cloak
-                                        class="absolute left-0 right-0 mt-1.5 bg-white rounded-xl shadow-lg border border-slate-200 z-30 max-h-56 overflow-y-auto divide-y divide-slate-100 text-xs"
-                                    >
-                                        @forelse ($selectableRefugees as $refugee)
-                                            <button 
-                                                type="button"
-                                                wire:click="selectRefugee({{ $refugee->id }})"
-                                                @click="openRefugeeList = false"
-                                                class="w-full text-left px-3.5 py-2.5 hover:bg-blue-50/60 transition flex items-center justify-between gap-2 cursor-pointer"
-                                            >
-                                                <div class="min-w-0">
-                                                    <span class="font-semibold text-slate-900 block truncate">
-                                                        {{ $refugee->head_name }} ({{ $refugee->members }} jiwa)
-                                                    </span>
-                                                    <span class="text-[11px] font-mono text-slate-400 block truncate">
-                                                        {{ $refugee->masked_nik }}
-                                                    </span>
-                                                </div>
-                                                <span class="text-[11px] text-slate-500 shrink-0">
-                                                    {{ $refugee->shelter ? str_replace(['Posko Utama ', 'Posko Evakuasi ', 'Posko Darurat '], '', $refugee->shelter->name) : '-' }}
-                                                </span>
-                                            </button>
-                                        @empty
-                                            <div class="px-3.5 py-3 text-slate-400 text-center">
-                                                Pengungsi "{{ $refugeeSearch }}" tidak ditemukan.
-                                            </div>
-                                        @endforelse
-                                    </div>
+                                <div x-show="filteredOptions.length === 0" class="px-3.5 py-4 text-center text-xs text-slate-400">
+                                    Pengungsi tidak ditemukan untuk "<span class="font-medium text-slate-600" x-text="search"></span>"
                                 </div>
-                            @endif
-
+                            </div>
                             @error('refugee_id') <span class="text-[11px] text-red-600 mt-1 block">{{ $message }}</span> @enderror
                         </div>
 
