@@ -10,6 +10,22 @@ use Illuminate\View\View;
 
 class ItemController extends Controller
 {
+    public function index(\Illuminate\Http\Request $request): View
+    {
+        \Illuminate\Support\Facades\Gate::authorize('viewAny', Item::class);
+
+        $items = Item::query()
+            ->search($request->string('search')->toString())
+            ->category($request->string('category')->toString())
+            ->withCount(['aidNeeds', 'aidPackageItems'])
+            ->withSum('stocks', 'quantity')
+            ->latest()
+            ->paginate(10)
+            ->withQueryString();
+
+        return view('admin.items.index', compact('items'));
+    }
+
     public function create(): View
     {
         Gate::authorize('create', Item::class);
