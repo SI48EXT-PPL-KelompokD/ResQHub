@@ -56,4 +56,28 @@ class ItemController extends Controller
 
         return redirect()->route('admin.items.index')->with('success', 'Barang berhasil diperbarui.');
     }
+
+    public function destroy(Item $item)
+    {
+        Gate::authorize('delete', $item);
+
+        if ($item->aidNeeds()->exists() || $item->aidPackageItems()->exists()) {
+            $item->update(['is_active' => false]);
+            $message = 'Barang sudah pernah dipakai, sehingga dinonaktifkan dan tetap disimpan dalam riwayat.';
+        } else {
+            $item->delete();
+            $message = 'Barang berhasil dihapus dari katalog.';
+        }
+
+        return redirect()->route('admin.items.index')->with('success', $message);
+    }
+
+    public function activate(Item $item)
+    {
+        Gate::authorize('delete', $item);
+
+        $item->update(['is_active' => true]);
+
+        return redirect()->route('admin.items.index')->with('success', 'Barang berhasil diaktifkan kembali.');
+    }
 }

@@ -21,4 +21,9 @@ class ItemPolicy
     {
         return $user->isAdmin();
     }
+
+    public function delete(User $user, Item $item): bool
+    {
+        return $user->isAdmin();
+    }
 }

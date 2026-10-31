@@ -40,4 +40,9 @@ class Item extends Model
     {
         return $query->when($category, fn (Builder $q) => $q->where('category', $category));
     }
+
+    public function scopeActive(Builder $query): Builder
+    {
+        return $query->where('is_active', true);
+    }
 }

@@ -96,4 +96,66 @@ class ItemCatalogTest extends TestCase
         $this->actingAs($user)->get(route('admin.items.edit', $item))->assertForbidden();
         $this->actingAs($user)->put(route('admin.items.update', $item), [])->assertForbidden();
     }
+
+    public function test_admin_can_delete_item_without_usage(): void
+    {
+        $admin = User::factory()->create(['role' => 'admin']);
+        $item = Item::create(['name' => 'Beras', 'category' => 'pangan', 'unit' => 'kg', 'min_threshold' => 10]);
+
+        $this->actingAs($admin)->delete(route('admin.items.destroy', $item))
+            ->assertRedirect(route('admin.items.index'))->assertSessionHas('success');
+
+        $this->assertDatabaseMissing('items', ['id' => $item->id]);
+    }
+
+    public function test_used_item_is_deactivated_instead_of_deleted(): void
+    {
+        $admin = User::factory()->create(['role' => 'admin']);
+        $item = Item::create(['name' => 'Beras', 'category' => 'pangan', 'unit' => 'kg', 'min_threshold' => 10]);
+        $eventId = DB::table('disaster_events')->insertGetId([
+            'name' => 'Banjir', 'disaster_type' => 'banjir', 'severity' => 'sedang', 'status' => 'aktif',
+            'regency' => 'Bandung', 'lat' => 0, 'lng' => 0, 'started_at' => now(), 'created_at' => now(), 'updated_at' => now(),
+        ]);
+        $shelterId = DB::table('shelters')->insertGetId([
+            'disaster_event_id' => $eventId, 'coordinator_id' => $admin->id, 'name' => 'Posko', 'address' => 'Alamat',
+            'lat' => 0, 'lng' => 0, 'capacity' => 100, 'contact' => '000', 'status' => 'aktif', 'created_at' => now(), 'updated_at' => now(),
+        ]);
+        DB::table('aid_needs')->insert([
+            'shelter_id' => $shelterId, 'item_id' => $item->id, 'qty_needed' => 10,
+            'created_at' => now(), 'updated_at' => now(),
+        ]);
+
+        $this->actingAs($admin)->delete(route('admin.items.destroy', $item));
+
+        $this->assertDatabaseHas('items', ['id' => $item->id, 'is_active' => false]);
+    }
+
+    public function test_inactive_item_is_not_available_for_new_choices(): void
+    {
+        $active = Item::create(['name' => 'Beras', 'category' => 'pangan', 'unit' => 'kg']);
+        $inactive = Item::create(['name' => 'Gula', 'category' => 'pangan', 'unit' => 'kg', 'is_active' => false]);
+
+        $this->assertTrue(Item::active()->whereKey($active)->exists());
+        $this->assertFalse(Item::active()->whereKey($inactive)->exists());
+    }
+
+    public function test_non_admin_cannot_delete_item(): void
+    {
+        $user = User::factory()->create(['role' => 'relawan']);
+        $item = Item::create(['name' => 'Beras', 'category' => 'pangan', 'unit' => 'kg']);
+
+        $this->actingAs($user)->delete(route('admin.items.destroy', $item))->assertForbidden();
+        $this->assertDatabaseHas('items', ['id' => $item->id]);
+    }
+
+    public function test_admin_can_reactivate_inactive_item(): void
+    {
+        $admin = User::factory()->create(['role' => 'admin']);
+        $item = Item::create(['name' => 'Beras', 'category' => 'pangan', 'unit' => 'kg', 'is_active' => false]);
+
+        $this->actingAs($admin)->patch(route('admin.items.activate', $item))
+            ->assertRedirect(route('admin.items.index'))->assertSessionHas('success');
+
+        $this->assertDatabaseHas('items', ['id' => $item->id, 'is_active' => true]);
+    }
 }
