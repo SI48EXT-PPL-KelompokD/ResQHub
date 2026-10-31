@@ -7,6 +7,7 @@ use App\Models\Shelter;
 use App\Models\User;
 use App\Services\RefugeeService;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 use Livewire\Attributes\Layout;
 use Livewire\Attributes\Title;
@@ -257,17 +258,21 @@ class RefugeeManagement extends Component
         $user = $this->currentUser();
         $refugee = Refugee::findOrFail($this->refugeeId);
 
-        $result = $refugeeService->updateFamilyData($user, $refugee, $validated);
-        $warningMessages = array_column($result['warnings'], 'message');
-        $message = 'Data keluarga pengungsi berhasil diperbarui.';
+        [$message, $warningMessages] = DB::transaction(function () use ($refugeeService, $user, $refugee, $validated) {
+            $result = $refugeeService->updateFamilyData($user, $refugee, $validated);
+            $warnings = array_column($result['warnings'], 'message');
+            $msg = 'Data keluarga pengungsi berhasil diperbarui.';
 
-        if ($this->statusAction === 'pindah') {
-            $updated = $refugeeService->transferShelter($user, $result['refugee'], (int) $this->to_shelter_id);
-            $message = "Data diperbarui & perpindahan keluarga {$updated->head_name} ke {$updated->shelter->name} berhasil dicatat.";
-        } elseif ($this->statusAction === 'pulang') {
-            $updated = $refugeeService->checkOut($user, $result['refugee']);
-            $message = "Data diperbarui & kepulangan keluarga {$updated->head_name} berhasil dicatat.";
-        }
+            if ($this->statusAction === 'pindah') {
+                $updated = $refugeeService->transferShelter($user, $result['refugee'], (int) $this->to_shelter_id);
+                $msg = "Data diperbarui & perpindahan keluarga {$updated->head_name} ke {$updated->shelter->name} berhasil dicatat.";
+            } elseif ($this->statusAction === 'pulang') {
+                $updated = $refugeeService->checkOut($user, $result['refugee']);
+                $msg = "Data diperbarui & kepulangan keluarga {$updated->head_name} berhasil dicatat.";
+            }
+
+            return [$msg, $warnings];
+        });
 
         $this->showEditModal = false;
         $this->panelMode = 'create';
@@ -434,7 +439,7 @@ class RefugeeManagement extends Component
 
         $currentShelter = $selectedShelterId
             ? $accessibleShelters->firstWhere('id', $selectedShelterId)
-            : $accessibleShelters->first();
+            : ($accessibleShelters->count() === 1 ? $accessibleShelters->first() : null);
 
         $destinationShelters = $refugeeService->getDestinationShelters(
             $this->selectedRefugee?->shelter_id ?? ($this->shelter_id ? (int) $this->shelter_id : null)

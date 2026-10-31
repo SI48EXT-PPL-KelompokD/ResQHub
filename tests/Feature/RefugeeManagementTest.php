@@ -316,6 +316,51 @@ class RefugeeManagementTest extends TestCase
         $this->assertEquals($shelter2->id, $newRefugee->fresh()->shelter_id);
         $this->assertEquals($initialOccupancy1, $shelter1->fresh()->occupancy);
         $this->assertEquals($initialOccupancy2 + 4, $shelter2->fresh()->occupancy);
+
+        // 3. Pastikan status kontekstual (Opsi B):
+        //    - Di posko lama (Posko 1): tampil sebagai riwayat berstatus 'pindah' (tidak muncul saat filter 'di_posko')
+        //    - Di posko baru (Posko 2): tampil sebagai pengungsi aktif berstatus 'di_posko'
+        $this->assertEquals('pindah', $newRefugee->fresh()->effectiveStatusForShelter($shelter1->id));
+        $this->assertEquals('di_posko', $newRefugee->fresh()->effectiveStatusForShelter($shelter2->id));
+
+        $admin = User::where('email', 'admin@resqhub.id')->firstOrFail();
+
+        Livewire::actingAs($admin)
+            ->test(RefugeeManagement::class)
+            ->set('shelterFilter', (string) $shelter1->id)
+            ->set('statusFilter', 'di_posko')
+            ->assertDontSee('Rahmat Hidayat')
+            ->set('statusFilter', 'pindah')
+            ->assertSee('Rahmat Hidayat')
+            ->assertSee('Pindah ke ' . $shelter2->name)
+            ->set('shelterFilter', (string) $shelter2->id)
+            ->set('statusFilter', 'di_posko')
+            ->assertSee('Rahmat Hidayat');
+    }
+
+    public function test_reconcile_transferred_refugees_moves_legacy_seeded_refugee_to_destination_shelter(): void
+    {
+        $admin = User::where('email', 'admin@resqhub.id')->firstOrFail();
+
+        // Simulasikan kondisi data lama di mana shelter_id tertinggal di posko asal (2)
+        // padahal riwayat perpindahan terakhir menuju posko tujuan (1)
+        Refugee::where('id', 3)->update(['shelter_id' => 2, 'status' => 'pindah']);
+
+        Livewire::actingAs($admin)
+            ->test(RefugeeManagement::class)
+            ->set('shelterFilter', '2')
+            ->set('statusFilter', 'di_posko')
+            ->assertDontSee('Ujang Suherman')
+            ->set('statusFilter', 'pindah')
+            ->assertSee('Ujang Suherman')
+            ->set('shelterFilter', '1')
+            ->set('statusFilter', 'di_posko')
+            ->assertSee('Ujang Suherman');
+
+        $refugee3 = Refugee::findOrFail(3);
+        $this->assertEquals(1, $refugee3->shelter_id);
+        $this->assertEquals('pindah', $refugee3->effectiveStatusForShelter(2));
+        $this->assertEquals('di_posko', $refugee3->effectiveStatusForShelter(1));
     }
 }
 

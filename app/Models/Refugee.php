@@ -41,7 +41,7 @@ use Illuminate\Support\Facades\DB;
  * @method static Builder|Refugee forShelter(int $shelterId)
  * @method static Builder|Refugee forShelters(array $shelterIds)
  * @method static Builder|Refugee search(?string $search)
- * @method static Builder|Refugee byStatus(?string $status)
+ * @method static Builder|Refugee byStatus(?string $status, ?int $shelterId = null)
  */
 class Refugee extends Model
 {
@@ -146,11 +146,29 @@ class Refugee extends Model
     }
 
     /**
-     * Cek apakah pengungsi masih menghuni posko (belum pulang).
+     * Cek apakah pengungsi masih menghuni posko saat ini (belum pulang).
      */
     public function isOccupyingShelter(): bool
     {
         return in_array($this->status, ['di_posko', 'pindah'], true);
+    }
+
+    /**
+     * Tentukan status kontekstual pengungsi pada posko yang sedang dilihat:
+     * - Di posko lama (shelter_id != $shelterId): berstatus 'pindah' (sebagai catatan riwayat).
+     * - Di posko saat ini / terbaru (shelter_id == $shelterId): berstatus 'di_posko' (aktif) atau 'pulang'.
+     */
+    public function effectiveStatusForShelter(?int $shelterId = null): string
+    {
+        if ($shelterId !== null && (int) $this->shelter_id !== (int) $shelterId) {
+            return 'pindah';
+        }
+
+        if ($this->status === 'pulang') {
+            return 'pulang';
+        }
+
+        return 'di_posko';
     }
 
     /**
@@ -204,14 +222,17 @@ class Refugee extends Model
     }
 
     /**
-     * Scope filter pengungsi berdasarkan posko (termasuk yang pernah pindah dari posko tersebut).
+     * Scope filter pengungsi berdasarkan posko:
+     * Mencakup pengungsi yang saat ini berada di posko tersebut (aktif/pulang)
+     * maupun pengungsi yang pernah berada di posko tersebut lalu pindah keluar (riwayat pindah).
      */
     public function scopeForShelter(Builder $query, int $shelterId): Builder
     {
         return $query->where(function (Builder $q) use ($shelterId) {
             $q->where('shelter_id', $shelterId)
                 ->orWhereHas('movements', function (Builder $mq) use ($shelterId) {
-                    $mq->where('from_shelter_id', $shelterId);
+                    $mq->where('type', 'pindah')
+                        ->where('from_shelter_id', $shelterId);
                 });
         });
     }
@@ -226,7 +247,8 @@ class Refugee extends Model
         return $query->where(function (Builder $q) use ($shelterIds) {
             $q->whereIn('shelter_id', $shelterIds)
                 ->orWhereHas('movements', function (Builder $mq) use ($shelterIds) {
-                    $mq->whereIn('from_shelter_id', $shelterIds);
+                    $mq->where('type', 'pindah')
+                        ->whereIn('from_shelter_id', $shelterIds);
                 });
         });
     }
@@ -249,15 +271,35 @@ class Refugee extends Model
     }
 
     /**
-     * Scope filter berdasarkan status ('di_posko', 'pindah', 'pulang').
+     * Scope filter berdasarkan status ('di_posko', 'pindah', 'pulang') secara kontekstual per posko.
      */
-    public function scopeByStatus(Builder $query, ?string $status): Builder
+    public function scopeByStatus(Builder $query, ?string $status, ?int $shelterId = null): Builder
     {
         if (empty($status)) {
             return $query;
         }
 
-        return $query->where('status', $status);
+        if ($shelterId !== null) {
+            return match ($status) {
+                'di_posko' => $query->where('shelter_id', $shelterId)
+                    ->whereIn('status', ['di_posko', 'pindah']),
+                'pindah' => $query->where('shelter_id', '!=', $shelterId)
+                    ->whereHas('movements', function (Builder $mq) use ($shelterId) {
+                        $mq->where('type', 'pindah')
+                            ->where('from_shelter_id', $shelterId);
+                    }),
+                'pulang' => $query->where('shelter_id', $shelterId)
+                    ->where('status', 'pulang'),
+                default => $query->where('status', $status),
+            };
+        }
+
+        return match ($status) {
+            'di_posko' => $query->whereIn('status', ['di_posko', 'pindah']),
+            'pindah' => $query->where('status', 'pindah'),
+            'pulang' => $query->where('status', 'pulang'),
+            default => $query->where('status', $status),
+        };
     }
 }
 

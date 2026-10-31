@@ -213,15 +213,20 @@
                             @forelse ($refugees as $refugee)
                                 @php
                                     $isSelected = $refugeeId === $refugee->id;
-                                    $statusBadge = match ($refugee->status) {
+                                    $contextShelterId = $currentShelter?->id;
+                                    $effectiveStatus = $refugee->effectiveStatusForShelter($contextShelterId);
+                                    if ($contextShelterId === null && $statusFilter === 'pindah' && $refugee->status === 'pindah') {
+                                        $effectiveStatus = 'pindah';
+                                    }
+                                    $statusBadge = match ($effectiveStatus) {
                                         'di_posko' => ['label' => 'Di Posko', 'classes' => 'bg-emerald-100/90 text-emerald-800'],
                                         'pindah'   => ['label' => 'Pindah', 'classes' => 'bg-blue-100/90 text-blue-700'],
                                         'pulang'   => ['label' => 'Pulang', 'classes' => 'bg-slate-100 text-slate-600'],
-                                        default    => ['label' => ucfirst($refugee->status), 'classes' => 'bg-slate-100 text-slate-600'],
+                                        default    => ['label' => ucfirst($effectiveStatus), 'classes' => 'bg-slate-100 text-slate-600'],
                                     };
                                 @endphp
                                 <tr 
-                                    wire:key="refugee-{{ $refugee->id }}"
+                                    wire:key="refugee-{{ $refugee->id }}-{{ $effectiveStatus }}"
                                     class="transition {{ $isSelected ? 'bg-blue-50/75' : 'hover:bg-slate-50/60' }}"
                                 >
                                     <!-- Kepala Keluarga -->
@@ -234,7 +239,11 @@
                                             <span class="font-semibold text-slate-900 group-hover:text-blue-600 transition block leading-snug">
                                                 {{ $refugee->head_name }}
                                             </span>
-                                            @if ($accessibleShelters->count() > 1 && $refugee->shelter)
+                                            @if ($effectiveStatus === 'pindah' && $refugee->shelter)
+                                                <span class="text-[11px] text-blue-600/80 block mt-0.5">
+                                                    Pindah ke {{ $refugee->shelter->name }}
+                                                </span>
+                                            @elseif ($accessibleShelters->count() > 1 && $refugee->shelter)
                                                 <span class="text-[11px] text-slate-400 block mt-0.5">
                                                     {{ $refugee->shelter->name }}
                                                 </span>
@@ -262,7 +271,7 @@
                                     <!-- Aksi -->
                                     <td class="py-3.5 px-5 text-right">
                                         <div class="inline-flex items-center justify-end space-x-2">
-                                            @if ($canManage && $refugee->status === 'di_posko')
+                                            @if ($canManage && $effectiveStatus === 'di_posko')
                                                 <button 
                                                     type="button"
                                                     wire:click="openEditModal({{ $refugee->id }})"
@@ -495,6 +504,15 @@
 
                 {{-- MODE 2: DETAIL PENGUNGSI & RIWAYAT MASUK / PINDAH / PULANG --}}
                 @elseif ($panelMode === 'detail' && $selectedRefugee)
+                    @php
+                        $detailEffectiveStatus = $selectedRefugee->effectiveStatusForShelter($currentShelter?->id);
+                        $detailStatusLabel = match ($detailEffectiveStatus) {
+                            'di_posko' => 'Di Posko',
+                            'pindah'   => 'Pindah Posko',
+                            'pulang'   => 'Pulang',
+                            default    => ucfirst($detailEffectiveStatus),
+                        };
+                    @endphp
                     <div class="space-y-5">
                         <div class="flex items-start justify-between">
                             <div>
@@ -505,8 +523,8 @@
                                     NIK: {{ $selectedRefugee->masked_nik }}
                                 </p>
                             </div>
-                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold {{ $selectedRefugee->status === 'di_posko' ? 'bg-emerald-100 text-emerald-800' : ($selectedRefugee->status === 'pindah' ? 'bg-blue-100 text-blue-700' : 'bg-slate-100 text-slate-700') }}">
-                                {{ $selectedRefugee->status_label }}
+                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold {{ $detailEffectiveStatus === 'di_posko' ? 'bg-emerald-100 text-emerald-800' : ($detailEffectiveStatus === 'pindah' ? 'bg-blue-100 text-blue-700' : 'bg-slate-100 text-slate-700') }}">
+                                {{ $detailStatusLabel }}
                             </span>
                         </div>
 
@@ -586,7 +604,7 @@
                             >
                                 Tutup
                             </button>
-                            @if ($canManage && $selectedRefugee->status === 'di_posko')
+                            @if ($canManage && $detailEffectiveStatus === 'di_posko')
                                 <button 
                                     type="button" 
                                     wire:click="openEditModal({{ $selectedRefugee->id }})"

@@ -50,6 +50,7 @@ class RefugeeService
     public function listRefugees(User $user, array $filters = [], int $perPage = 10): LengthAwarePaginator
     {
         $this->ensureCanViewModule($user);
+        $this->reconcileTransferredRefugees();
 
         $query = Refugee::query()
             ->with(['shelter'])
@@ -69,7 +70,7 @@ class RefugeeService
         }
 
         $query->search($filters['search'] ?? null)
-            ->byStatus($filters['status'] ?? null);
+            ->byStatus($filters['status'] ?? null, $shelterId);
 
         $sort = $filters['sort'] ?? 'latest';
         match ($sort) {
@@ -88,6 +89,7 @@ class RefugeeService
     public function getRefugeeDetail(User $user, int $refugeeId): Refugee
     {
         $this->ensureCanViewModule($user);
+        $this->reconcileTransferredRefugees();
 
         $refugee = Refugee::with([
             'shelter',
@@ -496,6 +498,7 @@ class RefugeeService
     public function getSummaryStatistics(User $user, ?int $shelterId = null): array
     {
         $this->ensureCanViewModule($user);
+        $this->reconcileTransferredRefugees();
 
         $shelterQuery = Shelter::query()->where('status', '!=', 'ditutup');
         $refugeeQuery = Refugee::query();
@@ -513,16 +516,12 @@ class RefugeeService
         $totalOccupancy = (int) $shelterQuery->sum('occupancy');
         $occupancyPercent = $totalCapacity > 0 ? round(($totalOccupancy / $totalCapacity) * 100, 1) : 0;
 
-        $activeRefugeesQuery = (clone $refugeeQuery)->whereIn('status', ['di_posko', 'pindah']);
+        $activeRefugeesQuery = Refugee::query()->whereIn('status', ['di_posko', 'pindah']);
         if ($shelterId !== null) {
-            $activeRefugeesQuery = Refugee::query()
-                ->where('shelter_id', $shelterId)
-                ->whereIn('status', ['di_posko', 'pindah']);
+            $activeRefugeesQuery->where('shelter_id', $shelterId);
         } elseif ($user->isKoordinator()) {
             $managedIds = $user->managedShelters()->pluck('id')->all();
-            $activeRefugeesQuery = Refugee::query()
-                ->whereIn('shelter_id', $managedIds)
-                ->whereIn('status', ['di_posko', 'pindah']);
+            $activeRefugeesQuery->whereIn('shelter_id', $managedIds);
         }
 
         $aggregates = $activeRefugeesQuery->selectRaw('
@@ -550,10 +549,37 @@ class RefugeeService
             'total_capacity' => $totalCapacity,
             'total_occupancy' => $totalOccupancy,
             'occupancy_percent' => $occupancyPercent,
-            'count_di_posko' => (clone $refugeeQuery)->where('status', 'di_posko')->count(),
-            'count_pindah' => (clone $refugeeQuery)->where('status', 'pindah')->count(),
-            'count_pulang' => (clone $refugeeQuery)->where('status', 'pulang')->count(),
+            'count_di_posko' => (clone $refugeeQuery)->byStatus('di_posko', $shelterId)->count(),
+            'count_pindah' => (clone $refugeeQuery)->byStatus('pindah', $shelterId)->count(),
+            'count_pulang' => (clone $refugeeQuery)->byStatus('pulang', $shelterId)->count(),
         ];
+    }
+
+    /**
+     * Sinkronisasi otomatis pengungsi berstatus 'pindah' agar shelter_id selalu
+     * merujuk pada posko tujuan terakhir (to_shelter_id), bukan tertinggal di posko lama.
+     */
+    public function reconcileTransferredRefugees(): void
+    {
+        $transferredRefugees = Refugee::query()
+            ->where('status', 'pindah')
+            ->with(['movements' => fn ($q) => $q->where('type', 'pindah')])
+            ->get();
+
+        foreach ($transferredRefugees as $refugee) {
+            /** @var RefugeeMovement|null $latestTransfer */
+            $latestTransfer = $refugee->movements->first();
+
+            if (
+                $latestTransfer !== null
+                && $latestTransfer->to_shelter_id !== null
+                && (int) $refugee->shelter_id !== (int) $latestTransfer->to_shelter_id
+            ) {
+                $refugee->update([
+                    'shelter_id' => (int) $latestTransfer->to_shelter_id,
+                ]);
+            }
+        }
     }
 
     /**
