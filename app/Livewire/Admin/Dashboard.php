@@ -2,9 +2,12 @@
 
 namespace App\Livewire\Admin;
 
+use App\Models\User;
+use App\Services\HealthCheckService;
 use Livewire\Component;
 use Livewire\Attributes\Layout;
 use Livewire\Attributes\Title;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 
 #[Layout('layouts.admin')]
@@ -64,7 +67,15 @@ class Dashboard extends Component
             ->where('status', 'aktif')
             ->first();
 
+        // 6. Ringkasan Triase Kesehatan Harian (Modul C · PBI-08)
+        /** @var User|null $user */
+        $user = Auth::user();
+        $triageSummary = ($user && $user->canAccessModule('modul_c'))
+            ? app(HealthCheckService::class)->getDailyTriageSummary($user)
+            : null;
+
         return view('livewire.admin.dashboard', [
+            'triageSummary' => $triageSummary,
             'totalCapacity' => $totalCapacity,
             'totalOccupancy' => $totalOccupancy,
             'occupancyPercent' => $occupancyPercent,
