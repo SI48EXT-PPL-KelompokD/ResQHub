@@ -23,5 +23,5 @@ Route::post('/logout', [LoginController::class, 'logout'])->name('logout');
 // Group Terotentikasi
 Route::middleware(['auth'])->prefix('admin')->name('admin.')->group(function () {
     Route::get('/dashboard', Dashboard::class)->name('dashboard');
-    Route::get('/users', UserManagement::class)->name('users');
+    Route::get('/users', UserManagement::class)->middleware('role:admin')->name('users');
 });
