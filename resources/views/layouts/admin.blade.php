@@ -12,9 +12,24 @@
 
     @vite(['resources/css/app.css', 'resources/js/app.js'])
     @livewireStyles
+
+    <!-- Leaflet.js CSS (OpenStreetMap) -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
+    @stack('styles')
+    
     <style>
         body { font-family: 'Inter', sans-serif; }
         [x-cloak] { display: none !important; }
+        /* Leaflet tile reset for Tailwind */
+        .leaflet-container img {
+            max-width: none !important;
+        }
+        .leaflet-pane {
+            z-index: 10 !important;
+        }
+        .leaflet-top, .leaflet-bottom {
+            z-index: 20 !important;
+        }
     </style>
 </head>
 <body class="h-full antialiased text-slate-800 bg-slate-50/60" x-data="{ sidebarOpen: false }">
@@ -299,6 +314,10 @@
 
     </div>
 
+    <!-- Leaflet.js (OpenStreetMap) -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+    
     @livewireScripts
+    @stack('scripts')
 </body>
 </html>

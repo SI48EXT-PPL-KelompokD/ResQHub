@@ -271,6 +271,7 @@
         x-data="{ open: $wire.entangle('showCreateModal') }"
         x-show="open"
         x-cloak
+        x-effect="if (open) { setTimeout(() => window.dispatchEvent(new CustomEvent('render-shelter-map')), 250); }"
         @keydown.escape.window="open = false; $wire.closeCreateModal()"
         class="fixed inset-0 z-50 overflow-y-auto"
         role="dialog" 
@@ -302,7 +303,7 @@
                 x-transition:leave="transition ease-in duration-200"
                 x-transition:leave-start="opacity-100 scale-100 translate-y-0"
                 x-transition:leave-end="opacity-0 scale-95 translate-y-3"
-                class="w-full max-w-xl bg-white rounded-2xl text-left shadow-2xl border border-slate-200 overflow-hidden my-6"
+                class="w-full max-w-2xl bg-white rounded-2xl text-left shadow-2xl border border-slate-200 overflow-hidden my-6"
             >
                 <form wire:submit.prevent="store">
                     <div class="p-6">
@@ -377,35 +378,169 @@
                                 @error('address') <span class="text-xs text-red-600 mt-1 block font-medium">{{ $message }}</span> @enderror
                             </div>
 
-                            <!-- Koordinat (Lat & Lng) -->
-                            <div class="grid grid-cols-2 gap-3">
-                                <div>
-                                    <label class="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1.5">
-                                        Latitude <span class="text-red-500">*</span>
-                                    </label>
-                                    <input 
-                                        type="number" 
-                                        step="0.0000001" 
-                                        wire:model="lat" 
-                                        required 
-                                        placeholder="-6.9935" 
-                                        class="w-full py-2.5 px-3 text-xs sm:text-sm rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-transparent transition font-mono"
-                                    />
-                                    @error('lat') <span class="text-xs text-red-600 mt-1 block font-medium">{{ $message }}</span> @enderror
+                            <!-- Titik Koordinat & Peta Interaktif Leaflet (Nominatim Geocoding + Pin Picker) -->
+                            <div 
+                                x-data="shelterMapPicker()"
+                                x-init="init()"
+                                @render-shelter-map.window="setupMap()"
+                                class="bg-slate-50/80 p-3.5 sm:p-4 rounded-2xl border border-slate-200/90 space-y-3"
+                            >
+                                <!-- Header Titik Peta -->
+                                <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+                                    <div class="flex items-center space-x-2">
+                                        <span class="w-7 h-7 rounded-lg bg-blue-100 text-blue-600 flex items-center justify-center shrink-0">
+                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                                            </svg>
+                                        </span>
+                                        <div>
+                                            <label class="block text-xs font-bold text-slate-800 uppercase tracking-wider leading-none">
+                                                Titik Lokasi Posko (Peta Leaflet) <span class="text-red-500">*</span>
+                                            </label>
+                                            <p class="text-[11px] text-slate-500 mt-0.5">Klik peta, geser pin, atau cari nama lokasi</p>
+                                        </div>
+                                    </div>
+
+                                    <!-- Tombol Gunakan GPS Saya -->
+                                    <button 
+                                        type="button" 
+                                        @click="getCurrentLocation()"
+                                        :disabled="isLocating"
+                                        class="inline-flex items-center justify-center space-x-1.5 px-2.5 py-1.5 bg-white hover:bg-slate-100 text-slate-700 text-xs font-semibold rounded-lg border border-slate-200 shadow-2xs transition active:scale-95 disabled:opacity-50 cursor-pointer"
+                                        title="Gunakan posisi GPS perangkat saat ini"
+                                    >
+                                        <template x-if="!isLocating">
+                                            <svg class="w-3.5 h-3.5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                            </svg>
+                                        </template>
+                                        <template x-if="isLocating">
+                                            <svg class="animate-spin w-3.5 h-3.5 text-blue-600" fill="none" viewBox="0 0 24 24">
+                                                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                            </svg>
+                                        </template>
+                                        <span x-text="isLocating ? 'Mendeteksi...' : 'GPS Saya'"></span>
+                                    </button>
                                 </div>
-                                <div>
-                                    <label class="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1.5">
-                                        Longitude <span class="text-red-500">*</span>
-                                    </label>
-                                    <input 
-                                        type="number" 
-                                        step="0.0000001" 
-                                        wire:model="lng" 
-                                        required 
-                                        placeholder="107.6250" 
-                                        class="w-full py-2.5 px-3 text-xs sm:text-sm rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-transparent transition font-mono"
-                                    />
-                                    @error('lng') <span class="text-xs text-red-600 mt-1 block font-medium">{{ $message }}</span> @enderror
+
+                                <!-- Kolom Pencarian Nama Lokasi (Nominatim OpenStreetMap) -->
+                                <div class="relative">
+                                    <div class="flex items-center space-x-1.5">
+                                        <div class="relative flex-1">
+                                            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
+                                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                                                </svg>
+                                            </div>
+                                            <input 
+                                                type="text" 
+                                                x-model="searchQuery" 
+                                                @keydown.enter.prevent="searchLocation()"
+                                                placeholder="Cari nama tempat / jalan (misal: GOR Baleendah, Stadion Si Jalak Harupat)..." 
+                                                class="w-full pl-8 pr-3 py-1.5 text-xs rounded-xl bg-white border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-transparent transition"
+                                            />
+                                        </div>
+                                        <button 
+                                            type="button" 
+                                            @click="searchLocation()"
+                                            :disabled="isSearching"
+                                            class="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white text-xs font-semibold rounded-xl transition shadow-2xs flex items-center space-x-1 shrink-0 cursor-pointer disabled:opacity-50"
+                                        >
+                                            <template x-if="!isSearching">
+                                                <span>Cari</span>
+                                            </template>
+                                            <template x-if="isSearching">
+                                                <span class="inline-flex items-center space-x-1">
+                                                    <svg class="animate-spin w-3 h-3 text-white" fill="none" viewBox="0 0 24 24">
+                                                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                                    </svg>
+                                                    <span>Mencari...</span>
+                                                </span>
+                                            </template>
+                                        </button>
+                                    </div>
+
+                                    <!-- Dropdown Hasil Pencarian Tempat -->
+                                    <div 
+                                        x-show="searchResults.length > 0" 
+                                        @click.away="searchResults = []"
+                                        x-cloak
+                                        x-transition
+                                        class="absolute left-0 right-0 top-full mt-1 z-30 bg-white rounded-xl shadow-xl border border-slate-200 max-h-48 overflow-y-auto divide-y divide-slate-100"
+                                    >
+                                        <template x-for="(item, idx) in searchResults" :key="idx">
+                                            <button 
+                                                type="button"
+                                                @click="selectLocation(item)"
+                                                class="w-full px-3 py-2 text-left hover:bg-blue-50/80 transition flex items-start space-x-2.5 cursor-pointer"
+                                            >
+                                                <span class="text-blue-600 mt-0.5 shrink-0">
+                                                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                                                    </svg>
+                                                </span>
+                                                <div class="flex-1 min-w-0">
+                                                    <p class="text-xs font-semibold text-slate-800 truncate" x-text="item.display_name.split(',')[0]"></p>
+                                                    <p class="text-[10px] text-slate-500 line-clamp-1" x-text="item.display_name"></p>
+                                                </div>
+                                            </button>
+                                        </template>
+                                    </div>
+
+                                    <template x-if="searchError">
+                                        <p class="text-[11px] text-amber-600 mt-1 flex items-center space-x-1" x-text="searchError"></p>
+                                    </template>
+                                </div>
+
+                                <!-- Kontainer Visual Peta Leaflet (wire:ignore agar state DOM map terjaga) -->
+                                <div wire:ignore class="relative rounded-xl overflow-hidden border border-slate-200 shadow-inner bg-slate-100">
+                                    <div x-ref="mapContainer" class="w-full h-56 sm:h-64 z-0 rounded-xl" style="height: 250px; min-height: 250px;"></div>
+                                    
+                                    <!-- Badge Petunjuk Interaksi Peta -->
+                                    <div class="absolute bottom-2 left-2 right-2 pointer-events-none z-10 flex justify-center">
+                                        <span class="bg-white/95 backdrop-blur-xs text-slate-600 text-[10px] font-medium px-2.5 py-1 rounded-full shadow-xs border border-slate-200/80">
+                                            📍 Klik peta atau geser pin untuk menentukan titik koordinat
+                                        </span>
+                                    </div>
+                                </div>
+
+                                <!-- Input Latitude & Longitude (Dua Arah / Bi-directional Sync) -->
+                                <div class="grid grid-cols-2 gap-3 pt-1">
+                                    <div>
+                                        <label class="block text-[11px] font-bold text-slate-600 uppercase tracking-wider mb-1">
+                                            Latitude <span class="text-red-500">*</span>
+                                        </label>
+                                        <input 
+                                            type="number" 
+                                            step="0.0000001" 
+                                            x-model="lat"
+                                            @input="onCoordInput()"
+                                            wire:model.blur="lat" 
+                                            required 
+                                            placeholder="-6.9935" 
+                                            class="w-full py-2 px-3 text-xs rounded-xl bg-white border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-600 font-mono transition"
+                                        />
+                                        @error('lat') <span class="text-[11px] text-red-600 mt-0.5 block font-medium">{{ $message }}</span> @enderror
+                                    </div>
+                                    <div>
+                                        <label class="block text-[11px] font-bold text-slate-600 uppercase tracking-wider mb-1">
+                                            Longitude <span class="text-red-500">*</span>
+                                        </label>
+                                        <input 
+                                            type="number" 
+                                            step="0.0000001" 
+                                            x-model="lng"
+                                            @input="onCoordInput()"
+                                            wire:model.blur="lng" 
+                                            required 
+                                            placeholder="107.6250" 
+                                            class="w-full py-2 px-3 text-xs rounded-xl bg-white border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-600 font-mono transition"
+                                        />
+                                        @error('lng') <span class="text-[11px] text-red-600 mt-0.5 block font-medium">{{ $message }}</span> @enderror
+                                    </div>
                                 </div>
                             </div>
 
@@ -476,3 +611,228 @@
     </div>
 
 </div>
+
+@push('scripts')
+<script>
+    function shelterMapPicker() {
+        return {
+            lat: -6.9935,
+            lng: 107.625,
+            map: null,
+            marker: null,
+            searchQuery: '',
+            isSearching: false,
+            isLocating: false,
+            searchResults: [],
+            searchError: null,
+
+            init() {
+                const wireLat = this.$wire.get('lat');
+                const wireLng = this.$wire.get('lng');
+                this.lat = wireLat !== undefined && wireLat !== null && wireLat !== '' ? parseFloat(wireLat) : -6.9935;
+                this.lng = wireLng !== undefined && wireLng !== null && wireLng !== '' ? parseFloat(wireLng) : 107.625;
+
+                // Pantau perubahan properti Livewire jika diperbarui dari sisi server
+                this.$watch('$wire.lat', (val) => {
+                    if (val !== undefined && val !== null && val !== '') {
+                        const parsed = parseFloat(val);
+                        if (!isNaN(parsed) && Math.abs(parsed - this.lat) > 0.00001) {
+                            this.lat = parsed;
+                            this.syncMarker();
+                        }
+                    }
+                });
+
+                this.$watch('$wire.lng', (val) => {
+                    if (val !== undefined && val !== null && val !== '') {
+                        const parsed = parseFloat(val);
+                        if (!isNaN(parsed) && Math.abs(parsed - this.lng) > 0.00001) {
+                            this.lng = parsed;
+                            this.syncMarker();
+                        }
+                    }
+                });
+            },
+
+            setupMap() {
+                this.$nextTick(() => {
+                    const container = this.$refs.mapContainer;
+                    if (!container) return;
+
+                    if (typeof L === 'undefined') {
+                        setTimeout(() => this.setupMap(), 200);
+                        return;
+                    }
+
+                    const currentLat = parseFloat(this.lat) || -6.9935;
+                    const currentLng = parseFloat(this.lng) || 107.625;
+
+                    if (!this.map) {
+                        this.map = L.map(container, {
+                            center: [currentLat, currentLng],
+                            zoom: 14,
+                            zoomControl: true,
+                            attributionControl: false
+                        });
+
+                        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                            maxZoom: 19,
+                            attribution: '&copy; OpenStreetMap'
+                        }).addTo(this.map);
+
+                        // Pin Marker Draggable
+                        this.marker = L.marker([currentLat, currentLng], {
+                            draggable: true,
+                            autoPan: true
+                        }).addTo(this.map);
+
+                        this.marker.bindPopup(`<b>Titik Posko Evakuasi</b><br>Lat: ${currentLat.toFixed(6)}<br>Lng: ${currentLng.toFixed(6)}`);
+
+                        // Event drag pin marker
+                        this.marker.on('dragend', (e) => {
+                            const pos = e.target.getLatLng();
+                            this.updateCoordinates(pos.lat, pos.lng);
+                            this.marker.bindPopup(`<b>Titik Posko Evakuasi</b><br>Lat: ${pos.lat.toFixed(6)}<br>Lng: ${pos.lng.toFixed(6)}`).openPopup();
+                        });
+
+                        // Event klik pada peta
+                        this.map.on('click', (e) => {
+                            this.marker.setLatLng(e.latlng);
+                            this.updateCoordinates(e.latlng.lat, e.latlng.lng);
+                            this.marker.bindPopup(`<b>Titik Posko Evakuasi</b><br>Lat: ${e.latlng.lat.toFixed(6)}<br>Lng: ${e.latlng.lng.toFixed(6)}`).openPopup();
+                        });
+                    } else {
+                        this.map.setView([currentLat, currentLng], this.map.getZoom() || 14);
+                        if (this.marker) {
+                            this.marker.setLatLng([currentLat, currentLng]);
+                        }
+                    }
+
+                    // Invalidate size agar ukuran tile Leaflet pas dan tidak terdistorsi saat animasi modal selesai
+                    setTimeout(() => {
+                        if (this.map) {
+                            this.map.invalidateSize();
+                        }
+                    }, 250);
+                });
+            },
+
+            updateCoordinates(lat, lng) {
+                const numLat = Number(parseFloat(lat).toFixed(7));
+                const numLng = Number(parseFloat(lng).toFixed(7));
+                this.lat = numLat;
+                this.lng = numLng;
+                this.$wire.set('lat', numLat);
+                this.$wire.set('lng', numLng);
+            },
+
+            syncMarker() {
+                const numLat = parseFloat(this.lat);
+                const numLng = parseFloat(this.lng);
+                if (!isNaN(numLat) && !isNaN(numLng) && this.marker && this.map) {
+                    const currentPos = this.marker.getLatLng();
+                    if (Math.abs(currentPos.lat - numLat) > 0.00001 || Math.abs(currentPos.lng - numLng) > 0.00001) {
+                        this.marker.setLatLng([numLat, numLng]);
+                        this.map.panTo([numLat, numLng]);
+                    }
+                }
+            },
+
+            onCoordInput() {
+                const numLat = parseFloat(this.lat);
+                const numLng = parseFloat(this.lng);
+                if (!isNaN(numLat) && !isNaN(numLng)) {
+                    this.$wire.set('lat', numLat);
+                    this.$wire.set('lng', numLng);
+                    this.syncMarker();
+                }
+            },
+
+            searchLocation() {
+                const q = (this.searchQuery || '').trim();
+                if (q.length < 3) {
+                    this.searchError = 'Ketik minimal 3 karakter untuk mencari nama lokasi.';
+                    this.searchResults = [];
+                    return;
+                }
+
+                this.isSearching = true;
+                this.searchError = null;
+                this.searchResults = [];
+
+                // OpenStreetMap Nominatim Geocoding API (gratis & open-source)
+                const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(q)}&countrycodes=id&limit=5&addressdetails=1`;
+
+                fetch(url, {
+                    headers: { 'Accept-Language': 'id,en' }
+                })
+                .then(res => res.json())
+                .then(data => {
+                    this.isSearching = false;
+                    if (!data || data.length === 0) {
+                        this.searchError = 'Lokasi tidak ditemukan. Coba gunakan nama tempat atau kelurahan yang lebih spesifik.';
+                    } else {
+                        this.searchResults = data;
+                    }
+                })
+                .catch(err => {
+                    this.isSearching = false;
+                    this.searchError = 'Gagal menghubungi server pencarian lokasi.';
+                    console.error(err);
+                });
+            },
+
+            selectLocation(item) {
+                const lat = parseFloat(item.lat);
+                const lon = parseFloat(item.lon);
+                if (isNaN(lat) || isNaN(lon)) return;
+
+                this.searchResults = [];
+                this.searchQuery = item.display_name.split(',')[0];
+                this.searchError = null;
+
+                if (this.map && this.marker) {
+                    this.map.flyTo([lat, lon], 16, { animate: true, duration: 1.0 });
+                    this.marker.setLatLng([lat, lon]);
+                    this.marker.bindPopup(`<b>${item.display_name.split(',')[0]}</b><br>${item.display_name}`).openPopup();
+                }
+
+                this.updateCoordinates(lat, lon);
+
+                // Bantu isikan alamat posko jika masih kosong
+                const currentAddress = this.$wire.get('address');
+                if (!currentAddress || currentAddress.trim() === '') {
+                    this.$wire.set('address', item.display_name);
+                }
+            },
+
+            getCurrentLocation() {
+                if (!navigator.geolocation) {
+                    alert('Browser Anda tidak mendukung deteksi lokasi (Geolocation).');
+                    return;
+                }
+
+                this.isLocating = true;
+                navigator.geolocation.getCurrentPosition(
+                    (pos) => {
+                        this.isLocating = false;
+                        const lat = pos.coords.latitude;
+                        const lng = pos.coords.longitude;
+                        if (this.map && this.marker) {
+                            this.map.flyTo([lat, lng], 16);
+                            this.marker.setLatLng([lat, lng]);
+                            this.marker.bindPopup('<b>📍 Lokasi Anda Saat Ini</b>').openPopup();
+                        }
+                        this.updateCoordinates(lat, lng);
+                    },
+                    (err) => {
+                        this.isLocating = false;
+                        alert('Tidak dapat mendeteksi lokasi saat ini. Pastikan izin akses GPS diaktifkan.');
+                    },
+                    { enableHighAccuracy: true, timeout: 10000 }
+                );
+            }
+        };
+    }
+</script>
+@endpush
