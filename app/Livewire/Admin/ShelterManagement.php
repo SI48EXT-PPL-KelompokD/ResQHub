@@ -164,10 +164,10 @@ class ShelterManagement extends Component
     public function updateOccupancy(): void
     {
         $this->validate([
-            'newOccupancy' => 'required|integer|min:0',
+            'newOccupancy' => 'required|numeric|min:0',
         ], [
             'newOccupancy.required' => 'Jumlah pengungsi aktif wajib diisi.',
-            'newOccupancy.integer'  => 'Jumlah pengungsi harus berupa angka bulat.',
+            'newOccupancy.numeric'  => 'Jumlah pengungsi harus berupa angka valid.',
             'newOccupancy.min'      => 'Jumlah pengungsi tidak boleh kurang dari 0.',
         ]);
 
