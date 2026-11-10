@@ -61,6 +61,14 @@ class Shelter extends Model
     }
 
     /**
+     * Sisa kapasitas tampung jiwa yang masih tersedia.
+     */
+    public function getRemainingCapacityAttribute(): int
+    {
+        return max(0, $this->capacity - $this->occupancy);
+    }
+
+    /**
      * Persentase okupansi posko saat ini (0 - 100%).
      */
     public function getOccupancyPercentageAttribute(): float
@@ -106,9 +114,44 @@ class Shelter extends Model
         return match ($this->capacity_status) {
             'tersedia' => 'Tersedia (<80%)',
             'hampir_penuh' => 'Hampir Penuh (80-99%)',
-            'penuh' => 'Penuh',
+            'penuh' => 'Penuh (100%)',
             'ditutup' => 'Ditutup',
             default => ucfirst($this->status),
+        };
+    }
+
+    /**
+     * Kelas CSS warna badge status kapasitas (Tailwind CSS).
+     */
+    public function getCapacityBadgeClassesAttribute(): string
+    {
+        return match ($this->capacity_status) {
+            'penuh' => 'bg-red-50 text-red-700 border-red-200',
+            'hampir_penuh' => 'bg-amber-50 text-amber-700 border-amber-200',
+            'ditutup' => 'bg-slate-100 text-slate-600 border-slate-200',
+            default => 'bg-emerald-50 text-emerald-700 border-emerald-200',
+        };
+    }
+
+    /**
+     * Scope filter berdasarkan status kapasitas posko evakuasi.
+     */
+    public function scopeCapacityStatus(Builder $query, string $status): Builder
+    {
+        return match ($status) {
+            'tersedia' => $query->where('status', '!=', 'ditutup')
+                                ->where('status', '!=', 'penuh')
+                                ->whereRaw('(occupancy * 1.0 / NULLIF(capacity, 0)) < 0.8'),
+            'hampir_penuh' => $query->where('status', '!=', 'ditutup')
+                                     ->where('status', '!=', 'penuh')
+                                     ->whereRaw('(occupancy * 1.0 / NULLIF(capacity, 0)) >= 0.8 AND (occupancy * 1.0 / NULLIF(capacity, 0)) < 1.0'),
+            'penuh' => $query->where('status', '!=', 'ditutup')
+                             ->where(function (Builder $sub) {
+                                 $sub->where('status', 'penuh')
+                                     ->orWhereRaw('occupancy >= capacity');
+                             }),
+            'ditutup' => $query->where('status', 'ditutup'),
+            default => $query,
         };
     }
 

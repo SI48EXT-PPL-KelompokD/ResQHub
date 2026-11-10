@@ -64,9 +64,110 @@
         </button>
     </div>
 
+    <!-- Modul B: Kartu Ringkasan Status Kapasitas Posko (Interactive KPI Widgets) -->
+    <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+        
+        <!-- Total Posko Card -->
+        <button 
+            type="button"
+            wire:click="setCapacityFilter('')"
+            class="text-left p-4 rounded-2xl bg-white border transition-all duration-200 shadow-2xs hover:shadow-md cursor-pointer {{ $capacityFilter === '' ? 'border-blue-500 ring-2 ring-blue-500/20' : 'border-slate-200/80 hover:border-slate-300' }}"
+            title="Tampilkan semua posko evakuasi"
+        >
+            <div class="flex items-center justify-between mb-2">
+                <span class="text-xs font-semibold text-slate-500 uppercase tracking-wider">Total Posko</span>
+                <span class="w-8 h-8 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                    </svg>
+                </span>
+            </div>
+            <div class="flex items-baseline space-x-2">
+                <span class="text-2xl font-bold text-slate-900">{{ $stats['total'] }}</span>
+                <span class="text-xs text-slate-500">posko</span>
+            </div>
+            <p class="text-[11px] text-slate-400 mt-1 truncate">
+                Total kuota: <span class="font-semibold text-slate-700">{{ number_format($stats['total_capacity']) }}</span> jiwa
+            </p>
+        </button>
+
+        <!-- Posko Tersedia Card (<80%) -->
+        <button 
+            type="button"
+            wire:click="setCapacityFilter('tersedia')"
+            class="text-left p-4 rounded-2xl bg-white border transition-all duration-200 shadow-2xs hover:shadow-md cursor-pointer {{ $capacityFilter === 'tersedia' ? 'border-emerald-500 ring-2 ring-emerald-500/20 bg-emerald-50/20' : 'border-slate-200/80 hover:border-emerald-300' }}"
+            title="Klik untuk filter posko yang masih tersedia (<80%)"
+        >
+            <div class="flex items-center justify-between mb-2">
+                <span class="text-xs font-semibold text-emerald-700 uppercase tracking-wider">Tersedia (&lt;80%)</span>
+                <span class="w-8 h-8 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                </span>
+            </div>
+            <div class="flex items-baseline space-x-2">
+                <span class="text-2xl font-bold text-emerald-600">{{ $stats['tersedia'] }}</span>
+                <span class="text-xs text-slate-500">posko siap</span>
+            </div>
+            <p class="text-[11px] text-emerald-600/90 mt-1 truncate font-medium">
+                Sisa kuota: {{ number_format($stats['total_remaining']) }} jiwa
+            </p>
+        </button>
+
+        <!-- Posko Hampir Penuh Card (80-99%) -->
+        <button 
+            type="button"
+            wire:click="setCapacityFilter('hampir_penuh')"
+            class="text-left p-4 rounded-2xl bg-white border transition-all duration-200 shadow-2xs hover:shadow-md cursor-pointer {{ $capacityFilter === 'hampir_penuh' ? 'border-amber-500 ring-2 ring-amber-500/20 bg-amber-50/20' : 'border-slate-200/80 hover:border-amber-300' }}"
+            title="Klik untuk filter posko yang hampir penuh (80-99%)"
+        >
+            <div class="flex items-center justify-between mb-2">
+                <span class="text-xs font-semibold text-amber-700 uppercase tracking-wider">Hampir Penuh</span>
+                <span class="w-8 h-8 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                    </svg>
+                </span>
+            </div>
+            <div class="flex items-baseline space-x-2">
+                <span class="text-2xl font-bold text-amber-600">{{ $stats['hampir_penuh'] }}</span>
+                <span class="text-xs text-slate-500">posko waspada</span>
+            </div>
+            <p class="text-[11px] text-amber-600/90 mt-1 truncate font-medium">
+                Okupansi 80% s.d. 99%
+            </p>
+        </button>
+
+        <!-- Posko Penuh Card (100%) -->
+        <button 
+            type="button"
+            wire:click="setCapacityFilter('penuh')"
+            class="text-left p-4 rounded-2xl bg-white border transition-all duration-200 shadow-2xs hover:shadow-md cursor-pointer {{ $capacityFilter === 'penuh' ? 'border-red-500 ring-2 ring-red-500/20 bg-red-50/20' : 'border-slate-200/80 hover:border-red-300' }}"
+            title="Klik untuk filter posko yang penuh (100%)"
+        >
+            <div class="flex items-center justify-between mb-2">
+                <span class="text-xs font-semibold text-red-700 uppercase tracking-wider">Penuh (100%)</span>
+                <span class="w-8 h-8 rounded-xl bg-red-50 text-red-600 flex items-center justify-center">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" />
+                    </svg>
+                </span>
+            </div>
+            <div class="flex items-baseline space-x-2">
+                <span class="text-2xl font-bold text-red-600">{{ $stats['penuh'] }}</span>
+                <span class="text-xs text-slate-500">tidak menampung</span>
+            </div>
+            <p class="text-[11px] text-red-600/90 mt-1 truncate font-medium">
+                Kapasitas maksimal terisi
+            </p>
+        </button>
+
+    </div>
+
     <!-- Filters & Search Toolbar -->
     <div class="bg-white rounded-2xl border border-slate-200/80 shadow-2xs p-4 sm:p-5">
-        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
             
             <!-- Search -->
             <div class="relative lg:col-span-2">
@@ -89,10 +190,24 @@
                     wire:model.live="eventFilter"
                     class="w-full py-2 px-3 text-xs sm:text-sm bg-slate-50 hover:bg-white focus:bg-white text-slate-700 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-transparent transition"
                 >
-                    <option value="">Semua Kejadian Bencana</option>
+                    <option value="">Semua Bencana</option>
                     @foreach ($activeEvents as $event)
                         <option value="{{ $event->id }}">{{ $event->name }}</option>
                     @endforeach
+                </select>
+            </div>
+
+            <!-- Capacity Status Filter (SCRUM-56) -->
+            <div>
+                <select 
+                    wire:model.live="capacityFilter"
+                    class="w-full py-2 px-3 text-xs sm:text-sm bg-slate-50 hover:bg-white focus:bg-white text-slate-700 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-transparent transition"
+                >
+                    <option value="">Semua Kapasitas</option>
+                    <option value="tersedia">🟢 Tersedia (&lt;80%)</option>
+                    <option value="hampir_penuh">🟠 Hampir Penuh (80-99%)</option>
+                    <option value="penuh">🔴 Penuh (100%)</option>
+                    <option value="ditutup">⚪ Ditutup</option>
                 </select>
             </div>
 
@@ -161,15 +276,17 @@
                                 </span>
                             </td>
 
-                            <!-- Kapasitas & Okupansi -->
+                            <!-- Kapasitas & Okupansi (SCRUM-56) -->
                             <td class="py-4 px-4">
-                                <div class="space-y-1.5 min-w-[140px]">
+                                <div class="space-y-1.5 min-w-[150px]">
                                     <div class="flex items-center justify-between text-xs">
-                                        <span class="font-bold text-slate-800">{{ $shelter->occupancy }} <span class="text-slate-400 font-normal">/ {{ $shelter->capacity }} jiwa</span></span>
-                                        <span class="font-semibold text-[11px] text-slate-600">{{ $shelter->occupancy_percentage }}%</span>
+                                        <span class="font-bold text-slate-800">{{ number_format($shelter->occupancy) }} <span class="text-slate-400 font-normal">/ {{ number_format($shelter->capacity) }} jiwa</span></span>
+                                        <span class="font-bold text-[11px] {{ $shelter->capacity_status === 'penuh' ? 'text-red-600' : ($shelter->capacity_status === 'hampir_penuh' ? 'text-amber-600' : 'text-emerald-600') }}">
+                                            {{ $shelter->occupancy_percentage }}%
+                                        </span>
                                     </div>
                                     <!-- Progress bar -->
-                                    <div class="w-full h-1.5 bg-slate-100 rounded-full overflow-hidden">
+                                    <div class="w-full h-2 bg-slate-100 rounded-full overflow-hidden">
                                         @php
                                             $barColor = match ($shelter->capacity_status) {
                                                 'ditutup' => 'bg-slate-400',
@@ -180,25 +297,32 @@
                                         @endphp
                                         <div class="h-full {{ $barColor }} rounded-full transition-all duration-300" style="width: {{ min(100, $shelter->occupancy_percentage) }}%"></div>
                                     </div>
-                                    <!-- Status Kapasitas Badge -->
-                                    <div>
+                                    <!-- Status Kapasitas Badge & Sisa Kuota -->
+                                    <div class="flex items-center justify-between gap-1 pt-0.5">
                                         @if ($shelter->capacity_status === 'tersedia')
-                                            <span class="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-medium bg-emerald-50 text-emerald-700 border border-emerald-200">
+                                            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                                                <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 mr-1"></span>
                                                 Tersedia (&lt;80%)
                                             </span>
                                         @elseif ($shelter->capacity_status === 'hampir_penuh')
-                                            <span class="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-medium bg-amber-50 text-amber-700 border border-amber-200">
-                                                Hampir Penuh (80-99%)
+                                            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-amber-50 text-amber-700 border border-amber-200">
+                                                <span class="w-1.5 h-1.5 rounded-full bg-amber-500 mr-1 animate-pulse"></span>
+                                                Hampir Penuh
                                             </span>
                                         @elseif ($shelter->capacity_status === 'penuh')
-                                            <span class="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-medium bg-red-50 text-red-700 border border-red-200">
+                                            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-red-50 text-red-700 border border-red-200">
+                                                <span class="w-1.5 h-1.5 rounded-full bg-red-500 mr-1 animate-ping"></span>
                                                 Penuh (100%)
                                             </span>
                                         @else
-                                            <span class="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-medium bg-slate-100 text-slate-600 border border-slate-200">
+                                            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-slate-100 text-slate-600 border border-slate-200">
                                                 Ditutup
                                             </span>
                                         @endif
+
+                                        <span class="text-[10px] text-slate-400 font-medium">
+                                            Sisa: <strong class="text-slate-600 font-semibold">{{ number_format($shelter->remaining_capacity) }}</strong>
+                                        </span>
                                     </div>
                                 </div>
                             </td>
@@ -231,8 +355,31 @@
 
                             <!-- Aksi -->
                             <td class="py-4 px-4 sm:px-6 text-right">
-                                <div class="inline-flex items-center space-x-1.5">
+                                <div class="inline-flex items-center space-x-1">
+                                    <!-- Tombol Update Okupansi Pengungsi -->
                                     <button 
+                                        type="button"
+                                        wire:click="openOccupancyModal({{ $shelter->id }})"
+                                        class="p-1.5 text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 rounded-lg transition"
+                                        title="Update Jumlah Pengungsi Aktif"
+                                    >
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
+                                        </svg>
+                                    </button>
+
+                                    <!-- Tombol Detail Posko -->
+                                    <button 
+                                        type="button"
+                                        class="p-1.5 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition"
+                                        title="Detail Posko"
+                                    >
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                                        </svg>
+                                    </button>
+                                </div> 
                                         type="button"
                                         class="p-1.5 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition"
                                         title="Detail Posko"
@@ -597,6 +744,158 @@
                         >
                             <span wire:loading.remove wire:target="store">Simpan Posko</span>
                             <span wire:loading wire:target="store" class="inline-flex items-center space-x-1">
+                                <svg class="animate-spin h-4 w-4 text-white" fill="none" viewBox="0 0 24 24">
+                                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                </svg>
+                                <span>Menyimpan...</span>
+                            </span>
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Form Update Okupansi Pengungsi (SCRUM-56) -->
+    <div 
+        x-data="{ open: $wire.entangle('showOccupancyModal') }"
+        x-show="open"
+        x-cloak
+        @keydown.escape.window="open = false; $wire.closeOccupancyModal()"
+        class="fixed inset-0 z-50 overflow-y-auto"
+        role="dialog" 
+        aria-modal="true"
+        aria-labelledby="occupancy-modal-title"
+    >
+        <!-- Backdrop Blur -->
+        <div 
+            x-show="open"
+            x-transition:enter="transition ease-out duration-300"
+            x-transition:enter-start="opacity-0"
+            x-transition:enter-end="opacity-100"
+            x-transition:leave="transition ease-in duration-200"
+            x-transition:leave-start="opacity-100"
+            x-transition:leave-end="opacity-0"
+            class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm cursor-pointer" 
+            @click="open = false; $wire.closeOccupancyModal()"
+            aria-hidden="true"
+        ></div>
+
+        <!-- Centered Wrapper -->
+        <div class="min-h-full flex items-center justify-center p-4 sm:p-6 relative z-10">
+            <div 
+                x-show="open"
+                x-transition:enter="transition ease-out duration-300"
+                x-transition:enter-start="opacity-0 scale-95 translate-y-3"
+                x-transition:enter-end="opacity-100 scale-100 translate-y-0"
+                x-transition:leave="transition ease-in duration-200"
+                x-transition:leave-start="opacity-100 scale-100 translate-y-0"
+                x-transition:leave-end="opacity-0 scale-95 translate-y-3"
+                class="w-full max-w-lg bg-white rounded-2xl text-left shadow-2xl border border-slate-200 overflow-hidden my-6"
+            >
+                <form wire:submit.prevent="updateOccupancy">
+                    <div class="p-6">
+                        <!-- Header -->
+                        <div class="flex items-center justify-between pb-3 mb-4 border-b border-slate-100">
+                            <div>
+                                <h3 class="text-lg font-bold text-slate-900" id="occupancy-modal-title">
+                                    Update Okupansi Pengungsi
+                                </h3>
+                                <p class="text-xs text-slate-500 mt-0.5 truncate max-w-xs sm:max-w-md">
+                                    Posko: <strong class="text-slate-800">{{ $selectedShelterName }}</strong>
+                                </p>
+                            </div>
+                            <button 
+                                type="button" 
+                                @click="open = false; $wire.closeOccupancyModal()" 
+                                class="text-slate-400 hover:text-slate-600 p-1.5 rounded-lg hover:bg-slate-100 transition cursor-pointer"
+                            >
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                                </svg>
+                            </button>
+                        </div>
+
+                        <!-- Info Ringkasan Kapasitas -->
+                        <div class="bg-slate-50 rounded-xl p-3.5 border border-slate-200/80 mb-4 grid grid-cols-2 gap-3 text-center">
+                            <div class="p-2 rounded-lg bg-white border border-slate-200/60 shadow-2xs">
+                                <span class="text-[11px] font-semibold text-slate-500 uppercase tracking-wider block">Kapasitas Maksimal</span>
+                                <span class="text-lg font-bold text-slate-800">{{ number_format($selectedShelterCapacity) }} <span class="text-xs font-normal text-slate-400">jiwa</span></span>
+                            </div>
+                            <div class="p-2 rounded-lg bg-white border border-slate-200/60 shadow-2xs">
+                                <span class="text-[11px] font-semibold text-slate-500 uppercase tracking-wider block">Okupansi Baru</span>
+                                <span class="text-lg font-bold text-blue-600">{{ number_format((int)$newOccupancy) }} <span class="text-xs font-normal text-slate-400">jiwa</span></span>
+                            </div>
+                        </div>
+
+                        <!-- Form Input Okupansi Baru -->
+                        <div class="space-y-4">
+                            <div>
+                                <label class="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1.5">
+                                    Jumlah Pengungsi Aktif (Jiwa) <span class="text-red-500">*</span>
+                                </label>
+                                <input 
+                                    type="number" 
+                                    min="0"
+                                    wire:model.live="newOccupancy" 
+                                    required 
+                                    placeholder="Contoh: 150" 
+                                    class="w-full py-2.5 px-3 text-sm font-semibold rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-transparent transition"
+                                />
+                                @error('newOccupancy') <span class="text-xs text-red-600 mt-1 block font-medium">{{ $message }}</span> @enderror
+                            </div>
+
+                            <!-- Live Dynamic Indicator Preview -->
+                            @php
+                                $cap = max(1, (int) $selectedShelterCapacity);
+                                $occ = max(0, (int) $newOccupancy);
+                                $previewPercent = round(($occ / $cap) * 100, 1);
+                                $previewBadge = match (true) {
+                                    $previewPercent >= 100 => ['label' => 'Penuh (100%)', 'color' => 'bg-red-50 text-red-700 border-red-200', 'bar' => 'bg-red-500'],
+                                    $previewPercent >= 80 => ['label' => 'Hampir Penuh (80-99%)', 'color' => 'bg-amber-50 text-amber-700 border-amber-200', 'bar' => 'bg-amber-500'],
+                                    default => ['label' => 'Tersedia (<80%)', 'color' => 'bg-emerald-50 text-emerald-700 border-emerald-200', 'bar' => 'bg-emerald-500'],
+                                };
+                            @endphp
+
+                            <div class="p-3.5 rounded-xl border border-slate-200/80 bg-slate-50/50 space-y-2">
+                                <div class="flex items-center justify-between text-xs">
+                                    <span class="font-medium text-slate-600">Simulasi Status Kapasitas:</span>
+                                    <span class="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-semibold border {{ $previewBadge['color'] }}">
+                                        {{ $previewBadge['label'] }} ({{ $previewPercent }}%)
+                                    </span>
+                                </div>
+                                <div class="w-full h-2 bg-slate-200 rounded-full overflow-hidden">
+                                    <div class="h-full {{ $previewBadge['bar'] }} rounded-full transition-all duration-300" style="width: {{ min(100, $previewPercent) }}%"></div>
+                                </div>
+                                <div class="flex items-center justify-between text-[11px] text-slate-500 pt-0.5">
+                                    <span>Sisa kuota: <strong>{{ max(0, $cap - $occ) }}</strong> jiwa</span>
+                                    @if ($occ >= $cap)
+                                        <span class="text-red-600 font-semibold flex items-center">
+                                            ⚠️ Posko akan otomatis diset Penuh
+                                        </span>
+                                    @endif
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Footer -->
+                    <div class="bg-slate-50 px-6 py-4 flex items-center justify-end space-x-2 border-t border-slate-100 rounded-b-2xl">
+                        <button 
+                            type="button" 
+                            @click="open = false; $wire.closeOccupancyModal()"
+                            class="px-4 py-2 text-xs sm:text-sm font-semibold text-slate-600 hover:text-slate-800 hover:bg-slate-100 rounded-xl transition cursor-pointer"
+                        >
+                            Batal
+                        </button>
+                        <button 
+                            type="submit"
+                            wire:loading.attr="disabled"
+                            class="inline-flex items-center space-x-1.5 px-5 py-2 bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white text-xs sm:text-sm font-semibold rounded-xl shadow-xs transition duration-150 disabled:opacity-50 cursor-pointer"
+                        >
+                            <span wire:loading.remove wire:target="updateOccupancy">Simpan Okupansi</span>
+                            <span wire:loading wire:target="updateOccupancy" class="inline-flex items-center space-x-1">
                                 <svg class="animate-spin h-4 w-4 text-white" fill="none" viewBox="0 0 24 24">
                                     <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
                                     <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>

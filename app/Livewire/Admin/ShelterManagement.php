@@ -19,9 +19,17 @@ class ShelterManagement extends Component
     public string $search = '';
     public string $statusFilter = '';
     public string $eventFilter = '';
+    public string $capacityFilter = '';
 
-    // Modal state
+    // Modal state (Tambah Posko)
     public bool $showCreateModal = false;
+
+    // Modal state (Update Okupansi Pengungsi)
+    public bool $showOccupancyModal = false;
+    public ?int $selectedShelterId = null;
+    public string $selectedShelterName = '';
+    public int $selectedShelterCapacity = 0;
+    public $newOccupancy = 0;
 
     // Form inputs (Tambah Posko)
     public $disaster_event_id = '';
@@ -67,6 +75,20 @@ class ShelterManagement extends Component
         $this->resetPage();
     }
 
+    public function updatingCapacityFilter(): void
+    {
+        $this->resetPage();
+    }
+
+    /**
+     * Set atau toggle filter status kapasitas dari klik kartu widget.
+     */
+    public function setCapacityFilter(string $status): void
+    {
+        $this->capacityFilter = ($this->capacityFilter === $status) ? '' : $status;
+        $this->resetPage();
+    }
+
     public function openCreateModal(): void
     {
         $this->resetForm();
@@ -101,6 +123,86 @@ class ShelterManagement extends Component
     public function dismissNotification(): void
     {
         $this->notification = null;
+    }
+
+    /**
+     * Buka modal pembaruan okupansi pengungsi realtime.
+     */
+    public function openOccupancyModal(int $shelterId): void
+    {
+        $user = auth()->user();
+        $query = Shelter::query();
+        if (! $user->isAdmin()) {
+            $query->where('coordinator_id', $user->id);
+        }
+
+        $shelter = $query->findOrFail($shelterId);
+
+        $this->selectedShelterId = $shelter->id;
+        $this->selectedShelterName = $shelter->name;
+        $this->selectedShelterCapacity = $shelter->capacity;
+        $this->newOccupancy = $shelter->occupancy;
+        $this->showOccupancyModal = true;
+    }
+
+    /**
+     * Tutup modal okupansi.
+     */
+    public function closeOccupancyModal(): void
+    {
+        $this->showOccupancyModal = false;
+        $this->selectedShelterId = null;
+        $this->selectedShelterName = '';
+        $this->selectedShelterCapacity = 0;
+        $this->newOccupancy = 0;
+        $this->resetValidation();
+    }
+
+    /**
+     * Simpan pembaruan jumlah pengungsi aktif dan sinkronkan status kapasitas posko.
+     */
+    public function updateOccupancy(): void
+    {
+        $this->validate([
+            'newOccupancy' => 'required|integer|min:0',
+        ], [
+            'newOccupancy.required' => 'Jumlah pengungsi aktif wajib diisi.',
+            'newOccupancy.integer'  => 'Jumlah pengungsi harus berupa angka bulat.',
+            'newOccupancy.min'      => 'Jumlah pengungsi tidak boleh kurang dari 0.',
+        ]);
+
+        $user = auth()->user();
+        $query = Shelter::query();
+        if (! $user->isAdmin()) {
+            $query->where('coordinator_id', $user->id);
+        }
+
+        $shelter = $query->findOrFail($this->selectedShelterId);
+        $occupancyVal = (int) $this->newOccupancy;
+
+        // Aturan sinkronisasi status:
+        // Jika posko tidak dalam status 'ditutup', sesuaikan status aktif/penuh secara otomatis
+        $newStatus = $shelter->status;
+        if ($shelter->status !== 'ditutup') {
+            if ($occupancyVal >= $shelter->capacity) {
+                $newStatus = 'penuh';
+            } elseif ($shelter->status === 'penuh' && $occupancyVal < $shelter->capacity) {
+                $newStatus = 'aktif';
+            }
+        }
+
+        $shelter->update([
+            'occupancy' => $occupancyVal,
+            'status'    => $newStatus,
+        ]);
+
+        $this->closeOccupancyModal();
+        $this->dispatch('shelter-updated');
+
+        $this->notification = [
+            'type'    => 'success',
+            'message' => "Okupansi posko '{$shelter->name}' berhasil diperbarui menjadi {$shelter->occupancy} jiwa ({$shelter->occupancy_percentage}% - {$shelter->capacity_status_label}).",
+        ];
     }
 
     /**
@@ -193,10 +295,36 @@ class ShelterManagement extends Component
             $query->where('status', $this->statusFilter);
         }
 
+        // Filter status kapasitas posko
+        if (! empty($this->capacityFilter)) {
+            $query->capacityStatus($this->capacityFilter);
+        }
+
         // Filter kejadian bencana
         if (! empty($this->eventFilter)) {
             $query->where('disaster_event_id', $this->eventFilter);
         }
+
+        // Kalkulasi ringkasan metrik kapasitas untuk kartu widget
+        $statsQuery = Shelter::query();
+        if (! $user->isAdmin()) {
+            $statsQuery->where('coordinator_id', $user->id);
+        }
+
+        $allShelters = $statsQuery->get();
+        $stats = [
+            'total'              => $allShelters->count(),
+            'tersedia'           => $allShelters->filter(fn ($s) => $s->capacity_status === 'tersedia')->count(),
+            'hampir_penuh'       => $allShelters->filter(fn ($s) => $s->capacity_status === 'hampir_penuh')->count(),
+            'penuh'              => $allShelters->filter(fn ($s) => $s->capacity_status === 'penuh')->count(),
+            'ditutup'            => $allShelters->filter(fn ($s) => $s->capacity_status === 'ditutup')->count(),
+            'total_capacity'     => $allShelters->sum('capacity'),
+            'total_occupancy'    => $allShelters->sum('occupancy'),
+            'total_remaining'    => $allShelters->sum('remaining_capacity'),
+            'overall_percentage' => $allShelters->sum('capacity') > 0
+                ? round(($allShelters->sum('occupancy') / $allShelters->sum('capacity')) * 100, 1)
+                : 0.0,
+        ];
 
         $shelters = $query->latest()->paginate(10);
         $activeEvents = DisasterEvent::active()->orderBy('name')->get();
@@ -204,6 +332,7 @@ class ShelterManagement extends Component
         return view('livewire.admin.shelter-management', [
             'shelters'     => $shelters,
             'activeEvents' => $activeEvents,
+            'stats'        => $stats,
         ]);
     }
 }
