@@ -200,6 +200,18 @@
                             </svg>
                             <span>Manajemen Pengguna</span>
                         </a>
+
+                        <!-- Rekening Donasi (Livewire wire:navigate) -->
+                        <a 
+                            href="{{ route('admin.donation-accounts') }}" 
+                            wire:navigate
+                            class="flex items-center space-x-3 px-3 py-2.5 rounded-xl text-sm font-medium transition duration-150 {{ request()->routeIs('admin.donation-accounts') ? 'bg-blue-50 text-blue-700 font-semibold shadow-xs' : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900' }}"
+                        >
+                            <svg class="w-5 h-5 {{ request()->routeIs('admin.donation-accounts') ? 'text-blue-600' : 'text-slate-400' }}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+                            </svg>
+                            <span>Rekening Donasi</span>
+                        </a>
                     @endif
 
                 </nav>
