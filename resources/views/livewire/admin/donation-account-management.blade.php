@@ -108,7 +108,7 @@
 
                                     <!-- Aksi -->
                                     <td class="py-3 px-4">
-                                        <div class="flex flex-wrap items-center justify-center gap-2">
+                                        <div class="flex flex-wrap items-center justify-start gap-2">
                                             <button 
                                                 wire:click="openEditForm({{ $account->id }})" 
                                                 title="Ubah data rekening"
