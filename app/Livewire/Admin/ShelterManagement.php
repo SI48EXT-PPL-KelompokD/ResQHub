@@ -24,6 +24,18 @@ class ShelterManagement extends Component
     // Modal state (Tambah Posko)
     public bool $showCreateModal = false;
 
+    // Modal state (Ubah Data Posko - SCRUM-55, SCRUM-56)
+    public bool $showEditModal = false;
+    public ?int $editingShelterId = null;
+    public $edit_disaster_event_id = '';
+    public string $edit_name = '';
+    public string $edit_address = '';
+    public $edit_lat = -6.9935000;
+    public $edit_lng = 107.6250000;
+    public $edit_capacity = '';
+    public string $edit_contact = '';
+    public int $edit_occupancy = 0;
+
     // Modal state (Update Okupansi Pengungsi)
     public bool $showOccupancyModal = false;
     public ?int $selectedShelterId = null;
@@ -123,6 +135,140 @@ class ShelterManagement extends Component
     public function dismissNotification(): void
     {
         $this->notification = null;
+    }
+
+    /**
+     * Buka modal ubah posko evakuasi kelolaan koordinator.
+     */
+    public function openEditModal(int $shelterId): void
+    {
+        $user = auth()->user();
+        $query = Shelter::query();
+        if (! $user->isAdmin()) {
+            $query->where('coordinator_id', $user->id);
+        }
+
+        $shelter = $query->findOrFail($shelterId);
+
+        $this->editingShelterId = $shelter->id;
+        $this->edit_disaster_event_id = $shelter->disaster_event_id;
+        $this->edit_name = $shelter->name;
+        $this->edit_address = $shelter->address;
+        $this->edit_lat = (float) $shelter->lat;
+        $this->edit_lng = (float) $shelter->lng;
+        $this->edit_capacity = $shelter->capacity;
+        $this->edit_contact = $shelter->contact;
+        $this->edit_occupancy = $shelter->occupancy;
+
+        $this->showEditModal = true;
+        $this->dispatch('render-shelter-edit-map', lat: (float) $shelter->lat, lng: (float) $shelter->lng);
+    }
+
+    /**
+     * Tutup modal ubah posko.
+     */
+    public function closeEditModal(): void
+    {
+        $this->showEditModal = false;
+        $this->editingShelterId = null;
+        $this->resetEditForm();
+        $this->resetValidation();
+    }
+
+    public function resetEditForm(): void
+    {
+        $this->edit_disaster_event_id = '';
+        $this->edit_name = '';
+        $this->edit_address = '';
+        $this->edit_lat = -6.9935000;
+        $this->edit_lng = 107.6250000;
+        $this->edit_capacity = '';
+        $this->edit_contact = '';
+        $this->edit_occupancy = 0;
+    }
+
+    /**
+     * Simpan pembaruan data posko evakuasi.
+     * Aturan bisnis:
+     * - Hanya koordinator pemilik atau admin yang berhak mengubah
+     * - Kapasitas tidak boleh lebih kecil dari jumlah pengungsi aktif saat ini
+     */
+    public function update(): void
+    {
+        $user = auth()->user();
+        $query = Shelter::query();
+        if (! $user->isAdmin()) {
+            $query->where('coordinator_id', $user->id);
+        }
+
+        $shelter = $query->findOrFail($this->editingShelterId);
+        $minCapacity = max(1, (int) $shelter->occupancy);
+
+        $this->validate([
+            'edit_disaster_event_id' => [
+                'required',
+                'exists:disaster_events,id',
+                function ($attribute, $value, $fail) use ($shelter) {
+                    if ($value != $shelter->disaster_event_id) {
+                        $event = DisasterEvent::find($value);
+                        if (! $event || $event->status !== 'aktif') {
+                            $fail('Kejadian bencana yang dipilih harus berstatus aktif.');
+                        }
+                    }
+                },
+            ],
+            'edit_name'     => 'required|string|max:150',
+            'edit_address'  => 'required|string|max:255',
+            'edit_lat'      => 'required|numeric|between:-90,90',
+            'edit_lng'      => 'required|numeric|between:-180,180',
+            'edit_capacity' => [
+                'required',
+                'integer',
+                'min:' . $minCapacity,
+            ],
+            'edit_contact'  => 'required|string|max:50',
+        ], [
+            'edit_disaster_event_id.required' => 'Pilih kejadian bencana terkait.',
+            'edit_name.required'              => 'Nama posko wajib diisi.',
+            'edit_name.max'                   => 'Nama posko maksimal 150 karakter.',
+            'edit_address.required'           => 'Alamat posko wajib diisi.',
+            'edit_lat.required'               => 'Titik koordinat latitude wajib ditentukan.',
+            'edit_lng.required'               => 'Titik koordinat longitude wajib ditentukan.',
+            'edit_capacity.required'          => 'Kapasitas daya tampung posko wajib diisi.',
+            'edit_capacity.min'               => "Kapasitas posko tidak boleh lebih kecil dari jumlah pengungsi aktif saat ini ({$shelter->occupancy} jiwa).",
+            'edit_contact.required'           => 'Nomor kontak narahubung posko wajib diisi.',
+        ]);
+
+        $newCap = (int) $this->edit_capacity;
+        $newStatus = $shelter->status;
+
+        // Penyesuaian otomatis status kapasitas jika tidak ditutup
+        if ($shelter->status !== 'ditutup') {
+            if ($shelter->occupancy >= $newCap) {
+                $newStatus = 'penuh';
+            } elseif ($shelter->status === 'penuh' && $shelter->occupancy < $newCap) {
+                $newStatus = 'aktif';
+            }
+        }
+
+        $shelter->update([
+            'disaster_event_id' => $this->edit_disaster_event_id,
+            'name'              => trim($this->edit_name),
+            'address'           => trim($this->edit_address),
+            'lat'               => (float) $this->edit_lat,
+            'lng'               => (float) $this->edit_lng,
+            'capacity'          => $newCap,
+            'contact'           => trim($this->edit_contact),
+            'status'            => $newStatus,
+        ]);
+
+        $this->closeEditModal();
+        $this->dispatch('shelter-updated');
+
+        $this->notification = [
+            'type'    => 'success',
+            'message' => "Data posko '{$shelter->name}' berhasil diperbarui.",
+        ];
     }
 
     /**

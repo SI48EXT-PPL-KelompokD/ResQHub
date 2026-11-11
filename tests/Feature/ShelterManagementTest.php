@@ -252,4 +252,139 @@ class ShelterManagementTest extends TestCase
             ->assertSee('Posko Hijau Tersedia')
             ->assertDontSee('Posko Kuning Hampir Penuh');
     }
+
+    public function test_koordinator_can_edit_own_shelter_with_valid_data(): void
+    {
+        $koordinator = User::where('role', 'koordinator')->first();
+        $event = DisasterEvent::where('status', 'aktif')->first();
+
+        $shelter = Shelter::create([
+            'disaster_event_id' => $event->id,
+            'coordinator_id'    => $koordinator->id,
+            'name'              => 'Posko Awal',
+            'address'           => 'Jl. Awal No. 10',
+            'lat'               => -6.9900000,
+            'lng'               => 107.6200000,
+            'capacity'          => 150,
+            'occupancy'         => 30,
+            'contact'           => '081234567890',
+            'status'            => 'aktif',
+        ]);
+
+        Livewire::actingAs($koordinator)
+            ->test(ShelterManagement::class)
+            ->call('openEditModal', $shelter->id)
+            ->assertSet('editingShelterId', $shelter->id)
+            ->assertSet('edit_name', 'Posko Awal')
+            ->assertSet('edit_capacity', 150)
+            ->set('edit_name', 'Posko Gedung Serbaguna Diperbarui')
+            ->set('edit_address', 'Jl. Baru No. 99')
+            ->set('edit_capacity', 200)
+            ->set('edit_contact', '089988776655 (Admin)')
+            ->call('update')
+            ->assertHasNoErrors()
+            ->assertSet('showEditModal', false);
+
+        $shelter->refresh();
+        $this->assertEquals('Posko Gedung Serbaguna Diperbarui', $shelter->name);
+        $this->assertEquals('Jl. Baru No. 99', $shelter->address);
+        $this->assertEquals(200, $shelter->capacity);
+        $this->assertEquals('089988776655 (Admin)', $shelter->contact);
+    }
+
+    public function test_capacity_cannot_be_less_than_active_refugees_count(): void
+    {
+        $koordinator = User::where('role', 'koordinator')->first();
+        $event = DisasterEvent::where('status', 'aktif')->first();
+
+        // Posko saat ini menampung 75 pengungsi aktif dengan kapasitas 100
+        $shelter = Shelter::create([
+            'disaster_event_id' => $event->id,
+            'coordinator_id'    => $koordinator->id,
+            'name'              => 'Posko Uji Batas Kapasitas',
+            'address'           => 'Jl. Batas No. 5',
+            'lat'               => -6.991,
+            'lng'               => 107.621,
+            'capacity'          => 100,
+            'occupancy'         => 75,
+            'contact'           => '08123',
+            'status'            => 'aktif',
+        ]);
+
+        // Koordinator mencoba mengubah kapasitas menjadi 50 (lebih kecil dari okupansi aktif 75 jiwa)
+        Livewire::actingAs($koordinator)
+            ->test(ShelterManagement::class)
+            ->call('openEditModal', $shelter->id)
+            ->set('edit_capacity', 50)
+            ->call('update')
+            ->assertHasErrors(['edit_capacity'])
+            ->assertSet('showEditModal', true);
+
+        // Kapasitas posko di database tidak boleh berubah
+        $shelter->refresh();
+        $this->assertEquals(100, $shelter->capacity);
+    }
+
+    public function test_koordinator_cannot_edit_other_koordinator_shelter(): void
+    {
+        $koordinatorA = User::where('role', 'koordinator')->first();
+        $event = DisasterEvent::where('status', 'aktif')->first();
+
+        // Buat koordinator B
+        $koordinatorB = User::factory()->create([
+            'role'  => 'koordinator',
+            'email' => 'koordinator_b@example.com',
+        ]);
+
+        $shelterA = Shelter::create([
+            'disaster_event_id' => $event->id,
+            'coordinator_id'    => $koordinatorA->id,
+            'name'              => 'Posko Milik Koordinator A',
+            'address'           => 'Jl. Koordinator A',
+            'lat'               => -6.992,
+            'lng'               => 107.622,
+            'capacity'          => 100,
+            'occupancy'         => 10,
+            'contact'           => '08123',
+            'status'            => 'aktif',
+        ]);
+
+        // Koordinator B mencoba mengakses posko milik Koordinator A
+        Livewire::actingAs($koordinatorB)
+            ->test(ShelterManagement::class)
+            ->call('openEditModal', $shelterA->id)
+            ->assertStatus(404);
+    }
+
+    public function test_admin_can_edit_any_shelter(): void
+    {
+        $koordinator = User::where('role', 'koordinator')->first();
+        $admin = User::where('role', 'admin')->first();
+        $event = DisasterEvent::where('status', 'aktif')->first();
+
+        $shelter = Shelter::create([
+            'disaster_event_id' => $event->id,
+            'coordinator_id'    => $koordinator->id,
+            'name'              => 'Posko Binaan Koordinator',
+            'address'           => 'Jl. Lapangan',
+            'lat'               => -6.993,
+            'lng'               => 107.623,
+            'capacity'          => 80,
+            'occupancy'         => 20,
+            'contact'           => '08111222',
+            'status'            => 'aktif',
+        ]);
+
+        // Admin dapat membuka dan mengubah data posko milik koordinator siapapun
+        Livewire::actingAs($admin)
+            ->test(ShelterManagement::class)
+            ->call('openEditModal', $shelter->id)
+            ->set('edit_capacity', 120)
+            ->call('update')
+            ->assertHasNoErrors()
+            ->assertSet('showEditModal', false);
+
+        $shelter->refresh();
+        $this->assertEquals(120, $shelter->capacity);
+    }
 }

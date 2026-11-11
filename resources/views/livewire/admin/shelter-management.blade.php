@@ -360,13 +360,27 @@
                                     <button 
                                         type="button"
                                         wire:click="openOccupancyModal({{ $shelter->id }})"
-                                        class="p-1.5 text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 rounded-lg transition"
+                                        class="p-1.5 text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 rounded-lg transition cursor-pointer"
                                         title="Update Jumlah Pengungsi Aktif"
                                     >
                                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
                                         </svg>
                                     </button>
+
+                                    <!-- Tombol Ubah / Edit Posko (SCRUM-55, SCRUM-56) -->
+                                    @if(auth()->user()->isAdmin() || $shelter->coordinator_id === auth()->id())
+                                        <button 
+                                            type="button"
+                                            wire:click="openEditModal({{ $shelter->id }})"
+                                            class="p-1.5 text-slate-400 hover:text-amber-600 hover:bg-amber-50 rounded-lg transition cursor-pointer"
+                                            title="Ubah Data Posko"
+                                        >
+                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                                            </svg>
+                                        </button>
+                                    @endif
 
                                     <!-- Tombol Detail Posko -->
                                     <button 
@@ -899,12 +913,324 @@
         </div>
     </div>
 
+    <!-- Modal Form Ubah Posko (SCRUM-55, SCRUM-56) -->
+    <div 
+        x-data="{ open: $wire.entangle('showEditModal') }"
+        x-show="open"
+        x-cloak
+        x-effect="if (open) { setTimeout(() => window.dispatchEvent(new CustomEvent('render-shelter-edit-map')), 250); }"
+        @keydown.escape.window="open = false; $wire.closeEditModal()"
+        class="fixed inset-0 z-50 overflow-y-auto"
+        role="dialog" 
+        aria-modal="true"
+        aria-labelledby="edit-modal-title"
+    >
+        <!-- Backdrop Blur -->
+        <div 
+            x-show="open"
+            x-transition:enter="transition ease-out duration-300"
+            x-transition:enter-start="opacity-0"
+            x-transition:enter-end="opacity-100"
+            x-transition:leave="transition ease-in duration-200"
+            x-transition:leave-start="opacity-100"
+            x-transition:leave-end="opacity-0"
+            class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm cursor-pointer" 
+            @click="open = false; $wire.closeEditModal()"
+            aria-hidden="true"
+        ></div>
+
+        <!-- Centered & Scrollable Wrapper -->
+        <div class="min-h-full flex items-center justify-center p-4 sm:p-6 relative z-10">
+            <div 
+                x-show="open"
+                x-transition:enter="transition ease-out duration-300"
+                x-transition:enter-start="opacity-0 scale-95 translate-y-3"
+                x-transition:enter-end="opacity-100 scale-100 translate-y-0"
+                x-transition:leave="transition ease-in duration-200"
+                x-transition:leave-start="opacity-100 scale-100 translate-y-0"
+                x-transition:leave-end="opacity-0 scale-95 translate-y-3"
+                class="w-full max-w-2xl bg-white rounded-2xl text-left shadow-2xl border border-slate-200 overflow-hidden my-6"
+            >
+                <form wire:submit.prevent="update">
+                    <div class="p-6">
+                        <div class="flex items-center justify-between pb-3 mb-4 border-b border-slate-100">
+                            <div>
+                                <h3 class="text-lg font-bold text-slate-900" id="edit-modal-title">
+                                    Ubah Data Posko Evakuasi
+                                </h3>
+                                <p class="text-xs text-slate-500">
+                                    Perbarui rincian informasi posko kelolaan Anda.
+                                </p>
+                            </div>
+                            <button 
+                                type="button" 
+                                @click="open = false; $wire.closeEditModal()" 
+                                class="text-slate-400 hover:text-slate-600 p-1.5 rounded-lg hover:bg-slate-100 transition cursor-pointer"
+                            >
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                                </svg>
+                            </button>
+                        </div>
+
+                        <!-- Info Banner Pengungsi Aktif Saat Ini -->
+                        @if($edit_occupancy > 0)
+                            <div class="mb-4 bg-amber-50 border border-amber-200/80 rounded-xl p-3 flex items-start space-x-2.5 text-xs text-amber-800">
+                                <svg class="w-4 h-4 text-amber-600 mt-0.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                </svg>
+                                <div>
+                                    <span class="font-semibold">Aturan Kapasitas:</span> Posko ini sedang menampung <strong>{{ $edit_occupancy }} jiwa</strong> pengungsi aktif. Berdasarkan aturan sistem, kapasitas daya tampung tidak boleh disetel kurang dari <strong>{{ $edit_occupancy }} jiwa</strong>.
+                                </div>
+                            </div>
+                        @endif
+
+                        <div class="space-y-4">
+                            <!-- Kejadian Bencana Terkait -->
+                            <div>
+                                <label class="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1.5">
+                                    Kejadian Bencana Terkait <span class="text-red-500">*</span>
+                                </label>
+                                <select 
+                                    wire:model="edit_disaster_event_id" 
+                                    required 
+                                    class="w-full py-2.5 px-3 text-xs sm:text-sm rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-transparent transition bg-slate-50 hover:bg-white focus:bg-white"
+                                >
+                                    <option value="">-- Pilih Kejadian Bencana Aktif --</option>
+                                    @foreach ($activeEvents as $event)
+                                        <option value="{{ $event->id }}">
+                                            {{ $event->name }} ({{ ucfirst($event->disaster_type) }} - {{ $event->regency }})
+                                        </option>
+                                    @endforeach
+                                </select>
+                                @error('edit_disaster_event_id') <span class="text-xs text-red-600 mt-1 block font-medium">{{ $message }}</span> @enderror
+                            </div>
+
+                            <!-- Nama Posko -->
+                            <div>
+                                <label class="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1.5">
+                                    Nama Posko <span class="text-red-500">*</span>
+                                </label>
+                                <input 
+                                    type="text" 
+                                    wire:model="edit_name" 
+                                    required 
+                                    class="w-full py-2.5 px-3 text-xs sm:text-sm rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-transparent transition"
+                                />
+                                @error('edit_name') <span class="text-xs text-red-600 mt-1 block font-medium">{{ $message }}</span> @enderror
+                            </div>
+
+                            <!-- Alamat Posko -->
+                            <div>
+                                <label class="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1.5">
+                                    Alamat Lengkap <span class="text-red-500">*</span>
+                                </label>
+                                <textarea 
+                                    wire:model="edit_address" 
+                                    required 
+                                    rows="2" 
+                                    class="w-full py-2.5 px-3 text-xs sm:text-sm rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-transparent transition"
+                                ></textarea>
+                                @error('edit_address') <span class="text-xs text-red-600 mt-1 block font-medium">{{ $message }}</span> @enderror
+                            </div>
+
+                            <!-- Titik Koordinat & Peta Interaktif Leaflet (Edit) -->
+                            <div 
+                                x-data="shelterMapPicker('edit_')"
+                                x-init="init()"
+                                @render-shelter-edit-map.window="setupMap($event.detail)"
+                                class="bg-slate-50/80 p-3.5 sm:p-4 rounded-2xl border border-slate-200/90 space-y-3"
+                            >
+                                <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+                                    <div class="flex items-center space-x-2">
+                                        <span class="w-7 h-7 rounded-lg bg-amber-100 text-amber-600 flex items-center justify-center shrink-0">
+                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                                            </svg>
+                                        </span>
+                                        <div>
+                                            <h4 class="text-xs font-bold text-slate-800 uppercase tracking-wider">Titik Lokasi Posko (Leaflet Maps)</h4>
+                                            <p class="text-[11px] text-slate-500">Geser pin marker atau cari tempat untuk memperbarui titik koordinat posko.</p>
+                                        </div>
+                                    </div>
+
+                                    <button 
+                                        type="button" 
+                                        @click="getCurrentLocation()"
+                                        :disabled="isLocating"
+                                        class="inline-flex items-center space-x-1.5 px-2.5 py-1.5 text-[11px] font-semibold text-blue-700 bg-blue-50 hover:bg-blue-100 rounded-lg border border-blue-200 transition cursor-pointer self-start sm:self-auto disabled:opacity-50"
+                                    >
+                                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4-1.79-4-4-4zm8.94 3A8.994 8.994 0 0013 3.06V1h-2v2.06A8.994 8.994 0 003.06 11H1v2h2.06A8.994 8.994 0 0011 20.94V23h2v-2.06A8.994 8.994 0 0020.94 13H23v-2h-2.06zM12 19c-3.87 0-7-3.13-7-7s3.13-7 7-7 7 3.13 7 7-3.13 7-7 7z" />
+                                        </svg>
+                                        <span x-text="isLocating ? 'Mendeteksi...' : 'GPS Saat Ini'"></span>
+                                    </button>
+                                </div>
+
+                                <!-- Bar Pencarian Lokasi -->
+                                <div class="relative">
+                                    <div class="flex gap-1.5">
+                                        <div class="relative flex-1">
+                                            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
+                                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                                                </svg>
+                                            </div>
+                                            <input 
+                                                type="text" 
+                                                x-model="searchQuery" 
+                                                @keydown.enter.prevent="searchLocation()"
+                                                placeholder="Cari nama lokasi, jalan, kelurahan, atau gedung di peta..." 
+                                                class="w-full pl-9 pr-3 py-2 text-xs bg-white text-slate-800 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-transparent"
+                                            />
+                                        </div>
+                                        <button 
+                                            type="button" 
+                                            @click="searchLocation()"
+                                            :disabled="isSearching"
+                                            class="px-3.5 py-2 text-xs font-semibold text-white bg-slate-800 hover:bg-slate-900 rounded-xl transition cursor-pointer disabled:opacity-50"
+                                        >
+                                            <span x-show="!isSearching">Cari</span>
+                                            <span x-show="isSearching">...</span>
+                                        </button>
+                                    </div>
+
+                                    <!-- Dropdown Hasil Pencarian -->
+                                    <div 
+                                        x-show="searchResults.length > 0" 
+                                        x-cloak
+                                        @click.away="searchResults = []"
+                                        class="absolute z-30 left-0 right-0 mt-1 bg-white border border-slate-200 rounded-xl shadow-lg max-h-48 overflow-y-auto divide-y divide-slate-100 text-xs"
+                                    >
+                                        <template x-for="(res, idx) in searchResults" :key="idx">
+                                            <div 
+                                                @click="selectLocation(res)"
+                                                class="p-2.5 hover:bg-blue-50 cursor-pointer transition flex items-start space-x-2"
+                                            >
+                                                <span class="text-blue-600 mt-0.5">📍</span>
+                                                <div class="flex-1 truncate">
+                                                    <div class="font-semibold text-slate-800" x-text="res.display_name.split(',')[0]"></div>
+                                                    <div class="text-[11px] text-slate-500 truncate" x-text="res.display_name"></div>
+                                                </div>
+                                            </div>
+                                        </template>
+                                    </div>
+
+                                    <template x-if="searchError">
+                                        <p class="text-[11px] text-red-600 mt-1" x-text="searchError"></p>
+                                    </template>
+                                </div>
+
+                                <!-- Kontainer Visual Peta Leaflet (wire:ignore agar state DOM map terjaga) -->
+                                <div wire:ignore class="relative rounded-xl overflow-hidden border border-slate-200 shadow-inner bg-slate-100">
+                                    <div x-ref="mapContainer" class="w-full h-56 sm:h-64 z-0 rounded-xl" style="height: 250px; min-height: 250px;"></div>
+                                    <div class="absolute bottom-2 left-2 right-2 pointer-events-none z-10 flex justify-center">
+                                        <span class="bg-white/95 backdrop-blur-xs text-slate-600 text-[10px] font-medium px-2.5 py-1 rounded-full shadow-xs border border-slate-200/80">
+                                            📍 Klik peta atau geser pin untuk menentukan titik koordinat
+                                        </span>
+                                    </div>
+                                </div>
+
+                                <!-- Input Latitude & Longitude -->
+                                <div class="grid grid-cols-2 gap-3 pt-1">
+                                    <div>
+                                        <label class="block text-[11px] font-semibold text-slate-600 mb-1">Latitude</label>
+                                        <input 
+                                            type="number" 
+                                            step="0.0000001" 
+                                            x-model="lat" 
+                                            @input="onCoordInput()"
+                                            class="w-full py-1.5 px-2.5 text-xs rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-600 font-mono bg-white"
+                                        />
+                                        @error('edit_lat') <span class="text-xs text-red-600 mt-1 block font-medium">{{ $message }}</span> @enderror
+                                    </div>
+                                    <div>
+                                        <label class="block text-[11px] font-semibold text-slate-600 mb-1">Longitude</label>
+                                        <input 
+                                            type="number" 
+                                            step="0.0000001" 
+                                            x-model="lng" 
+                                            @input="onCoordInput()"
+                                            class="w-full py-1.5 px-2.5 text-xs rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-600 font-mono bg-white"
+                                        />
+                                        @error('edit_lng') <span class="text-xs text-red-600 mt-1 block font-medium">{{ $message }}</span> @enderror
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                <!-- Kapasitas Daya Tampung -->
+                                <div>
+                                    <label class="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1.5">
+                                        Kapasitas (Jiwa) <span class="text-red-500">*</span>
+                                    </label>
+                                    <input 
+                                        type="number" 
+                                        min="{{ max(1, $edit_occupancy) }}"
+                                        wire:model="edit_capacity" 
+                                        required 
+                                        class="w-full py-2.5 px-3 text-xs sm:text-sm rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-transparent transition"
+                                    />
+                                    <p class="text-[11px] text-slate-500 mt-1">
+                                        Minimal: <span class="font-semibold text-slate-700">{{ max(1, $edit_occupancy) }} jiwa</span> (aktif: {{ $edit_occupancy }} jiwa).
+                                    </p>
+                                    @error('edit_capacity') <span class="text-xs text-red-600 mt-1 block font-medium">{{ $message }}</span> @enderror
+                                </div>
+
+                                <!-- Kontak Narahubung -->
+                                <div>
+                                    <label class="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1.5">
+                                        Kontak Narahubung <span class="text-red-500">*</span>
+                                    </label>
+                                    <input 
+                                        type="text" 
+                                        wire:model="edit_contact" 
+                                        required 
+                                        class="w-full py-2.5 px-3 text-xs sm:text-sm rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-transparent transition"
+                                    />
+                                    @error('edit_contact') <span class="text-xs text-red-600 mt-1 block font-medium">{{ $message }}</span> @enderror
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Modal Footer -->
+                    <div class="bg-slate-50 px-6 py-4 flex items-center justify-end space-x-2 border-t border-slate-100 rounded-b-2xl">
+                        <button 
+                            type="button" 
+                            @click="open = false; $wire.closeEditModal()"
+                            class="px-4 py-2 text-xs sm:text-sm font-semibold text-slate-600 hover:text-slate-800 hover:bg-slate-100 rounded-xl transition cursor-pointer"
+                        >
+                            Batal
+                        </button>
+                        <button 
+                            type="submit"
+                            wire:loading.attr="disabled"
+                            class="inline-flex items-center space-x-1.5 px-5 py-2 bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white text-xs sm:text-sm font-semibold rounded-xl shadow-xs transition duration-150 disabled:opacity-50 cursor-pointer"
+                        >
+                            <span wire:loading.remove wire:target="update">Simpan Perubahan</span>
+                            <span wire:loading wire:target="update" class="inline-flex items-center space-x-1">
+                                <svg class="animate-spin h-4 w-4 text-white" fill="none" viewBox="0 0 24 24">
+                                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                </svg>
+                                <span>Menyimpan...</span>
+                            </span>
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
 </div>
 
 @push('scripts')
 <script>
-    function shelterMapPicker() {
+    function shelterMapPicker(prefix = '') {
         return {
+            prefix: prefix,
             lat: -6.9935,
             lng: 107.625,
             map: null,
@@ -915,14 +1241,18 @@
             searchResults: [],
             searchError: null,
 
+            getLatProp() { return this.prefix ? this.prefix + 'lat' : 'lat'; },
+            getLngProp() { return this.prefix ? this.prefix + 'lng' : 'lng'; },
+            getAddrProp() { return this.prefix ? this.prefix + 'address' : 'address'; },
+
             init() {
-                const wireLat = this.$wire.get('lat');
-                const wireLng = this.$wire.get('lng');
+                const wireLat = this.$wire.get(this.getLatProp());
+                const wireLng = this.$wire.get(this.getLngProp());
                 this.lat = wireLat !== undefined && wireLat !== null && wireLat !== '' ? parseFloat(wireLat) : -6.9935;
                 this.lng = wireLng !== undefined && wireLng !== null && wireLng !== '' ? parseFloat(wireLng) : 107.625;
 
                 // Pantau perubahan properti Livewire jika diperbarui dari sisi server
-                this.$watch('$wire.lat', (val) => {
+                this.$watch('$wire.' + this.getLatProp(), (val) => {
                     if (val !== undefined && val !== null && val !== '') {
                         const parsed = parseFloat(val);
                         if (!isNaN(parsed) && Math.abs(parsed - this.lat) > 0.00001) {
@@ -932,7 +1262,7 @@
                     }
                 });
 
-                this.$watch('$wire.lng', (val) => {
+                this.$watch('$wire.' + this.getLngProp(), (val) => {
                     if (val !== undefined && val !== null && val !== '') {
                         const parsed = parseFloat(val);
                         if (!isNaN(parsed) && Math.abs(parsed - this.lng) > 0.00001) {
@@ -943,20 +1273,29 @@
                 });
             },
 
-            setupMap() {
+            setupMap(customCoords = null) {
                 this.$nextTick(() => {
                     const container = this.$refs.mapContainer;
                     if (!container) return;
 
                     if (typeof L === 'undefined') {
-                        setTimeout(() => this.setupMap(), 200);
+                        setTimeout(() => this.setupMap(customCoords), 200);
                         return;
                     }
 
-                    const currentLat = parseFloat(this.lat) || -6.9935;
-                    const currentLng = parseFloat(this.lng) || 107.625;
+                    const wireLat = this.$wire.get(this.getLatProp());
+                    const wireLng = this.$wire.get(this.getLngProp());
+                    let currentLat = (customCoords && customCoords.lat !== undefined) ? parseFloat(customCoords.lat) : ((wireLat !== undefined && wireLat !== null && wireLat !== '') ? parseFloat(wireLat) : (parseFloat(this.lat) || -6.9935));
+                    let currentLng = (customCoords && customCoords.lng !== undefined) ? parseFloat(customCoords.lng) : ((wireLng !== undefined && wireLng !== null && wireLng !== '') ? parseFloat(wireLng) : (parseFloat(this.lng) || 107.625));
+
+                    this.lat = currentLat;
+                    this.lng = currentLng;
 
                     if (!this.map) {
+                        if (container._leaflet_id) {
+                            container._leaflet_id = null;
+                        }
+
                         this.map = L.map(container, {
                             center: [currentLat, currentLng],
                             zoom: 14,
@@ -994,6 +1333,7 @@
                         this.map.setView([currentLat, currentLng], this.map.getZoom() || 14);
                         if (this.marker) {
                             this.marker.setLatLng([currentLat, currentLng]);
+                            this.marker.bindPopup(`<b>Titik Posko Evakuasi</b><br>Lat: ${currentLat.toFixed(6)}<br>Lng: ${currentLng.toFixed(6)}`);
                         }
                     }
 
@@ -1011,8 +1351,8 @@
                 const numLng = Number(parseFloat(lng).toFixed(7));
                 this.lat = numLat;
                 this.lng = numLng;
-                this.$wire.set('lat', numLat);
-                this.$wire.set('lng', numLng);
+                this.$wire.set(this.getLatProp(), numLat);
+                this.$wire.set(this.getLngProp(), numLng);
             },
 
             syncMarker() {
@@ -1031,8 +1371,8 @@
                 const numLat = parseFloat(this.lat);
                 const numLng = parseFloat(this.lng);
                 if (!isNaN(numLat) && !isNaN(numLng)) {
-                    this.$wire.set('lat', numLat);
-                    this.$wire.set('lng', numLng);
+                    this.$wire.set(this.getLatProp(), numLat);
+                    this.$wire.set(this.getLngProp(), numLng);
                     this.syncMarker();
                 }
             },
@@ -1089,9 +1429,9 @@
                 this.updateCoordinates(lat, lon);
 
                 // Bantu isikan alamat posko jika masih kosong
-                const currentAddress = this.$wire.get('address');
+                const currentAddress = this.$wire.get(this.getAddrProp());
                 if (!currentAddress || currentAddress.trim() === '') {
-                    this.$wire.set('address', item.display_name);
+                    this.$wire.set(this.getAddrProp(), item.display_name);
                 }
             },
 
