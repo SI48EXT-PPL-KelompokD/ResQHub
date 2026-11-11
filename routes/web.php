@@ -5,6 +5,7 @@ use App\Http\Controllers\Auth\LoginController;
 use App\Livewire\Auth\Register;
 use App\Livewire\Admin\Dashboard;
 use App\Livewire\Admin\UserManagement;
+use App\Livewire\Admin\DonationAccountManagement;
 
 // Root redirect
 Route::get('/', function () {
@@ -24,4 +25,10 @@ Route::post('/logout', [LoginController::class, 'logout'])->name('logout');
 Route::middleware(['auth'])->prefix('admin')->name('admin.')->group(function () {
     Route::get('/dashboard', Dashboard::class)->name('dashboard');
     Route::get('/users', UserManagement::class)->middleware('role:admin')->name('users');
+    //Donation Accounts
+    Route::get('/donation-accounts', DonationAccountManagement::class)
+        ->middleware('role:admin')
+        ->name('donation-accounts');
 });
+
+
