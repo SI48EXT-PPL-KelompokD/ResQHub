@@ -33,20 +33,29 @@ class DonationAccountManagement extends Component
 
     // Panel form (accountId null = tambah, berisi id = ubah)
     public $showForm = false;
+
     public $accountId = null;
+
     public $disaster_event_id = '';
+
     public $bank_name = '';
+
     public $account_number = '';
+
     public $account_holder = '';
+
     public $notes = '';
+
     public $is_active = '1'; // string "1" / "0" agar cocok dengan option select
 
     // Modal hapus
     public $showDeleteModal = false;
+
     public $deleteId = null;
 
     // Modal nonaktifkan
     public $showStatusModal = false;
+
     public $statusId = null;
 
     // Toast
@@ -149,6 +158,7 @@ class DonationAccountManagement extends Component
             // tidak boleh dipindah setelah rekening menerima donasi.
             if ($account->hasDonations() && (int) $data['disaster_event_id'] !== (int) $account->disaster_event_id) {
                 $this->addError('disaster_event_id', 'Kejadian tidak dapat diubah karena rekening sudah menerima donasi.');
+
                 return;
             }
         } else {
@@ -167,14 +177,14 @@ class DonationAccountManagement extends Component
                 $account->save();
 
                 if ($changes) {
-                    ActivityLog::record($account, 'updated_donation_account', $changes);
+                    ActivityLog::record(auth()->id(), $account, 'updated_donation_account', $changes);
                 }
 
                 return 'Rekening donasi berhasil diperbarui.';
             }
 
             $created = DonationAccount::create($data);
-            ActivityLog::record($created, 'created_donation_account', $data);
+            ActivityLog::record(auth()->id(), $created, 'created_donation_account', $data);
 
             return 'Rekening donasi berhasil ditambahkan.';
         });
@@ -196,6 +206,7 @@ class DonationAccountManagement extends Component
         if ($account->is_active) {
             $this->statusId = $account->id;
             $this->showStatusModal = true;
+
             return;
         }
 
@@ -226,10 +237,10 @@ class DonationAccountManagement extends Component
         $old = (bool) $account->is_active;
 
         DB::transaction(function () use ($account, $old) {
-            $account->update(['is_active' => !$old]);
+            $account->update(['is_active' => ! $old]);
 
-            ActivityLog::record($account, 'changed_donation_account_status', [
-                'is_active' => ['old' => $old, 'new' => !$old],
+            ActivityLog::record(auth()->id(), $account, 'changed_donation_account_status', [
+                'is_active' => ['old' => $old, 'new' => ! $old],
             ]);
         });
 
@@ -275,7 +286,7 @@ class DonationAccountManagement extends Component
             }
 
             // Catat sebelum dihapus agar subject_id dan datanya masih tersimpan di log.
-            ActivityLog::record($account, 'deleted_donation_account', [
+            ActivityLog::record(auth()->id(), $account, 'deleted_donation_account', [
                 'bank_name' => $account->bank_name,
                 'account_number' => $account->account_number,
                 'disaster_event_id' => $account->disaster_event_id,
@@ -289,8 +300,9 @@ class DonationAccountManagement extends Component
         $this->showDeleteModal = false;
         $this->deleteId = null;
 
-        if (!$deleted) {
+        if (! $deleted) {
             $this->notify('Rekening sudah menerima donasi dan hanya dapat dinonaktifkan.', 'error');
+
             return;
         }
 
