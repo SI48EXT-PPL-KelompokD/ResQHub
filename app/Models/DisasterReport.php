@@ -80,6 +80,26 @@ class DisasterReport extends Model
         return $this->hasMany(ReportPhoto::class);
     }
 
+    public function getDisasterTypeLabelAttribute(): string
+    {
+        return self::disasterTypeLabel($this->disaster_type);
+    }
+
+    public function getStatusLabelAttribute(): string
+    {
+        return match ($this->status) {
+            self::STATUS_PENDING => 'Menunggu Verifikasi',
+            self::STATUS_ACCEPTED => 'Diterima',
+            self::STATUS_REJECTED => 'Ditolak',
+            default => ucfirst((string) $this->status),
+        };
+    }
+
+    public static function disasterTypeLabel(?string $type): string
+    {
+        return ucwords(str_replace('_', ' ', (string) $type));
+    }
+
     public function isPending(): bool
     {
         return $this->status === self::STATUS_PENDING;

@@ -5,6 +5,8 @@ use App\Http\Controllers\Auth\LoginController;
 use App\Livewire\Auth\Register;
 use App\Livewire\Admin\Dashboard;
 use App\Livewire\Admin\UserManagement;
+use App\Livewire\Report\CreateReport;
+use App\Livewire\Report\MyReports;
 
 // Root redirect
 Route::get('/', function () {
@@ -24,4 +26,10 @@ Route::post('/logout', [LoginController::class, 'logout'])->name('logout');
 Route::middleware(['auth'])->prefix('admin')->name('admin.')->group(function () {
     Route::get('/dashboard', Dashboard::class)->name('dashboard');
     Route::get('/users', UserManagement::class)->middleware('role:admin')->name('users');
+
+    // Modul A - Laporan Kejadian (PBI-01) untuk warga
+    Route::middleware('role:warga')->group(function () {
+        Route::get('/laporan', MyReports::class)->name('reports.index');
+        Route::get('/laporan/buat', CreateReport::class)->name('reports.create');
+    });
 });

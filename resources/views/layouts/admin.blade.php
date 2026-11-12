@@ -12,9 +12,24 @@
 
     @vite(['resources/css/app.css', 'resources/js/app.js'])
     @livewireStyles
+
+    <!-- Leaflet.js CSS (OpenStreetMap) -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
+    @stack('styles')
+    
     <style>
         body { font-family: 'Inter', sans-serif; }
         [x-cloak] { display: none !important; }
+        /* Leaflet tile reset for Tailwind */
+        .leaflet-container img {
+            max-width: none !important;
+        }
+        .leaflet-pane {
+            z-index: 10 !important;
+        }
+        .leaflet-top, .leaflet-bottom {
+            z-index: 20 !important;
+        }
     </style>
 </head>
 <body class="h-full antialiased text-slate-800 bg-slate-50/60" x-data="{ sidebarOpen: false }">
@@ -171,8 +186,9 @@
                     <!-- Modul A: SOS Masuk & Laporan (Ivan) -->
                     @if (Auth::user()->canAccessModule('modul_a'))
                         <a 
-                            href="#" 
-                            class="flex items-center space-x-3 px-3 py-2.5 rounded-xl text-sm font-medium text-slate-600 hover:bg-slate-50 hover:text-slate-900 transition duration-150 group"
+                            href="{{ Auth::user()->isWarga() ? route('admin.reports.index') : '#' }}" 
+                            @if (Auth::user()->isWarga()) wire:navigate @endif
+                            class="flex items-center space-x-3 px-3 py-2.5 rounded-xl text-sm font-medium transition duration-150 group {{ request()->routeIs('admin.reports*') ? 'bg-blue-50 text-blue-700 font-semibold shadow-xs' : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900' }}"
                             title="Modul A - SOS & Laporan"
                         >
                             <svg class="w-5 h-5 text-rose-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -298,6 +314,10 @@
 
     </div>
 
+    <!-- Leaflet.js (OpenStreetMap) -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+    
     @livewireScripts
+    @stack('scripts')
 </body>
 </html>
