@@ -393,6 +393,20 @@
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
                                         </svg>
                                     </button>
+
+                                    <!-- Tombol Hapus Posko (SCRUM-55) -->
+                                    @if(auth()->user()->isAdmin() || $shelter->coordinator_id === auth()->id())
+                                        <button 
+                                            type="button"
+                                            wire:click="confirmDelete({{ $shelter->id }})"
+                                            class="p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition cursor-pointer"
+                                            title="Hapus Posko"
+                                        >
+                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                            </svg>
+                                        </button>
+                                    @endif
                                 </div>
                             </td>
                         </tr>
@@ -1192,6 +1206,43 @@
                                     @error('edit_contact') <span class="text-xs text-red-600 mt-1 block font-medium">{{ $message }}</span> @enderror
                                 </div>
                             </div>
+
+                            <!-- Status Operasional Posko & Alasan Penutupan (SCRUM-55) -->
+                            <div class="p-4 rounded-xl border border-slate-200/90 bg-slate-50/70 space-y-3">
+                                <div>
+                                    <label class="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1.5">
+                                        Status Operasional Posko <span class="text-red-500">*</span>
+                                    </label>
+                                    <div class="grid grid-cols-2 gap-2">
+                                        <label class="flex items-center space-x-2.5 p-2.5 rounded-lg border cursor-pointer transition {{ $edit_status !== 'ditutup' ? 'bg-blue-50/80 border-blue-200 text-blue-900 font-medium' : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50' }}">
+                                            <input type="radio" value="aktif" wire:model.live="edit_status" class="text-blue-600 focus:ring-blue-500">
+                                            <span class="text-xs">Aktif / Beroperasi</span>
+                                        </label>
+                                        <label class="flex items-center space-x-2.5 p-2.5 rounded-lg border cursor-pointer transition {{ $edit_status === 'ditutup' ? 'bg-red-50/80 border-red-200 text-red-900 font-medium' : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50' }}">
+                                            <input type="radio" value="ditutup" wire:model.live="edit_status" class="text-red-600 focus:ring-red-500">
+                                            <span class="text-xs">Ditutup</span>
+                                        </label>
+                                    </div>
+                                    @error('edit_status') <span class="text-xs text-red-600 mt-1 block font-medium">{{ $message }}</span> @enderror
+                                </div>
+
+                                <!-- Field Alasan Penutupan (Muncul Dinamis bila status Ditutup) -->
+                                @if($edit_status === 'ditutup')
+                                    <div class="pt-2 border-t border-slate-200/70">
+                                        <label class="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1.5">
+                                            Alasan Penutupan Posko <span class="text-red-500">*</span>
+                                        </label>
+                                        <textarea 
+                                            wire:model="edit_close_reason" 
+                                            rows="2" 
+                                            placeholder="Contoh: Tanggap darurat telah berakhir dan seluruh warga pengungsi telah kembali ke rumah masing-masing."
+                                            class="w-full py-2 px-3 text-xs sm:text-sm rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent bg-white"
+                                        ></textarea>
+                                        <p class="text-[11px] text-slate-500 mt-0.5">Wajib diisi bila status posko ditutup (minimal 5 karakter).</p>
+                                        @error('edit_close_reason') <span class="text-xs text-red-600 mt-1 block font-medium">{{ $message }}</span> @enderror
+                                    </div>
+                                @endif
+                            </div>
                         </div>
                     </div>
 
@@ -1220,6 +1271,127 @@
                         </button>
                     </div>
                 </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Konfirmasi Hapus Posko (SCRUM-55) -->
+    <div 
+        x-data="{ open: $wire.entangle('showDeleteModal') }"
+        x-show="open"
+        x-cloak
+        @keydown.escape.window="open = false; $wire.closeDeleteModal()"
+        class="fixed inset-0 z-50 overflow-y-auto"
+        role="dialog" 
+        aria-modal="true"
+        aria-labelledby="delete-modal-title"
+    >
+        <!-- Backdrop Blur -->
+        <div 
+            x-show="open"
+            x-transition:enter="transition ease-out duration-300"
+            x-transition:enter-start="opacity-0"
+            x-transition:enter-end="opacity-100"
+            x-transition:leave="transition ease-in duration-200"
+            x-transition:leave-start="opacity-100"
+            x-transition:leave-end="opacity-0"
+            class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm cursor-pointer" 
+            @click="open = false; $wire.closeDeleteModal()"
+            aria-hidden="true"
+        ></div>
+
+        <!-- Centered Wrapper -->
+        <div class="min-h-full flex items-center justify-center p-4 sm:p-6 relative z-10">
+            <div 
+                x-show="open"
+                x-transition:enter="transition ease-out duration-300"
+                x-transition:enter-start="opacity-0 scale-95 translate-y-3"
+                x-transition:enter-end="opacity-100 scale-100 translate-y-0"
+                x-transition:leave="transition ease-in duration-200"
+                x-transition:leave-start="opacity-100 scale-100 translate-y-0"
+                x-transition:leave-end="opacity-0 scale-95 translate-y-3"
+                class="w-full max-w-md bg-white rounded-2xl text-left shadow-2xl border border-slate-200 overflow-hidden my-6"
+            >
+                <div class="p-6">
+                    @if($deletingShelterCanBeDeleted)
+                        <!-- Skenario 1: Posko Bersih Belum Memiliki Data Keterkaitan (Boleh Dihapus) -->
+                        <div class="w-12 h-12 rounded-2xl bg-red-100 text-red-600 flex items-center justify-center mb-4">
+                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                            </svg>
+                        </div>
+
+                        <h3 class="text-lg font-bold text-slate-900" id="delete-modal-title">
+                            Hapus Posko Evakuasi
+                        </h3>
+                        <p class="text-sm text-slate-500 mt-2">
+                            Apakah Anda yakin ingin menghapus posko <strong class="text-slate-800">{{ $deletingShelterName }}</strong>? Posko ini belum pernah memiliki data pengungsi, kebutuhan, atau logistik. Tindakan ini bersifat permanen dan tidak dapat dibatalkan.
+                        </p>
+
+                        <div class="mt-6 flex items-center justify-end space-x-2">
+                            <button 
+                                type="button" 
+                                @click="open = false; $wire.closeDeleteModal()"
+                                class="px-4 py-2 text-xs sm:text-sm font-semibold text-slate-600 hover:text-slate-800 hover:bg-slate-100 rounded-xl transition cursor-pointer"
+                            >
+                                Batal
+                            </button>
+                            <button 
+                                type="button" 
+                                wire:click="destroy"
+                                wire:loading.attr="disabled"
+                                class="inline-flex items-center space-x-1.5 px-4 py-2 bg-red-600 hover:bg-red-700 active:bg-red-800 text-white text-xs sm:text-sm font-semibold rounded-xl shadow-xs transition cursor-pointer disabled:opacity-50"
+                            >
+                                <span wire:loading.remove wire:target="destroy">Ya, Hapus Posko</span>
+                                <span wire:loading wire:target="destroy">Menghapus...</span>
+                            </button>
+                        </div>
+                    @else
+                        <!-- Skenario 2: Posko Memiliki Riwayat Data (Ditolak Sesuai Aturan PBI-04) -->
+                        <div class="w-12 h-12 rounded-2xl bg-amber-100 text-amber-600 flex items-center justify-center mb-4">
+                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                            </svg>
+                        </div>
+
+                        <h3 class="text-lg font-bold text-slate-900" id="delete-modal-title">
+                            Posko Tidak Dapat Dihapus
+                        </h3>
+                        <p class="text-xs sm:text-sm text-slate-600 mt-2">
+                            Sesuai aturan bisnis dan integritas data kebencanaan <strong class="text-slate-800">PBI-04</strong>, posko <strong class="text-slate-800">{{ $deletingShelterName }}</strong> tidak dapat dihapus karena:
+                        </p>
+
+                        <div class="mt-3 bg-amber-50/80 border border-amber-200/90 rounded-xl p-3 text-xs text-amber-900 space-y-1.5">
+                            @foreach($deletingShelterBlockReasons as $reason)
+                                <div class="flex items-start space-x-2">
+                                    <span class="text-amber-600 font-bold">•</span>
+                                    <span>Telah {{ $reason }}.</span>
+                                </div>
+                            @endforeach
+                        </div>
+
+                        <p class="text-xs text-slate-500 mt-3">
+                            💡 Posko yang sudah memiliki riwayat data hanya dapat ditutup bila operasional posko telah selesai.
+                        </p>
+
+                        <div class="mt-6 flex items-center justify-end space-x-2">
+                            <button 
+                                type="button" 
+                                @click="open = false; $wire.closeDeleteModal()"
+                                class="px-4 py-2 text-xs sm:text-sm font-semibold text-slate-600 hover:text-slate-800 hover:bg-slate-100 rounded-xl transition cursor-pointer"
+                            >
+                                Tutup Dialog
+                            </button>
+                            <button 
+                                type="button" 
+                                wire:click="closeDeleteModal(); openEditModal({{ $deletingShelterId }})"
+                                class="px-4 py-2 bg-amber-500 hover:bg-amber-600 text-white text-xs sm:text-sm font-semibold rounded-xl shadow-xs transition cursor-pointer"
+                            >
+                                Tutup Posko Sebagai Gantinya
+                            </button>
+                        </div>
+                    @endif
+                </div>
             </div>
         </div>
     </div>

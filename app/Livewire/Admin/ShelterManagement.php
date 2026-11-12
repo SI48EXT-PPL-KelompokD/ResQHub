@@ -35,6 +35,15 @@ class ShelterManagement extends Component
     public $edit_capacity = '';
     public string $edit_contact = '';
     public int $edit_occupancy = 0;
+    public string $edit_status = 'aktif';
+    public string $edit_close_reason = '';
+
+    // Modal state (Hapus Posko - SCRUM-55)
+    public bool $showDeleteModal = false;
+    public ?int $deletingShelterId = null;
+    public string $deletingShelterName = '';
+    public bool $deletingShelterCanBeDeleted = true;
+    public array $deletingShelterBlockReasons = [];
 
     // Modal state (Update Okupansi Pengungsi)
     public bool $showOccupancyModal = false;
@@ -159,6 +168,8 @@ class ShelterManagement extends Component
         $this->edit_capacity = $shelter->capacity;
         $this->edit_contact = $shelter->contact;
         $this->edit_occupancy = $shelter->occupancy;
+        $this->edit_status = $shelter->status;
+        $this->edit_close_reason = $shelter->close_reason ?? '';
 
         $this->showEditModal = true;
         $this->dispatch('render-shelter-edit-map', lat: (float) $shelter->lat, lng: (float) $shelter->lng);
@@ -185,6 +196,8 @@ class ShelterManagement extends Component
         $this->edit_capacity = '';
         $this->edit_contact = '';
         $this->edit_occupancy = 0;
+        $this->edit_status = 'aktif';
+        $this->edit_close_reason = '';
     }
 
     /**
@@ -192,6 +205,7 @@ class ShelterManagement extends Component
      * Aturan bisnis:
      * - Hanya koordinator pemilik atau admin yang berhak mengubah
      * - Kapasitas tidak boleh lebih kecil dari jumlah pengungsi aktif saat ini
+     * - Status "Ditutup" hanya dapat dipilih bila tidak ada pengungsi aktif disertai alasan
      */
     public function update(): void
     {
@@ -203,6 +217,12 @@ class ShelterManagement extends Component
 
         $shelter = $query->findOrFail($this->editingShelterId);
         $minCapacity = max(1, (int) $shelter->occupancy);
+
+        // Aturan bisnis: Status Ditutup hanya dapat dipilih bila occupancy == 0
+        if ($this->edit_status === 'ditutup' && ! $shelter->canBeClosed()) {
+            $this->addError('edit_status', "Posko tidak dapat ditutup karena masih terdapat {$shelter->occupancy} jiwa pengungsi aktif. Pengungsi harus dipindahkan atau dipulangkan terlebih dahulu.");
+            return;
+        }
 
         $this->validate([
             'edit_disaster_event_id' => [
@@ -227,6 +247,10 @@ class ShelterManagement extends Component
                 'min:' . $minCapacity,
             ],
             'edit_contact'  => 'required|string|max:50',
+            'edit_status'   => 'required|in:aktif,penuh,ditutup',
+            'edit_close_reason' => $this->edit_status === 'ditutup'
+                ? 'required|string|min:5|max:255'
+                : 'nullable|string|max:255',
         ], [
             'edit_disaster_event_id.required' => 'Pilih kejadian bencana terkait.',
             'edit_name.required'              => 'Nama posko wajib diisi.',
@@ -237,18 +261,27 @@ class ShelterManagement extends Component
             'edit_capacity.required'          => 'Kapasitas daya tampung posko wajib diisi.',
             'edit_capacity.min'               => "Kapasitas posko tidak boleh lebih kecil dari jumlah pengungsi aktif saat ini ({$shelter->occupancy} jiwa).",
             'edit_contact.required'           => 'Nomor kontak narahubung posko wajib diisi.',
+            'edit_status.required'            => 'Status operasional posko wajib ditentukan.',
+            'edit_status.in'                  => 'Pilihan status operasional posko tidak valid.',
+            'edit_close_reason.required'      => 'Alasan penutupan posko wajib diisi bila status posko Ditutup.',
+            'edit_close_reason.min'           => 'Alasan penutupan posko minimal 5 karakter.',
         ]);
 
         $newCap = (int) $this->edit_capacity;
-        $newStatus = $shelter->status;
+        $newStatus = $this->edit_status;
+        $closeReason = null;
 
-        // Penyesuaian otomatis status kapasitas jika tidak ditutup
-        if ($shelter->status !== 'ditutup') {
+        if ($this->edit_status === 'ditutup') {
+            $newStatus = 'ditutup';
+            $closeReason = trim($this->edit_close_reason);
+        } else {
+            // Penyesuaian otomatis status kapasitas jika tidak ditutup
             if ($shelter->occupancy >= $newCap) {
                 $newStatus = 'penuh';
-            } elseif ($shelter->status === 'penuh' && $shelter->occupancy < $newCap) {
+            } elseif ($this->edit_status === 'penuh' && $shelter->occupancy < $newCap) {
                 $newStatus = 'aktif';
             }
+            $closeReason = null;
         }
 
         $shelter->update([
@@ -260,14 +293,86 @@ class ShelterManagement extends Component
             'capacity'          => $newCap,
             'contact'           => trim($this->edit_contact),
             'status'            => $newStatus,
+            'close_reason'      => $closeReason,
         ]);
 
         $this->closeEditModal();
         $this->dispatch('shelter-updated');
 
+        $statusMessage = $newStatus === 'ditutup' ? " dan kini berstatus Ditutup" : "";
         $this->notification = [
             'type'    => 'success',
-            'message' => "Data posko '{$shelter->name}' berhasil diperbarui.",
+            'message' => "Data posko '{$shelter->name}' berhasil diperbarui{$statusMessage}.",
+        ];
+    }
+
+    /**
+     * Buka modal konfirmasi penghapusan posko.
+     */
+    public function confirmDelete(int $shelterId): void
+    {
+        $user = auth()->user();
+        $query = Shelter::query();
+        if (! $user->isAdmin()) {
+            $query->where('coordinator_id', $user->id);
+        }
+
+        $shelter = $query->findOrFail($shelterId);
+
+        $this->deletingShelterId = $shelter->id;
+        $this->deletingShelterName = $shelter->name;
+        $this->deletingShelterCanBeDeleted = $shelter->canBeDeleted();
+        $this->deletingShelterBlockReasons = $shelter->delete_block_reasons;
+        $this->showDeleteModal = true;
+    }
+
+    /**
+     * Tutup modal konfirmasi hapus posko.
+     */
+    public function closeDeleteModal(): void
+    {
+        $this->showDeleteModal = false;
+        $this->deletingShelterId = null;
+        $this->deletingShelterName = '';
+        $this->deletingShelterCanBeDeleted = true;
+        $this->deletingShelterBlockReasons = [];
+    }
+
+    /**
+     * Hapus posko evakuasi.
+     * Aturan bisnis PBI-04:
+     * - Posko hanya dapat dihapus bila belum pernah memiliki pengungsi, kebutuhan, atau stok logistik.
+     * - Bila sudah memiliki data terkait, posko hanya dapat ditutup.
+     */
+    public function destroy(): void
+    {
+        $user = auth()->user();
+        $query = Shelter::query();
+        if (! $user->isAdmin()) {
+            $query->where('coordinator_id', $user->id);
+        }
+
+        $shelter = $query->findOrFail($this->deletingShelterId);
+
+        if (! $shelter->canBeDeleted()) {
+            $reasons = implode(', ', $shelter->delete_block_reasons);
+            $this->notification = [
+                'type'    => 'error',
+                'message' => "Posko '{$shelter->name}' tidak dapat dihapus karena {$reasons}. Sesuai SOP, posko hanya dapat ditutup.",
+            ];
+            $this->closeDeleteModal();
+            return;
+        }
+
+        $name = $shelter->name;
+        $shelter->delete();
+
+        $this->closeDeleteModal();
+        $this->dispatch('shelter-deleted');
+
+        $this->notification = [
+            'type'    => 'success',
+            'message' => "Posko '{$name}' berhasil dihapus dari sistem.",
         ];
     }
 

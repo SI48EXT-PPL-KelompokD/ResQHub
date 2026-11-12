@@ -61,6 +61,67 @@ class Shelter extends Model
     }
 
     /**
+     * Memeriksa apakah status posko dapat diubah menjadi "Ditutup".
+     * Aturan bisnis PBI-04:
+     * - Status "Ditutup" hanya dapat dipilih bila tidak ada pengungsi aktif (occupancy == 0).
+     */
+    public function canBeClosed(): bool
+    {
+        return (int) $this->occupancy === 0;
+    }
+
+    /**
+     * Memeriksa apakah posko dapat dihapus secara permanen.
+     * Aturan bisnis PBI-04:
+     * - Posko hanya dapat dihapus bila belum pernah memiliki pengungsi, kebutuhan, atau stok logistik.
+     * - Bila sudah memiliki riwayat data tersebut, posko hanya dapat ditutup.
+     */
+    public function canBeDeleted(): bool
+    {
+        if ((int) $this->occupancy > 0) {
+            return false;
+        }
+
+        if (DB::table('refugees')->where('shelter_id', $this->id)->exists()) {
+            return false;
+        }
+
+        if (DB::table('aid_needs')->where('shelter_id', $this->id)->exists()) {
+            return false;
+        }
+
+        if (DB::table('stocks')->where('shelter_id', $this->id)->exists()) {
+            return false;
+        }
+
+        return true;
+    }
+
+    /**
+     * Mendapatkan daftar alasan yang memblokir penghapusan posko.
+     */
+    public function getDeleteBlockReasonsAttribute(): array
+    {
+        $reasons = [];
+
+        if ((int) $this->occupancy > 0) {
+            $reasons[] = "masih menampung {$this->occupancy} jiwa pengungsi aktif";
+        } elseif (DB::table('refugees')->where('shelter_id', $this->id)->exists()) {
+            $reasons[] = 'memiliki riwayat pencatatan data pengungsi';
+        }
+
+        if (DB::table('aid_needs')->where('shelter_id', $this->id)->exists()) {
+            $reasons[] = 'memiliki data permohonan kebutuhan logistik';
+        }
+
+        if (DB::table('stocks')->where('shelter_id', $this->id)->exists()) {
+            $reasons[] = 'memiliki data inventaris/stok bantuan';
+        }
+
+        return $reasons;
+    }
+
+    /**
      * Sisa kapasitas tampung jiwa yang masih tersedia.
      */
     public function getRemainingCapacityAttribute(): int

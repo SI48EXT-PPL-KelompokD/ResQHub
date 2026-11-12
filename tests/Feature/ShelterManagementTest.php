@@ -6,6 +6,7 @@ use App\Models\DisasterEvent;
 use App\Models\Shelter;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\DB;
 use Livewire\Livewire;
 use Tests\TestCase;
 use App\Livewire\Admin\ShelterManagement;
@@ -386,5 +387,183 @@ class ShelterManagementTest extends TestCase
 
         $shelter->refresh();
         $this->assertEquals(120, $shelter->capacity);
+    }
+
+    public function test_shelter_cannot_be_closed_if_refugees_are_still_active(): void
+    {
+        $koordinator = User::where('role', 'koordinator')->first();
+        $event = DisasterEvent::where('status', 'aktif')->first();
+
+        // Posko masih menampung 40 jiwa pengungsi aktif
+        $shelter = Shelter::create([
+            'disaster_event_id' => $event->id,
+            'coordinator_id'    => $koordinator->id,
+            'name'              => 'Posko Masih Ada Pengungsi',
+            'address'           => 'Jl. Pengungsi No. 3',
+            'lat'               => -6.994,
+            'lng'               => 107.624,
+            'capacity'          => 100,
+            'occupancy'         => 40,
+            'contact'           => '081234',
+            'status'            => 'aktif',
+        ]);
+
+        // Koordinator mencoba mengubah status menjadi 'ditutup'
+        Livewire::actingAs($koordinator)
+            ->test(ShelterManagement::class)
+            ->call('openEditModal', $shelter->id)
+            ->set('edit_status', 'ditutup')
+            ->set('edit_close_reason', 'Bencana telah dinyatakan selesai.')
+            ->call('update')
+            ->assertHasErrors(['edit_status'])
+            ->assertSet('showEditModal', true);
+
+        // Status di database harus tetap aktif
+        $shelter->refresh();
+        $this->assertEquals('aktif', $shelter->status);
+        $this->assertNull($shelter->close_reason);
+    }
+
+    public function test_shelter_can_be_closed_if_no_active_refugees_and_reason_provided(): void
+    {
+        $koordinator = User::where('role', 'koordinator')->first();
+        $event = DisasterEvent::where('status', 'aktif')->first();
+
+        // Posko dengan pengungsi 0 jiwa (sudah pulang / kosong)
+        $shelter = Shelter::create([
+            'disaster_event_id' => $event->id,
+            'coordinator_id'    => $koordinator->id,
+            'name'              => 'Posko Siap Ditutup',
+            'address'           => 'Jl. Evakuasi Selesai',
+            'lat'               => -6.995,
+            'lng'               => 107.625,
+            'capacity'          => 100,
+            'occupancy'         => 0,
+            'contact'           => '0812345',
+            'status'            => 'aktif',
+        ]);
+
+        Livewire::actingAs($koordinator)
+            ->test(ShelterManagement::class)
+            ->call('openEditModal', $shelter->id)
+            ->set('edit_status', 'ditutup')
+            ->set('edit_close_reason', 'Masa tanggap darurat telah berakhir dan seluruh pengungsi telah kembali ke rumah.')
+            ->call('update')
+            ->assertHasNoErrors()
+            ->assertSet('showEditModal', false);
+
+        $shelter->refresh();
+        $this->assertEquals('ditutup', $shelter->status);
+        $this->assertEquals('ditutup', $shelter->capacity_status);
+        $this->assertEquals('Masa tanggap darurat telah berakhir dan seluruh pengungsi telah kembali ke rumah.', $shelter->close_reason);
+    }
+
+    public function test_closing_shelter_fails_if_close_reason_is_empty(): void
+    {
+        $koordinator = User::where('role', 'koordinator')->first();
+        $event = DisasterEvent::where('status', 'aktif')->first();
+
+        $shelter = Shelter::create([
+            'disaster_event_id' => $event->id,
+            'coordinator_id'    => $koordinator->id,
+            'name'              => 'Posko Tutup Tanpa Alasan',
+            'address'           => 'Jl. Tanpa Alasan',
+            'lat'               => -6.996,
+            'lng'               => 107.626,
+            'capacity'          => 80,
+            'occupancy'         => 0,
+            'contact'           => '08123',
+            'status'            => 'aktif',
+        ]);
+
+        Livewire::actingAs($koordinator)
+            ->test(ShelterManagement::class)
+            ->call('openEditModal', $shelter->id)
+            ->set('edit_status', 'ditutup')
+            ->set('edit_close_reason', '')
+            ->call('update')
+            ->assertHasErrors(['edit_close_reason'])
+            ->assertSet('showEditModal', true);
+
+        $shelter->refresh();
+        $this->assertEquals('aktif', $shelter->status);
+    }
+
+    public function test_shelter_without_refugees_needs_or_stocks_can_be_deleted(): void
+    {
+        $koordinator = User::where('role', 'koordinator')->first();
+        $event = DisasterEvent::where('status', 'aktif')->first();
+
+        // Posko baru tanpa data historis pengungsi, kebutuhan, atau stok
+        $shelter = Shelter::create([
+            'disaster_event_id' => $event->id,
+            'coordinator_id'    => $koordinator->id,
+            'name'              => 'Posko Baru Salah Input',
+            'address'           => 'Jl. Salah Input',
+            'lat'               => -6.997,
+            'lng'               => 107.627,
+            'capacity'          => 50,
+            'occupancy'         => 0,
+            'contact'           => '08111',
+            'status'            => 'aktif',
+        ]);
+
+        Livewire::actingAs($koordinator)
+            ->test(ShelterManagement::class)
+            ->call('confirmDelete', $shelter->id)
+            ->assertSet('deletingShelterId', $shelter->id)
+            ->assertSet('deletingShelterCanBeDeleted', true)
+            ->call('destroy')
+            ->assertHasNoErrors()
+            ->assertSet('showDeleteModal', false);
+
+        $this->assertDatabaseMissing('shelters', [
+            'id' => $shelter->id,
+        ]);
+    }
+
+    public function test_shelter_with_historical_refugees_or_needs_or_stocks_cannot_be_deleted(): void
+    {
+        $koordinator = User::where('role', 'koordinator')->first();
+        $event = DisasterEvent::where('status', 'aktif')->first();
+
+        $shelter = Shelter::create([
+            'disaster_event_id' => $event->id,
+            'coordinator_id'    => $koordinator->id,
+            'name'              => 'Posko Bersejarah',
+            'address'           => 'Jl. Bersejarah No. 1',
+            'lat'               => -6.998,
+            'lng'               => 107.628,
+            'capacity'          => 100,
+            'occupancy'         => 0, // sedang 0 jiwa, tapi memiliki riwayat di tabel refugees
+            'contact'           => '08222',
+            'status'            => 'aktif',
+        ]);
+
+        // Simulasikan riwayat pengungsi di database
+        DB::table('refugees')->insert([
+            'shelter_id'    => $shelter->id,
+            'head_name'     => 'Bapak Supardi',
+            'nik'           => '3204123456780001',
+            'members'       => 4,
+            'status'        => 'pulang',
+            'checked_in_at' => now()->subDays(5),
+            'created_at'    => now()->subDays(5),
+            'updated_at'    => now()->subDays(1),
+        ]);
+
+        // Koordinator mencoba menghapus posko ini
+        Livewire::actingAs($koordinator)
+            ->test(ShelterManagement::class)
+            ->call('confirmDelete', $shelter->id)
+            ->assertSet('deletingShelterId', $shelter->id)
+            ->assertSet('deletingShelterCanBeDeleted', false)
+            ->call('destroy')
+            ->assertSet('showDeleteModal', false);
+
+        // Posko tetap ada di database dan tidak terhapus
+        $this->assertDatabaseHas('shelters', [
+            'id' => $shelter->id,
+        ]);
     }
 }
