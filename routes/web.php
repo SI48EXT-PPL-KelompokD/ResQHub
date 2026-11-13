@@ -2,6 +2,7 @@
 
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Auth\LoginController;
+use App\Http\Controllers\Admin\AidNeedController;
 use App\Livewire\Auth\Register;
 use App\Livewire\Admin\Dashboard;
 use App\Livewire\Admin\UserManagement;
@@ -32,4 +33,12 @@ Route::middleware(['auth'])->prefix('admin')->name('admin.')->group(function () 
     Route::put('/items/{item}', [ItemController::class, 'update'])->name('items.update');
     Route::delete('/items/{item}', [ItemController::class, 'destroy'])->name('items.destroy');
     Route::patch('/items/{item}/activate', [ItemController::class, 'activate'])->name('items.activate');
+
+    Route::middleware(['role:koordinator'])->group(function () {
+        Route::resource('needs', AidNeedController::class)
+            ->except(['show'])
+            ->parameters(['needs' => 'aid_need']);
+    });
 });
+
+Route::get('/needs', [AidNeedController::class, 'publicIndex'])->name('needs.public');
