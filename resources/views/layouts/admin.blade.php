@@ -111,12 +111,12 @@
                     <!-- Modul D: Kebutuhan Bantuan (Fadli) -->
                     @if (Auth::user()->canAccessModule('modul_d'))
                         <a 
-                            href="{{ Auth::user()->isAdmin() ? route('admin.items.index') : '#' }}" 
-                            @if (Auth::user()->isAdmin()) wire:navigate @endif
-                            class="flex items-center space-x-3 px-3 py-2.5 rounded-xl text-sm font-medium text-slate-600 hover:bg-slate-50 hover:text-slate-900 transition duration-150 group"
+                            href="{{ Auth::user()->isAdmin() ? route('admin.items.index') : (Auth::user()->isKoordinator() ? route('admin.needs.index') : route('needs.public')) }}"
+                            @if (Auth::user()->isAdmin() || Auth::user()->isKoordinator()) wire:navigate @endif
+                            class="flex items-center space-x-3 px-3 py-2.5 rounded-xl text-sm font-medium transition duration-150 group {{ request()->routeIs('admin.items.*', 'admin.needs.*', 'needs.public') ? 'bg-blue-50 text-blue-700 font-semibold shadow-xs' : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900' }}"
                             title="Modul D - Kebutuhan Bantuan"
                         >
-                            <svg class="w-5 h-5 text-slate-400 group-hover:text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <svg class="w-5 h-5 {{ request()->routeIs('admin.items.*', 'admin.needs.*', 'needs.public') ? 'text-blue-600' : 'text-slate-400 group-hover:text-slate-600' }}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
                             </svg>
                             <span class="flex-1">Kebutuhan</span>
