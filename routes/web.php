@@ -24,7 +24,7 @@ Route::post('/logout', [LoginController::class, 'logout'])->name('logout');
 // Group Terotentikasi
 Route::middleware(['auth'])->prefix('admin')->name('admin.')->group(function () {
     Route::get('/dashboard', Dashboard::class)->name('dashboard');
-    Route::get('/users', UserManagement::class)->name('users');
+    Route::get('/users', UserManagement::class)->middleware('role:admin')->name('users');
     Route::get('/items/create', [ItemController::class, 'create'])->name('items.create');
     Route::get('/items', [ItemController::class, 'index'])->name('items.index');
     Route::post('/items', [ItemController::class, 'store'])->name('items.store');
