@@ -1,8 +1,9 @@
 @component('layouts.admin')
     <div class="max-w-6xl mx-auto space-y-6">
-        <div>
+        <div class="space-y-1">
             <p class="text-sm font-medium text-blue-600">Katalog Barang Bantuan</p>
             <h1 class="text-2xl font-bold text-slate-900">Tambah Barang</h1>
+            <p class="max-w-2xl text-sm text-slate-600">Tambahkan barang dengan kategori dan satuan yang konsisten agar kebutuhan setiap posko mudah dicatat.</p>
         </div>
 
         @if (session('success'))
@@ -12,6 +13,10 @@
         <div class="grid items-start gap-6 lg:grid-cols-3">
             <form method="POST" action="{{ route('admin.items.store') }}" class="lg:col-span-1 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
                 @csrf
+                <div class="mb-6 border-b border-slate-100 pb-4">
+                    <h2 class="font-semibold text-slate-900">Detail barang</h2>
+                    <p class="mt-1 text-sm text-slate-500">Gunakan nama dan satuan yang akan dipakai bersama oleh seluruh posko.</p>
+                </div>
                 <div class="space-y-5">
                 <div class="space-y-1.5">
                     <label for="name" class="block text-sm font-semibold text-slate-700">Nama barang</label>
@@ -20,7 +25,7 @@
                 </div>
                 <div class="space-y-1.5">
                     <label for="category" class="block text-sm font-semibold text-slate-700">Kategori</label>
-                    <select id="category" name="category" required class="block w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-900 shadow-sm outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100">
+                    <select id="category" name="category" required class="block w-full cursor-pointer rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-900 shadow-sm outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100">
                         @foreach(['pangan'=>'Pangan','sandang'=>'Sandang','kebersihan'=>'Kebersihan','obat_obatan'=>'Obat-obatan','perlengkapan_bayi'=>'Perlengkapan bayi','peralatan'=>'Peralatan'] as $value => $label)
                             <option value="{{ $value }}" @selected(old('category') === $value)>{{ $label }}</option>
                         @endforeach
@@ -38,11 +43,14 @@
                     @error('min_threshold')<p class="mt-1 text-xs text-rose-600">{{ $message }}</p>@enderror
                 </div>
                 </div>
-                <button class="mt-6 w-full rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-200">Simpan barang</button>
+                <button class="mt-6 w-full cursor-pointer rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-200">Simpan barang</button>
             </form>
 
             <div class="lg:col-span-2 rounded-2xl bg-white p-6 shadow-sm border border-slate-200">
-                <h2 class="mb-4 font-semibold text-slate-900">Daftar katalog</h2>
+                <div class="mb-4">
+                    <h2 class="font-semibold text-slate-900">Daftar katalog</h2>
+                    <p class="mt-1 text-sm text-slate-500">Barang aktif yang tersedia untuk kebutuhan dan stok posko.</p>
+                </div>
                 <div class="overflow-x-auto"><table class="w-full text-left text-sm"><thead><tr class="border-b text-slate-500"><th class="pb-3">Nama</th><th class="pb-3">Kategori</th><th class="pb-3">Satuan</th><th class="pb-3">Ambang</th></tr></thead><tbody>
                     @forelse($items as $item)<tr class="border-b last:border-0"><td class="py-3 font-medium">{{ $item->name }}</td><td class="py-3">{{ str_replace('_', '-', $item->category) }}</td><td class="py-3">{{ $item->unit }}</td><td class="py-3">{{ $item->min_threshold }}</td></tr>@empty<tr><td colspan="4" class="py-6 text-center text-slate-500">Belum ada barang.</td></tr>@endforelse
                 </tbody></table></div>
