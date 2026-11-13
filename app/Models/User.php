@@ -101,6 +101,11 @@ class User extends Authenticatable
         return $this->hasOne(VolunteerProfile::class);
     }
 
+    public function canManageVolunteerProfile(): bool
+    {
+        return in_array($this->role, ['relawan', 'nakes', 'koordinator'], true);
+    }
+
     public function canAccessModule(string $module): bool
     {
         if ($this->isAdmin()) {
