@@ -49,6 +49,20 @@ class GoodsDonation extends Model
         return $query->where('status', $status->value);
     }
 
+    public function scopeWithDisplay(Builder $query): Builder
+    {
+        return $query
+            ->leftJoin('aid_needs', 'aid_needs.id', '=', 'goods_donations.aid_need_id')
+            ->leftJoin('items', 'items.id', '=', 'aid_needs.item_id')
+            ->leftJoin('shelters', 'shelters.id', '=', 'aid_needs.shelter_id')
+            ->select(
+                'goods_donations.*',
+                'items.name as item_name',
+                'items.unit as item_unit',
+                'shelters.name as shelter_name',
+            );
+    }
+
     public function isPledged(): bool
     {
         return $this->status === GoodsDonationStatus::Dijanjikan;

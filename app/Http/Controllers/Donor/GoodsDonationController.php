@@ -2,7 +2,6 @@
 
 namespace App\Http\Controllers\Donor;
 
-use App\Enums\DeliveryMethod;
 use App\Http\Requests\CancelGoodsDonationRequest;
 use App\Http\Requests\StoreGoodsDonationRequest;
 use App\Http\Requests\UpdateGoodsDonationRequest;
@@ -14,6 +13,7 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\View\View;
+use Illuminate\Support\Facades\DB;
 
 class GoodsDonationController
 {
@@ -24,9 +24,9 @@ class GoodsDonationController
         Gate::authorize('viewAny', GoodsDonation::class);
 
         $donations = GoodsDonation::query()
+            ->withDisplay()
             ->ownedBy($request->user())
-            ->with('aidNeed')
-            ->latest()
+            ->orderByDesc('goods_donations.id')
             ->paginate(10);
 
         return view('donor.goods-donations.index', compact('donations'));
@@ -40,8 +40,8 @@ class GoodsDonationController
 
         return view('donor.goods-donations.create', [
             'need' => $need,
+            'info' => $this->needInfo($need),
             'remaining' => max(0, $need->qty_needed - $need->qty_pledged),
-            'methods' => DeliveryMethod::cases(),
         ]);
     }
 
@@ -58,7 +58,7 @@ class GoodsDonationController
     {
         Gate::authorize('view', $goodsDonation);
 
-        $goodsDonation->load('aidNeed');
+        $need = $goodsDonation->aidNeed()->withTrashed()->first();
 
         $logs = ActivityLog::query()
             ->where('subject_type', GoodsDonation::class)
@@ -68,6 +68,8 @@ class GoodsDonationController
 
         return view('donor.goods-donations.show', [
             'donation' => $goodsDonation,
+            'need' => $need,
+            'info' => $this->needInfo($need),
             'logs' => $logs,
         ]);
     }
@@ -76,13 +78,14 @@ class GoodsDonationController
     {
         Gate::authorize('update', $goodsDonation);
 
-        $need = $goodsDonation->aidNeed;
+        $need = $goodsDonation->aidNeed()->withTrashed()->first();
+        abort_if(! $need, 404);
 
         return view('donor.goods-donations.edit', [
             'donation' => $goodsDonation,
             'need' => $need,
+            'info' => $this->needInfo($need),
             'remaining' => max(0, $need->qty_needed - $need->qty_pledged + $goodsDonation->quantity),
-            'methods' => DeliveryMethod::cases(),
         ]);
     }
 
@@ -102,5 +105,17 @@ class GoodsDonationController
         return redirect()
             ->route('donor.goods-donations.index')
             ->with('success', "Janji donasi {$goodsDonation->code} dibatalkan.");
+    }
+
+    private function needInfo(?AidNeed $need): array
+    {
+        $item = $need ? DB::table('items')->where('id', $need->item_id)->first(['name', 'unit']) : null;
+        $shelterName = $need ? DB::table('shelters')->where('id', $need->shelter_id)->value('name') : null;
+
+        return [
+            'item_name' => $item->name ?? 'Barang',
+            'item_unit' => $item->unit ?? '',
+            'shelter_name' => $shelterName ?? 'Posko',
+        ];
     }
 }
