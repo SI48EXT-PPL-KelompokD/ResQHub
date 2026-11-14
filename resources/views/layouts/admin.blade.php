@@ -107,6 +107,17 @@
                             <span class="flex-1">Data Posko</span>
                             <span class="text-[10px] {{ request()->routeIs('admin.shelters*') ? 'bg-blue-100 text-blue-700' : 'bg-slate-100 text-slate-500' }} px-1.5 py-0.5 rounded font-mono">Modul B</span>
                         </a>
+                        <a 
+                            href="{{ route('public.shelters') }}" 
+                            target="_blank"
+                            class="flex items-center space-x-2.5 px-3 py-1.5 ml-3 rounded-lg text-xs font-medium text-slate-500 hover:text-blue-600 hover:bg-slate-50 transition"
+                            title="Buka Peta Pencarian Posko Publik"
+                        >
+                            <svg class="w-3.5 h-3.5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                            </svg>
+                            <span>Peta Publik (Haversine)</span>
+                        </a>
                     @endif
 
                     <!-- Modul C: Pengungsi & Kesehatan (Shalman) -->

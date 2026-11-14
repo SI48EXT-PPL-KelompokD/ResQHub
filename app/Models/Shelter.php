@@ -233,10 +233,31 @@ class Shelter extends Model
     }
 
     /**
+     * Scope posko yang masih beroperasi (tidak ditutup).
+     */
+    public function scopeOperational(Builder $query): Builder
+    {
+        return $query->where('status', '!=', 'ditutup');
+    }
+
+    /**
      * Scope kalkulasi jarak terdekat berdasarkan rumus Haversine (dalam kilometer).
      */
     public function scopeNearby(Builder $query, float $lat, float $lng, ?float $radiusKm = null): Builder
     {
+        $connection = $query->getConnection();
+        if ($connection->getDriverName() === 'sqlite') {
+            $pdo = $connection->getPdo();
+            if (method_exists($pdo, 'sqliteCreateFunction')) {
+                $pdo->sqliteCreateFunction('acos', function ($val) {
+                    return acos(max(-1.0, min(1.0, (float) $val)));
+                }, 1);
+                $pdo->sqliteCreateFunction('cos', 'cos', 1);
+                $pdo->sqliteCreateFunction('sin', 'sin', 1);
+                $pdo->sqliteCreateFunction('radians', 'deg2rad', 1);
+            }
+        }
+
         // 6371 adalah radius rata-rata bumi dalam kilometer
         $haversine = "(6371 * acos(cos(radians(?)) * cos(radians(lat)) * cos(radians(lng) - radians(?)) + sin(radians(?)) * sin(radians(lat))))";
 
@@ -244,10 +265,54 @@ class Shelter extends Model
             ->selectRaw("{$haversine} AS distance", [$lat, $lng, $lat])
             ->orderBy('distance', 'asc');
 
-        if ($radiusKm !== null) {
-            $query->having('distance', '<=', $radiusKm);
+        if ($radiusKm !== null && (float) $radiusKm > 0) {
+            $radiusVal = (float) $radiusKm;
+            $query->whereRaw("{$haversine} <= {$radiusVal}", [$lat, $lng, $lat]);
         }
 
         return $query;
+    }
+
+    /**
+     * Hitung jarak dua titik koordinat bumi dalam kilometer (rumus Haversine murni PHP).
+     */
+    public static function calculateDistance(float $lat1, float $lng1, float $lat2, float $lng2): float
+    {
+        $earthRadius = 6371; // km
+        $dLat = deg2rad($lat2 - $lat1);
+        $dLng = deg2rad($lng2 - $lng1);
+
+        $a = sin($dLat / 2) * sin($dLat / 2) +
+             cos(deg2rad($lat1)) * cos(deg2rad($lat2)) *
+             sin($dLng / 2) * sin($dLng / 2);
+
+        $c = 2 * atan2(sqrt($a), sqrt(1 - $a));
+
+        return round($earthRadius * $c, 2);
+    }
+
+    /**
+     * URL tautan Google Maps untuk navigasi langsung ke titik lokasi posko.
+     */
+    public function getGoogleMapsUrlAttribute(): string
+    {
+        return "https://www.google.com/maps/dir/?api=1&destination={$this->lat},{$this->lng}";
+    }
+
+    /**
+     * Representasi jarak terformat (misal: "850 m" atau "2.4 km").
+     */
+    public function getFormattedDistanceAttribute(): string
+    {
+        if (! isset($this->attributes['distance'])) {
+            return '-';
+        }
+
+        $dist = (float) $this->attributes['distance'];
+        if ($dist < 1.0) {
+            return round($dist * 1000) . ' m';
+        }
+
+        return number_format($dist, 1, ',', '.') . ' km';
     }
 }

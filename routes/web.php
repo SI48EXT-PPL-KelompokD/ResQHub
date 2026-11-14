@@ -6,6 +6,10 @@ use App\Livewire\Auth\Register;
 use App\Livewire\Admin\Dashboard;
 use App\Livewire\Admin\UserManagement;
 use App\Livewire\Admin\ShelterManagement;
+use App\Livewire\Public\ShelterSearch;
+
+// Rute Publik (Warga & Pengunjung) - PBI-04 Pencarian Posko Terdekat (Haversine)
+Route::get('/posko', ShelterSearch::class)->name('public.shelters');
 
 // Root redirect
 Route::get('/', function () {
