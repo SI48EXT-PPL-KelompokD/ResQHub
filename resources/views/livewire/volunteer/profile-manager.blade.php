@@ -1,274 +1,262 @@
-<!---- profile-manager.blade.php -->
-<!DOCTYPE html>
-<html lang="id" x-data="{ open: false, confirmDelete: false }" class="h-full" xmlns:xlink="http://www.w3.org/1999/xlink">
-<head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>ResQHub - Profil Keahlian</title>
+{{-- Slide-over profil keahlian relawan (PBI-19) --}}
+<div>
+    @if ($open)
+        <div class="fixed inset-0 z-[60]" role="dialog" aria-modal="true" aria-label="Profil keahlian">
+            <div class="absolute inset-0 bg-slate-900/40 backdrop-blur-sm" wire:click="closeProfile"></div>
 
-    @livewireStyles
-    @vite(['resources/css/app.css', 'resources/js/app.js'])
-</head>
-<body x-show="open" class="fixed inset-0 z-[60]" role="dialog" aria-modal="true">
-    <div x-show="open" x-transition:enter="transition ease-out duration-200" x-transition:leave="transition ease-in duration-150"
-         class="absolute inset-0 bg-slate-900/40 backdrop-blur-sm" @click="open = false" role="presentation"></div>
-
-    <div x-show="open" class="absolute inset-y-0 right-0 w-full max-w-lg bg-white rounded-2xl shadow-xl border border-slate-200 flex flex-col z-[65]">
-        <!-- Header -->
-        <div class="border-b border-slate-200 px-6 py-4">
-            @if($mode === 'edit')
-                <h2 class="text-xl font-semibold text-slate-900">Profil Keahlian</h2>
-            @else
-                <h2 class="text-xl font-semibold text-slate-900">Profil Saya</h2>
-            @endif
-            <button type="button"
-                    class="absolute right-2 text-slate-400 hover:text-slate-600 p-1 rounded-lg hover:bg-slate-100"
-                    @click="open = false"
-                    aria-label="Tutup profil">
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                          d="M6 18L18 6M6 6l12 12" />
-                </svg>
-            </button>
-        </div>
-
-        <!-- Content -->
-        <div class="p-6 flex-1 overflow-y-auto">
-            @if($mode === 'view')
-                <!-- Profil View -->
-                <div class="mb-6">
-                    <div class="flex items-center space-x-3 mb-4">
-                        <!-- Avatar & Nama -->
-                        <div class="w-14 h-14 rounded-full bg-slate-200 flex items-center justify-center text-slate-500 font-bold text-xs shrink-0">
-                            {{ strtoupper(substr(auth()->user()->name ?? 'U', 0, 1)) }}
-                        </div>
-                        <div class="min-w-0">
-                            <p class="text-xs font-semibold text-slate-800">{{ auth()->user()->name ?? 'Pengguna' }}</p>
-                            <p class="text-[10px] text-slate-500">{{ Auth::user()->role_label ?? '-' }}</p>
-                        </div>
-                    </div>
-
-                    <!-- Status & Kesiapan -->
-                    <div class="mt-3 px-2 py-1 rounded-full bg-emerald-50 text-emerald-700 text-xs font-medium">
-                        <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse inline-block mr-1.5"></span>
-                        <span class="inline">{{ $profile ? $profile->readiness_label : 'Belum Ada Profil' }}</span>
-                    </div>
-
-                    <!-- Keahlian -->
-                    @if($profile && $profile->skills->isNotEmpty())
-                        <p class="mt-2 text-sm text-slate-600">Keahlian:</p>
-                        <div class="mt-1 flex flex-wrap gap-1.5">
-                            @foreach($profile->skills as $skill)
-                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium"
-                                      style="background:{{ str_contains(strtolower($skill->name),'medis') ? 'rgba(37,99,235,0.15)' : 'rgba(107,114,128,0.1)' }};color:{{ str_contains(strtolower($skill->name),'medis') ? '#2563EB' : '#6B727E' }};"
-                                      border="0">
-                                    {{ $skill->name }}
-                                </span>
-                            @endforeach
-                        </div>
-                    @else
-                        <p class="mt-2 text-sm text-slate-600">Belum ada keahlian terdaftar.</p>
-                    @endif
-
-                    <!-- Ringkasan -->
-                    <p class="mt-3 text-sm text-slate-500">
-                        Domisili {{ $profile ? auth()->user()->regency : '—' }} ·
-                        Radius {{ $profile ? $profile->radius_km : '—' }} km ·
-                        {{ $profile ? ($profile->certificate_path ? 'Sertifikat terunggah' : 'Belum ada sertifikat') : '—' }}
-                    </p>
-                </div>
-
-                <!-- Riwayat Tugas -->
-                @if($profile && ! $profile->assignments->isEmpty())
-                    <div class="mt-6">
-                        <h3 class="text-sm font-medium text-slate-800 mb-3">Riwayat Tugas</h3>
-                        <div class="space-y-3 max-h-80 overflow-y-auto">
-                            @foreach($profile->assignments as $assignment)
-                                @php
-                                    $statusLabels = [
-                                        'selesai' => ['label' => 'Selesai', 'class' => 'bg-emerald-50 text-emerald-700 border-emerald-200'],
-                                        'diterima' => ['label' => 'Berjalan', 'class' => 'bg-blue-50 text-blue-700 border-blue-200'],
-                                        'ditawarkan' => ['label' => 'Ditawarkan', 'class' => 'bg-amber-50 text-amber-700 border-amber-200'],
-                                        'ditolak' => ['label' => 'Ditolak', 'class' => 'bg-rose-50 text-rose-700 border-rose-200'],
-                                    ];
-                                    $assignLabel = $statusLabels[$assignment->status] ?? ['label' => $assignment->status, 'class' => ''];
-                                @endphp
-                                <div class="flex items-center gap-3 px-2 py-1 rounded bg-slate-50">
-                                    <div class="flex-1 min-w-0">
-                                        <p class="truncate text-sm line-clamp-1">{{ $assignment->volunteerTask->title }}</p>
-                                        <p class="text-[10px] text-slate-500 line-clamp-1">{{ \Illuminate\Support\Carbon::parse($assignment->volunteerTask->start_at)->translatedFormat('d M Y') }}</p>
-                                    </div>
-                                    <span class="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-medium {{$statusLabels[$assignment->assignment_status]['class']}}">
-                                        {{$statusLabels[$assignment->assignment_status]['label']}}
-                                    </span>
-                                </div>
-                            @endforeach
-                        </div>
-                    </div>
-                @endif
-            @endif
-
-            @if($mode === 'edit')
-                <!-- Profil Edit -->
-                <!-- Keahlian -->
-                <div class="mb-5">
-                    <p class="text-xs text-slate-500 mb-1">Keahlian <span class="text-red-500">*</span></p>
-                    <div class="space-y-1">
-                        @foreach($skills as $skill)
-                            <label class="cursor-pointer flex items-start space-x-2">
-                                <input type="checkbox"
-                                       wire:model.live="selectedSkills"
-                                       value="{{ $skill->id }}"
-                                       class="sr-only peer">
-                                <span class="flex-1 flex items-center rounded border peer-checked:bg-blue-50 peer-checked:text-blue-700 peer-checked:border-blue-300 border-slate-200 hover:border-blue-300 transition-colors peer-disabled:cursor-not-peer peer-disabled:opacity-50">
-                                    {{ $skill->name }}
-                                </span>
-                            </label>
-                        @endforeach
-                    </div>
-                </div>
-
-                <!-- Domisili & Radius -->
-                <div class="grid grid-cols-2 gap-4 mb-5">
+            <div class="absolute inset-y-0 right-0 w-full max-w-lg bg-white shadow-2xl flex flex-col">
+                {{-- Header --}}
+                <div class="flex items-start justify-between border-b border-slate-200 px-6 py-4">
                     <div>
-                        <p class="text-xs text-slate-500 mb-1">Domisili <span class="text-red-500">*</span></p>
-                        <select wire:model="regency" class="w-full rounded border px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-200 focus:border-blue-200">
-                            @foreach($regencyOptions as $opt)
-                                <option value="{{ $opt }}" {{ $regency === $opt ? 'selected' : '' }}>{{ $opt }}</option>
-                            @endforeach
-                        </select>
+                        <h2 class="text-lg font-semibold text-slate-900">Profil Keahlian</h2>
+                        <p class="mt-0.5 text-xs text-slate-500">Kelola keahlian, domisili, dan kesiapan Anda.</p>
                     </div>
-                    <div>
-                        <p class="text-xs text-slate-500 mb-1">Radius Kesediaan (km) <span class="text-red-500">*</span></p>
-                        <input type="number"
-                               wire:model="radius_km"
-                               min="1" max="200"
-                               class="w-full rounded border px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-200 focus:border-blue-200"
-                               required>
-                    </div>
-                </div>
-
-                <!-- Ketersediaan -->
-                <div class="mb-5">
-                    <p class="text-xs text-slate-500 mb-1">Ketersediaan <span class="text-red-500">*</span></p>
-                    <div class="flex space-x-3">
-                        <label>
-                            <input type="radio"
-                                   wire:model="availability"
-                                   value="siap"
-                                   class="sr-only peer">
-                            <span class="peer-checked:bg-blue-600 peer-checked:text-white peer-checked:border-blue-600 peer:border-slate-200 rounded border px-3 py-1 text-sm font-medium">Siap</span>
-                        </label>
-                        <label>
-                            <input type="radio"
-                                   wire:model="availability"
-                                   value="tidak_siap"
-                                   class="sr-only peer">
-                            <span class="peer-checked:bg-red-600 peer-checked:text-white peer-checked:border-red-600 peer:border-slate-200 rounded border px-3 py-1 text-sm font-medium">Tidak Siap</span>
-                        </label>
-                    </div>
-                </div>
-
-                <!-- Nomor STR (Khusus Medis) -->
-                @if($medicalSelected)
-                    <div class="mb-5">
-                        <p class="text-xs text-slate-500 mb-1">Nomor STR <span class="text-red-500">*</span></p>
-                        <input type="text"
-                               wire:model="str_number"
-                               placeholder="STR-XXXX-XXXX-XXXX"
-                               class="w-full rounded border px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-200 focus:border-blue-200"
-                               required>
-                        @error('str_number')<p class="text-xs text-red-500 mt-1">{{ $message }}</p>@enderror
-                    </div>
-                @endif
-
-                <!-- Sertifikat -->
-                <div class="mb-5">
-                    <p class="text-xs text-slate-500 mb-1">Sertifikat Pendukung</p>
-                    @if($certificate)
-                        <div class="flex items-center justify-between mb-2">
-                            <span class="text-sm text-slate-600">File baru:</span>
-                            <span class="text-sm text-blue-600">{{ $certificate->getClientOriginalName() }}</span>
-                        </div>
-                        <p class="text-xs text-emerald-600">Mengunggah... <span class="animate-pulse"></span></p>
-                    @elseif($profile?->certificate_path && !$removeCertificate)
-                        <div class="flex items-center justify-between mb-2">
-                            <span class="text-sm text-slate-600">Sertifikat saat ini:</span>
-                            <span class="text-sm text-blue-600">{{ basename($profile->certificate_path) }}</span>
-                        </div>
-                        <button type="button"
-                                wire:click="$set('removeCertificate', true)"
-                                class="text-sm text-red-600 hover:underline">Hapus</button>
-                    @else
-                        <p class="text-sm text-slate-500 text-center">Belum ada sertifikat</p>
-                    @endif
-                    <input type="file"
-                           wire:model="certificate"
-                           accept=".pdf,.jpg,.jpeg,.png"
-                           class="w-full rounded border px-3 py-2 my-4 focus:outline-none focus:ring-2 focus:ring-blue-200 focus:border-blue-200">
-                    @error('certificate')<p class="text-xs text-red-500 mt-1">{{ $message }}</p>@enderror
-                </div>
-            @endif
-
-            {{-- Tombol Aksi --}}
-            <div class="pt-4 border-t border-slate-200">
-                @if($mode === 'view')
-                    <button wire:click="edit"
-                            class="w-full bg-blue-600 text-white hover:bg-blue-700 text-sm font-medium py-2.5 rounded-lg transition">
-                        Ubah Profil
+                    <button type="button"
+                            wire:click="closeProfile"
+                            class="rounded-lg p-1.5 text-slate-400 transition hover:bg-slate-100 hover:text-slate-600"
+                            aria-label="Tutup profil">
+                        <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                        </svg>
                     </button>
-                    @if($profile && $profile->is_complete && $profile->availability === 'siap')
-                        <button wire:click="confirmDelete"
-                                class="w-full mt-2 bg-rose-600 text-white hover:bg-red-700 text-sm font-medium py-2.5 rounded-lg transition"
-                                {{ $this->hasActiveTask() ? 'disabled' : '' }}
-                                title="Profil tidak dapat dihapus selama masih ada tugas berjalan">
-                            Hapus Profil
-                        </button>
+                </div>
+
+                {{-- Content --}}
+                <div class="flex-1 overflow-y-auto px-6 py-5">
+                    @if ($mode === 'view')
+                        <div class="flex items-center gap-3">
+                            <div class="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-blue-600 text-sm font-bold text-white">
+                                {{ strtoupper(substr(auth()->user()->name ?? 'U', 0, 1)) }}
+                            </div>
+                            <div class="min-w-0">
+                                <p class="truncate text-sm font-semibold text-slate-900">{{ auth()->user()->name ?? 'Pengguna' }}</p>
+                                <p class="text-xs text-slate-500">{{ auth()->user()->role_label ?? '-' }}</p>
+                            </div>
+                        </div>
+
+                        <div class="mt-4">
+                            @php
+                                $readiness = $profile?->readiness_label ?? 'Belum Ada Profil';
+                                $readinessClass = match ($readiness) {
+                                    'Siap Digunakan' => 'bg-emerald-50 text-emerald-700',
+                                    'Belum Lengkap' => 'bg-amber-50 text-amber-700',
+                                    default => 'bg-slate-100 text-slate-600',
+                                };
+                            @endphp
+                            <span class="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium {{ $readinessClass }}">
+                                <span class="h-1.5 w-1.5 rounded-full bg-current"></span>
+                                {{ $readiness }}
+                            </span>
+                        </div>
+
+                        <div class="mt-5">
+                            <p class="text-xs font-medium uppercase tracking-wide text-slate-400">Keahlian</p>
+                            @if ($profile && $profile->skills->isNotEmpty())
+                                <div class="mt-2 flex flex-wrap gap-1.5">
+                                    @foreach ($profile->skills as $skill)
+                                        @php $isMedical = str_contains(strtolower($skill->name), 'medis'); @endphp
+                                        <span class="inline-flex items-center rounded-full px-2.5 py-1 text-xs font-medium {{ $isMedical ? 'bg-blue-50 text-blue-700' : 'bg-slate-100 text-slate-600' }}">
+                                            {{ $skill->name }}
+                                        </span>
+                                    @endforeach
+                                </div>
+                            @else
+                                <p class="mt-2 text-sm text-slate-500">Belum ada keahlian terdaftar.</p>
+                            @endif
+                        </div>
+
+                        <dl class="mt-5 divide-y divide-slate-100 rounded-xl border border-slate-200">
+                            <div class="flex items-center justify-between px-4 py-2.5">
+                                <dt class="text-xs text-slate-500">Domisili</dt>
+                                <dd class="text-sm font-medium text-slate-800">{{ auth()->user()->regency ?: '—' }}</dd>
+                            </div>
+                            <div class="flex items-center justify-between px-4 py-2.5">
+                                <dt class="text-xs text-slate-500">Radius kesediaan</dt>
+                                <dd class="text-sm font-medium text-slate-800">{{ $profile?->radius_km ?? '—' }} km</dd>
+                            </div>
+                            <div class="flex items-center justify-between px-4 py-2.5">
+                                <dt class="text-xs text-slate-500">Ketersediaan</dt>
+                                <dd class="text-sm font-medium text-slate-800">
+                                    {{ $profile?->availability === 'siap' ? 'Siap' : ($profile ? 'Tidak Siap' : '—') }}
+                                </dd>
+                            </div>
+                            <div class="flex items-center justify-between px-4 py-2.5">
+                                <dt class="text-xs text-slate-500">Nomor STR</dt>
+                                <dd class="text-sm font-medium text-slate-800">{{ $profile?->str_number ?: '—' }}</dd>
+                            </div>
+                            <div class="flex items-center justify-between px-4 py-2.5">
+                                <dt class="text-xs text-slate-500">Sertifikat</dt>
+                                <dd class="text-sm font-medium text-slate-800">
+                                    {{ $profile?->certificate_path ? 'Terunggah' : 'Belum ada' }}
+                                </dd>
+                            </div>
+                        </dl>
+
+                        @if ($taskHistory->isNotEmpty())
+                            <div class="mt-5">
+                                <p class="text-xs font-medium uppercase tracking-wide text-slate-400">Riwayat Tugas</p>
+                                <div class="mt-2 space-y-2">
+                                    @foreach ($taskHistory as $task)
+                                        @php
+                                            $statusMap = [
+                                                'selesai' => ['Selesai', 'bg-emerald-50 text-emerald-700'],
+                                                'diterima' => ['Berjalan', 'bg-blue-50 text-blue-700'],
+                                                'ditawarkan' => ['Ditawarkan', 'bg-amber-50 text-amber-700'],
+                                                'ditolak' => ['Ditolak', 'bg-rose-50 text-rose-700'],
+                                            ];
+                                            [$statusLabel, $statusClass] = $statusMap[$task->assignment_status] ?? [ucfirst($task->assignment_status), 'bg-slate-100 text-slate-600'];
+                                        @endphp
+                                        <div class="flex items-center gap-3 rounded-lg bg-slate-50 px-3 py-2">
+                                            <div class="min-w-0 flex-1">
+                                                <p class="truncate text-sm text-slate-800">{{ $task->title }}</p>
+                                                <p class="text-[11px] text-slate-500">
+                                                    {{ \Illuminate\Support\Carbon::parse($task->start_at)->translatedFormat('d M Y') }}
+                                                </p>
+                                            </div>
+                                            <span class="shrink-0 rounded px-2 py-0.5 text-[10px] font-medium {{ $statusClass }}">{{ $statusLabel }}</span>
+                                        </div>
+                                    @endforeach
+                                </div>
+                            </div>
+                        @endif
                     @else
-                        <button wire:click="confirmDelete"
-                                class="w-full mt-2 bg-rose-600 text-white hover:bg-red-700 text-sm font-medium py-2.5 rounded-lg transition"
-                                disabled>
+                        {{-- Mode edit --}}
+                        <div class="mb-5">
+                            <p class="mb-1.5 text-xs font-medium text-slate-700">Keahlian <span class="text-rose-500">*</span></p>
+                            <div class="flex flex-wrap gap-2">
+                                @foreach ($skills as $skill)
+                                    <label class="cursor-pointer">
+                                        <input type="checkbox" wire:model.live="selectedSkills" value="{{ $skill->id }}" class="peer sr-only">
+                                        <span class="inline-flex items-center rounded-full border border-slate-200 px-3 py-1.5 text-xs font-medium text-slate-600 transition peer-checked:border-blue-300 peer-checked:bg-blue-50 peer-checked:text-blue-700 peer-focus-visible:ring-2 peer-focus-visible:ring-blue-200">
+                                            {{ $skill->name }}
+                                        </span>
+                                    </label>
+                                @endforeach
+                            </div>
+                            @error('selectedSkills')<p class="mt-1 text-xs text-rose-500">{{ $message }}</p>@enderror
+                        </div>
+
+                        <div class="mb-5 grid grid-cols-1 gap-4 sm:grid-cols-2">
+                            <div>
+                                <label class="mb-1.5 block text-xs font-medium text-slate-700">Domisili <span class="text-rose-500">*</span></label>
+                                <select wire:model="regency" class="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800 focus:border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-100">
+                                    <option value="">Pilih kabupaten/kota</option>
+                                    @foreach ($regencyOptions as $option)
+                                        <option value="{{ $option }}">{{ $option }}</option>
+                                    @endforeach
+                                </select>
+                                @error('regency')<p class="mt-1 text-xs text-rose-500">{{ $message }}</p>@enderror
+                            </div>
+                            <div>
+                                <label class="mb-1.5 block text-xs font-medium text-slate-700">Radius (km) <span class="text-rose-500">*</span></label>
+                                <input type="number" wire:model="radius_km" min="1" max="200"
+                                       class="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800 focus:border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-100">
+                                @error('radius_km')<p class="mt-1 text-xs text-rose-500">{{ $message }}</p>@enderror
+                            </div>
+                        </div>
+
+                        <div class="mb-5">
+                            <p class="mb-1.5 text-xs font-medium text-slate-700">Ketersediaan <span class="text-rose-500">*</span></p>
+                            <div class="inline-flex rounded-lg bg-slate-100 p-1">
+                                <label class="cursor-pointer">
+                                    <input type="radio" wire:model="availability" value="siap" class="peer sr-only">
+                                    <span class="inline-block rounded-md px-4 py-1.5 text-xs font-medium text-slate-500 transition peer-checked:bg-white peer-checked:text-blue-700 peer-checked:shadow-sm">Siap</span>
+                                </label>
+                                <label class="cursor-pointer">
+                                    <input type="radio" wire:model="availability" value="tidak_siap" class="peer sr-only">
+                                    <span class="inline-block rounded-md px-4 py-1.5 text-xs font-medium text-slate-500 transition peer-checked:bg-white peer-checked:text-rose-700 peer-checked:shadow-sm">Tidak Siap</span>
+                                </label>
+                            </div>
+                            @error('availability')<p class="mt-1 text-xs text-rose-500">{{ $message }}</p>@enderror
+                        </div>
+
+                        @if ($medicalSelected)
+                            <div class="mb-5">
+                                <label class="mb-1.5 block text-xs font-medium text-slate-700">Nomor STR <span class="text-rose-500">*</span></label>
+                                <input type="text" wire:model="str_number" placeholder="STR-XXXX-XXXX-XXXX"
+                                       class="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800 focus:border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-100">
+                                <p class="mt-1 text-[11px] text-slate-500">Wajib untuk keahlian medis.</p>
+                                @error('str_number')<p class="mt-1 text-xs text-rose-500">{{ $message }}</p>@enderror
+                            </div>
+                        @endif
+
+                        <div class="mb-2">
+                            <label class="mb-1.5 block text-xs font-medium text-slate-700">Sertifikat pendukung</label>
+
+                            @if ($certificate)
+                                <div class="flex items-center justify-between rounded-lg border border-blue-200 bg-blue-50 px-3 py-2">
+                                    <span class="truncate text-xs text-blue-700">{{ $certificate->getClientOriginalName() }}</span>
+                                    <span class="text-[11px] font-medium text-blue-600">Siap diunggah</span>
+                                </div>
+                            @elseif ($profile?->certificate_path && ! $removeCertificate)
+                                <div class="flex items-center justify-between rounded-lg border border-slate-200 px-3 py-2">
+                                    <span class="truncate text-xs text-slate-600">{{ basename($profile->certificate_path) }}</span>
+                                    <button type="button" wire:click="$set('removeCertificate', true)" class="text-xs font-medium text-rose-600 hover:underline">Hapus</button>
+                                </div>
+                            @else
+                                <p class="text-xs text-slate-500">{{ $removeCertificate ? 'Sertifikat akan dihapus saat disimpan.' : 'Belum ada sertifikat.' }}</p>
+                            @endif
+
+                            <input type="file" wire:model="certificate" accept=".pdf,.jpg,.jpeg,.png"
+                                   class="mt-2 w-full rounded-lg border border-slate-200 px-3 py-2 text-xs text-slate-600 focus:outline-none focus:ring-2 focus:ring-blue-100">
+                            <p class="mt-1 text-[11px] text-slate-500">PDF/JPG/PNG, maksimal 5 MB.</p>
+                            @error('certificate')<p class="mt-1 text-xs text-rose-500">{{ $message }}</p>@enderror
+                        </div>
+                    @endif
+                </div>
+
+                {{-- Footer actions --}}
+                <div class="border-t border-slate-200 px-6 py-4">
+                    @if ($mode === 'view')
+                        @php
+                            $canDelete = $profile && $profile->is_complete && $profile->availability === 'siap' && ! $hasActiveTask;
+                        @endphp
+                        <button type="button" wire:click="edit"
+                                class="w-full rounded-lg bg-blue-600 py-2.5 text-sm font-medium text-white transition hover:bg-blue-700">
+                            {{ $profile ? 'Ubah Profil' : 'Lengkapi Profil' }}
+                        </button>
+                        <button type="button" wire:click="requestDelete"
+                                class="mt-2 w-full rounded-lg py-2.5 text-sm font-medium transition {{ $canDelete ? 'bg-rose-600 text-white hover:bg-rose-700' : 'cursor-not-allowed bg-slate-100 text-slate-400' }}"
+                                @disabled(! $canDelete)>
                             Hapus Profil
                         </button>
-                    @endif
-                @elseif($mode === 'edit')
-                    <button type="submit"
-                            wire:loading.attr="disabled"
-                            wire:target="form"
-                            class="w-full bg-blue-600 text-white hover:bg-blue-700 text-sm font-medium py-2.5 rounded-lg transition">
-                            <svg class="inline-block animate-spin w-4 h-4 mr-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/>
-                                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"/>
-                            </svg>
-                            Simpan Profil
+                        @if (! $canDelete)
+                            <p class="mt-2 text-center text-[11px] text-slate-500">
+                                {{ $hasActiveTask ? 'Tidak dapat dihapus: masih ada tugas berjalan.' : 'Lengkapi profil dan set ketersediaan "Siap" untuk mengaktifkan hapus.' }}
+                            </p>
+                        @endif
+                    @else
+                        <button type="button" wire:click="save" wire:loading.attr="disabled" wire:target="save,certificate"
+                                class="w-full rounded-lg bg-blue-600 py-2.5 text-sm font-medium text-white transition hover:bg-blue-700 disabled:opacity-60">
+                            <span wire:loading.remove wire:target="save">Simpan Profil</span>
+                            <span wire:loading wire:target="save">Menyimpan...</span>
                         </button>
-                        <button type="button"
-                                wire:click="cancel"
-                                class="w-full mt-2 bg-slate-200 text-slate-700 hover:bg-slate-300 text-sm font-medium py-2.5 rounded-lg transition">
+                        <button type="button" wire:click="cancel"
+                                class="mt-2 w-full rounded-lg bg-slate-100 py-2.5 text-sm font-medium text-slate-600 transition hover:bg-slate-200">
                             Batal
                         </button>
                     @endif
-                @endif
+                </div>
             </div>
         </div>
-    </div>
+    @endif
 
-    {{-- Delete Modal --}}
-    @if($showDeleteModal)
-        <div class="fixed inset-0 z-[70] overflow-y-auto" @click.self="cancelDelete">
-            <div class="absolute inset-0 bg-slate-900/50 backdrop-blur-sm"></div>
-            <div class="absolute inset-4 bg-white rounded-xl p-6 w-full max-w-md mx-auto shadow-2xl">
-                <h3 class="text-lg font-semibold text-slate-900 mb-4">Hapus profil relawan?</h3>
-                <p class="text-sm text-slate-500 mb-6">Anda tidak akan muncul lagi di rekomendasi tugas. Riwayat tugas yang sudah selesai tetap tersimpan.</p>
-                <div class="flex gap-3">
-                    <button type="button"
-                            wire:click="cancelDelete"
-                            class="flex-1 bg-slate-100 text-slate-600 hover:bg-slate-200 px-4 py-2 rounded text-sm">
+    {{-- Konfirmasi hapus --}}
+    @if ($showDeleteModal)
+        <div class="fixed inset-0 z-[70] flex items-center justify-center p-4" role="dialog" aria-modal="true">
+            <div class="absolute inset-0 bg-slate-900/50 backdrop-blur-sm" wire:click="cancelDelete"></div>
+            <div class="relative w-full max-w-md rounded-xl bg-white p-6 shadow-2xl">
+                <h3 class="text-lg font-semibold text-slate-900">Hapus profil relawan?</h3>
+                <p class="mt-2 text-sm text-slate-500">
+                    Anda tidak akan muncul lagi di rekomendasi tugas. Riwayat tugas yang sudah selesai tetap tersimpan.
+                </p>
+                <div class="mt-6 flex gap-3">
+                    <button type="button" wire:click="cancelDelete"
+                            class="flex-1 rounded-lg bg-slate-100 px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-200">
                         Batal
                     </button>
-                    <button type="button"
-                            wire:click="deleteProfile"
-                            class="flex-1 bg-rose-600 text-white hover:bg-red-700 px-4 py-2 rounded text-sm">
+                    <button type="button" wire:click="deleteProfile"
+                            class="flex-1 rounded-lg bg-rose-600 px-4 py-2 text-sm font-medium text-white hover:bg-rose-700">
                         Hapus Profil
                     </button>
                 </div>
@@ -277,18 +265,16 @@
     @endif
 
     {{-- Notifikasi --}}
-    @if($notification)
-        <div class="fixed top-4 left-4 right-4 bg-{{ $notificationType === 'success' ? 'emerald-500' : 'rose-600' }} text-white text-sm px-4 py-3 rounded shadow-xl animate-in fade-in-0 z-[50]">
-            <span>{{ $notification }}</span>
-            <button type="button"
-                    class="absolute right-2 text-opacity-90 hover:text-white"
-                    @click="dismissNotification">
-                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                          d="M6 18L18 6M6 6l12 12" />
-                </svg>
-            </button>
+    @if ($notification)
+        <div class="fixed left-4 right-4 top-4 z-[80] mx-auto max-w-lg rounded-lg px-4 py-3 text-sm text-white shadow-xl {{ $notificationType === 'success' ? 'bg-emerald-600' : 'bg-rose-600' }}">
+            <div class="flex items-start justify-between gap-3">
+                <span>{{ $notification }}</span>
+                <button type="button" wire:click="dismissNotification" class="shrink-0 text-white/80 hover:text-white" aria-label="Tutup notifikasi">
+                    <svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                </button>
+            </div>
         </div>
     @endif
-</body>
-</html>
+</div>

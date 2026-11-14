@@ -7,6 +7,7 @@ use App\Models\VolunteerProfile;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rule;
+use Livewire\Attributes\On;
 use Livewire\Component;
 use Livewire\WithFileUploads;
 
@@ -46,15 +47,25 @@ class ProfileManager extends Component
     public string $mode = 'view';
 
     public $regency = '';
+
     public $radius_km = 10;
+
     public $availability = 'siap';
+
     public $str_number = null;
+
     public array $selectedSkills = [];
+
     public $certificate = null;
+
     public bool $removeCertificate = false;
 
     public bool $showDeleteModal = false;
+
+    public bool $open = false;
+
     public ?string $notification = null;
+
     public string $notificationType = 'success';
 
     public function mount(): void
@@ -64,6 +75,23 @@ class ProfileManager extends Component
         }
 
         $this->fillFromProfile();
+    }
+
+    #[On('open-profile')]
+    public function openProfile(): void
+    {
+        $this->fillFromProfile();
+        $this->resetValidation();
+        $this->notification = null;
+        $this->mode = 'view';
+        $this->open = true;
+    }
+
+    public function closeProfile(): void
+    {
+        $this->open = false;
+        $this->mode = 'view';
+        $this->showDeleteModal = false;
     }
 
     public function profile(): ?VolunteerProfile
