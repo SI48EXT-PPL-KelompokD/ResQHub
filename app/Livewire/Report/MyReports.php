@@ -22,6 +22,22 @@ class MyReports extends Component
         $this->authorize('viewAny', DisasterReport::class);
     }
 
+    /**
+     * AC 4: hapus hanya untuk laporan milik sendiri yang masih menunggu verifikasi.
+     */
+    public function delete(int $reportId, DisasterReportService $service): void
+    {
+        $report = DisasterReport::findOrFail($reportId);
+
+        $this->authorize('delete', $report);
+
+        $service->delete(auth()->user(), $report);
+
+        session()->flash('status', 'Laporan berhasil dihapus.');
+
+        $this->resetPage();
+    }
+
     public function render(DisasterReportService $service)
     {
         return view('livewire.report.my-reports', [

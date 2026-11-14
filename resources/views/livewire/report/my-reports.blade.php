@@ -65,7 +65,9 @@
                             <span class="text-[11px] font-semibold px-2 py-0.5 rounded-full border {{ $badge }}">{{ $report->status_label }}</span>
                             <span class="text-[11px] font-medium px-2 py-0.5 rounded-full bg-slate-100 text-slate-600">{{ $report->disaster_type_label }}</span>
                         </div>
-                        <h2 class="mt-2 text-sm sm:text-base font-semibold text-slate-900 truncate">{{ $report->title }}</h2>
+                        <h2 class="mt-2 text-sm sm:text-base font-semibold text-slate-900 truncate">
+                            <a href="{{ route('admin.reports.show', $report) }}" wire:navigate class="hover:text-blue-700">{{ $report->title }}</a>
+                        </h2>
                         <p class="mt-0.5 text-xs text-slate-500 truncate">{{ $report->address }}</p>
                         <div class="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-[11px] text-slate-500">
                             <span>Kejadian: {{ $report->occurred_at?->translatedFormat('d M Y H:i') }}</span>
@@ -78,6 +80,19 @@
                                 <span class="font-semibold">Alasan penolakan:</span> {{ $report->reject_reason }}
                             </p>
                         @endif
+
+                        <div class="mt-3 flex flex-wrap items-center gap-2 text-xs font-semibold">
+                            <a href="{{ route('admin.reports.show', $report) }}" wire:navigate class="px-3 py-1.5 rounded-lg border border-slate-200 text-slate-700 hover:bg-slate-50 transition">Lihat Detail</a>
+                            @can('update', $report)
+                                <a href="{{ route('admin.reports.edit', $report) }}" wire:navigate class="px-3 py-1.5 rounded-lg border border-slate-200 text-slate-700 hover:bg-slate-50 transition">Ubah</a>
+                                <button
+                                    type="button"
+                                    wire:click="delete({{ $report->id }})"
+                                    wire:confirm="Hapus laporan ini? Laporan dan fotonya akan dihapus permanen."
+                                    class="px-3 py-1.5 rounded-lg border border-rose-200 text-rose-600 hover:bg-rose-50 transition"
+                                >Hapus</button>
+                            @endcan
+                        </div>
                     </div>
                 </article>
             @endforeach

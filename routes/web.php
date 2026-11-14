@@ -6,7 +6,9 @@ use App\Livewire\Auth\Register;
 use App\Livewire\Admin\Dashboard;
 use App\Livewire\Admin\UserManagement;
 use App\Livewire\Report\CreateReport;
+use App\Livewire\Report\EditReport;
 use App\Livewire\Report\MyReports;
+use App\Livewire\Report\ShowReport;
 
 // Root redirect
 Route::get('/', function () {
@@ -31,5 +33,7 @@ Route::middleware(['auth'])->prefix('admin')->name('admin.')->group(function () 
     Route::middleware('role:warga')->group(function () {
         Route::get('/laporan', MyReports::class)->name('reports.index');
         Route::get('/laporan/buat', CreateReport::class)->name('reports.create');
+        Route::get('/laporan/{report}', ShowReport::class)->name('reports.show');
+        Route::get('/laporan/{report}/ubah', EditReport::class)->name('reports.edit');
     });
 });
