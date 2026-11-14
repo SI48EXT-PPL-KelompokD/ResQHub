@@ -55,7 +55,7 @@ class VolunteerProfile extends Model
             return 'Belum Lengkap';
         }
 
-        return $this->availability === 'siap' ? 'Siap Digunakan' : 'Tidak Siap';
+        return $this->availability === 'siap' ? 'Siap Ditugaskan' : 'Tidak Siap';
     }
 
     public function scopeReadyForRecommendation($query)

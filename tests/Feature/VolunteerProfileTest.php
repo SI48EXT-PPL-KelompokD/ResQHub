@@ -54,9 +54,42 @@ class VolunteerProfileTest extends TestCase
         Livewire::test(ProfileManager::class)
             ->call('openProfile')
             ->assertSet('open', true)
-            ->assertSee('Profil Keahlian')
+            ->assertSee('Profil Saya')
+            ->assertSee('Siap Ditugaskan')
             ->assertSee('Evakuasi & SAR')
-            ->assertSee('Transportasi & Distribusi');
+            ->assertSee('Transportasi & Distribusi')
+            ->assertSee('Riwayat tugas');
+    }
+
+    public function test_riwayat_tugas_menampilkan_setiap_tugas_relawan(): void
+    {
+        $this->actingAs($this->relawanAktif());
+
+        Livewire::test(ProfileManager::class)
+            ->call('openProfile')
+            ->assertSee('Riwayat tugas')
+            ->assertSee('Evakuasi Perahu Karet Warga Terjebak RW 07 Andir')
+            ->assertSee('Berjalan')
+            ->assertSee('sedang berjalan');
+    }
+
+    public function test_riwayat_tugas_tetap_tampil_saat_belum_ada_tugas(): void
+    {
+        $relawan = User::factory()->create([
+            'role' => 'relawan',
+            'regency' => 'Kota Bandung',
+        ]);
+        $relawan->volunteerProfile()->create([
+            'radius_km' => 10,
+            'availability' => 'siap',
+        ]);
+
+        $this->actingAs($relawan);
+
+        Livewire::test(ProfileManager::class)
+            ->call('openProfile')
+            ->assertSee('Riwayat tugas')
+            ->assertSee('Belum ada riwayat tugas');
     }
 
     public function test_relawan_dapat_menyimpan_profil_keahlian(): void
@@ -67,6 +100,7 @@ class VolunteerProfileTest extends TestCase
         Livewire::test(ProfileManager::class)
             ->call('openProfile')
             ->call('edit')
+            ->assertSee('Profil Keahlian')
             ->set('regency', 'Kota Bandung')
             ->set('radius_km', 30)
             ->set('availability', 'tidak_siap')
@@ -83,6 +117,42 @@ class VolunteerProfileTest extends TestCase
         $this->assertSame('tidak_siap', $profile->availability);
         $this->assertSame('Kota Bandung', $relawan->fresh()->regency);
         $this->assertEqualsCanonicalizing([1, 3], $profile->skills()->pluck('skills.id')->all());
+    }
+
+    public function test_relawan_tanpa_profil_dapat_membuat_profil_baru(): void
+    {
+        $user = User::create([
+            'name' => 'Relawan Baru',
+            'email' => 'relawan.baru@resqhub.id',
+            'password' => 'password',
+            'role' => 'relawan',
+            'is_active' => true,
+        ]);
+
+        $this->actingAs($user);
+
+        Livewire::test(ProfileManager::class)
+            ->call('openProfile')
+            ->assertSee('Belum Ada Profil')
+            ->call('edit')
+            ->assertSee('Profil Keahlian')
+            ->set('regency', 'Kota Bandung')
+            ->set('radius_km', 12)
+            ->set('availability', 'siap')
+            ->set('selectedSkills', [1, 2])
+            ->call('save')
+            ->assertHasNoErrors()
+            ->assertSet('mode', 'view')
+            ->assertSee('Siap Ditugaskan');
+
+        $this->assertDatabaseHas('volunteer_profiles', [
+            'user_id' => $user->id,
+            'radius_km' => 12,
+            'availability' => 'siap',
+        ]);
+
+        $profile = $user->fresh()->volunteerProfile;
+        $this->assertEqualsCanonicalizing([1, 2], $profile->skills()->pluck('skills.id')->all());
     }
 
     public function test_keahlian_medis_wajib_mengisi_nomor_str(): void
@@ -121,6 +191,7 @@ class VolunteerProfileTest extends TestCase
             ->call('openProfile')
             ->call('requestDelete')
             ->assertSet('showDeleteModal', true)
+            ->assertSee('Hapus profil relawan?')
             ->call('deleteProfile')
             ->assertSet('showDeleteModal', false)
             ->assertSee('Profil relawan berhasil dihapus.');
