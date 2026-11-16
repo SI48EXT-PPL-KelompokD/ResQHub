@@ -259,9 +259,23 @@
                                         <p class="text-xs text-slate-500 mt-0.5 line-clamp-1">
                                             {{ $shelter->address }}
                                         </p>
-                                        <span class="inline-block text-[11px] text-slate-400 font-mono mt-0.5">
-                                            📍 {{ number_format($shelter->lat, 4) }}, {{ number_format($shelter->lng, 4) }}
-                                        </span>
+                                        <div class="flex flex-wrap items-center gap-2 mt-1">
+                                            <span class="inline-block text-[11px] text-slate-400 font-mono">
+                                                📍 {{ number_format($shelter->lat, 4) }}, {{ number_format($shelter->lng, 4) }}
+                                            </span>
+                                            <button
+                                                type="button"
+                                                wire:click="openDetailModal({{ $shelter->id }}, 'facilities')"
+                                                class="inline-flex items-center space-x-1 px-2 py-0.5 rounded-md text-[11px] font-semibold transition cursor-pointer {{ $shelter->needs_attention_facilities_count > 0 ? 'bg-amber-50 text-amber-700 border border-amber-200 hover:bg-amber-100' : 'bg-indigo-50 text-indigo-700 border border-indigo-200/80 hover:bg-indigo-100' }}"
+                                                title="Lihat & kelola fasilitas posko ini"
+                                            >
+                                                <span>🛠️</span>
+                                                <span>{{ $shelter->facilities->count() }} Fasilitas</span>
+                                                @if($shelter->needs_attention_facilities_count > 0)
+                                                    <span class="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse"></span>
+                                                @endif
+                                            </button>
+                                        </div>
                                     </div>
                                 </div>
                             </td>
@@ -382,11 +396,12 @@
                                         </button>
                                     @endif
 
-                                    <!-- Tombol Detail Posko -->
+                                    <!-- Tombol Detail & Fasilitas Posko (SCRUM-25) -->
                                     <button 
                                         type="button"
+                                        wire:click="openDetailModal({{ $shelter->id }}, 'facilities')"
                                         class="p-1.5 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition cursor-pointer"
-                                        title="Detail Posko"
+                                        title="Detail & Fasilitas Posko"
                                     >
                                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
@@ -1392,6 +1407,237 @@
                         </div>
                     @endif
                 </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Detail Posko & Tab Fasilitas (PBI-05 / SCRUM-25) -->
+    <div 
+        x-data="{ open: $wire.entangle('showDetailModal') }"
+        x-show="open"
+        x-cloak
+        @keydown.escape.window="open = false; $wire.closeDetailModal()"
+        class="fixed inset-0 z-50 overflow-y-auto"
+        role="dialog" 
+        aria-modal="true"
+        aria-labelledby="detail-modal-title"
+    >
+        <!-- Backdrop Blur -->
+        <div 
+            x-show="open"
+            x-transition:enter="transition ease-out duration-300"
+            x-transition:enter-start="opacity-0"
+            x-transition:enter-end="opacity-100"
+            x-transition:leave="transition ease-in duration-200"
+            x-transition:leave-start="opacity-100"
+            x-transition:leave-end="opacity-0"
+            class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm cursor-pointer" 
+            @click="open = false; $wire.closeDetailModal()"
+            aria-hidden="true"
+        ></div>
+
+        <!-- Centered Wrapper -->
+        <div class="min-h-full flex items-center justify-center p-4 sm:p-6 relative z-10">
+            <div 
+                x-show="open"
+                x-transition:enter="transition ease-out duration-300"
+                x-transition:enter-start="opacity-0 scale-95 translate-y-3"
+                x-transition:enter-end="opacity-100 scale-100 translate-y-0"
+                x-transition:leave="transition ease-in duration-200"
+                x-transition:leave-start="opacity-100 scale-100 translate-y-0"
+                x-transition:leave-end="opacity-0 scale-95 translate-y-3"
+                class="w-full max-w-3xl bg-white rounded-2xl text-left shadow-2xl border border-slate-200 overflow-hidden my-6"
+            >
+                @if($detailShelter)
+                    <!-- Modal Header -->
+                    <div class="bg-slate-50/90 px-6 py-4 border-b border-slate-200/80 flex items-start justify-between gap-4">
+                        <div class="flex items-start space-x-3">
+                            <div class="w-10 h-10 rounded-xl bg-blue-600 text-white flex items-center justify-center shrink-0 shadow-xs">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                                </svg>
+                            </div>
+                            <div>
+                                <div class="flex flex-wrap items-center gap-2">
+                                    <h3 class="text-base sm:text-lg font-bold text-slate-900 leading-snug" id="detail-modal-title">
+                                        {{ $detailShelter->name }}
+                                    </h3>
+                                    <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-semibold border {{ $detailShelter->capacity_badge_classes }}">
+                                        {{ $detailShelter->capacity_status_label }}
+                                    </span>
+                                </div>
+                                <p class="text-xs text-slate-500 mt-0.5">
+                                    {{ $detailShelter->disasterEvent?->name ?? 'Kejadian Bencana' }} &bull; Koordinator: <strong class="text-slate-700">{{ $detailShelter->coordinator?->name ?? '-' }}</strong>
+                                </p>
+                            </div>
+                        </div>
+
+                        <button 
+                            type="button" 
+                            @click="open = false; $wire.closeDetailModal()"
+                            class="p-1.5 text-slate-400 hover:text-slate-600 hover:bg-slate-200/70 rounded-xl transition cursor-pointer shrink-0"
+                            title="Tutup"
+                        >
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                            </svg>
+                        </button>
+                    </div>
+
+                    <!-- Tab Switcher Navigation -->
+                    <div class="px-6 pt-3 bg-white border-b border-slate-200 flex items-center space-x-6">
+                        <button
+                            type="button"
+                            wire:click="setDetailTab('facilities')"
+                            class="pb-3 text-xs sm:text-sm font-semibold border-b-2 transition inline-flex items-center space-x-2 cursor-pointer {{ $detailActiveTab === 'facilities' ? 'border-blue-600 text-blue-600' : 'border-transparent text-slate-500 hover:text-slate-800' }}"
+                        >
+                            <span>🛠️ Fasilitas Posko</span>
+                            <span class="px-2 py-0.5 rounded-full text-[11px] font-bold {{ $detailActiveTab === 'facilities' ? 'bg-blue-100 text-blue-700' : 'bg-slate-100 text-slate-600' }}">
+                                {{ $detailShelter->facilities->count() }}
+                            </span>
+                        </button>
+
+                        <button
+                            type="button"
+                            wire:click="setDetailTab('info')"
+                            class="pb-3 text-xs sm:text-sm font-semibold border-b-2 transition inline-flex items-center space-x-2 cursor-pointer {{ $detailActiveTab === 'info' ? 'border-blue-600 text-blue-600' : 'border-transparent text-slate-500 hover:text-slate-800' }}"
+                        >
+                            <span>📍 Profil & Lokasi Posko</span>
+                        </button>
+                    </div>
+
+                    <!-- Tab Content Body -->
+                    <div class="p-6 max-h-[65vh] overflow-y-auto bg-slate-50/40">
+                        @if($detailActiveTab === 'facilities')
+                            <!-- Ringkasan Kondisi Fasilitas -->
+                            @php
+                                $totalFac = $detailShelter->facilities->count();
+                                $goodFac = $detailShelter->facilities->where('condition', 'baik')->count();
+                                $minorFac = $detailShelter->facilities->where('condition', 'rusak_ringan')->count();
+                                $brokenFac = $detailShelter->facilities->where('condition', 'tidak_berfungsi')->count();
+                            @endphp
+
+                            <div class="grid grid-cols-3 gap-3 mb-5">
+                                <div class="bg-white p-3 rounded-xl border border-emerald-200/80 flex items-center justify-between">
+                                    <div>
+                                        <span class="text-[11px] font-semibold text-emerald-700 uppercase tracking-wider block">Baik</span>
+                                        <span class="text-lg font-bold text-slate-900">{{ $goodFac }}</span>
+                                    </div>
+                                    <span class="w-8 h-8 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center text-sm">✅</span>
+                                </div>
+                                <div class="bg-white p-3 rounded-xl border border-amber-200/80 flex items-center justify-between">
+                                    <div>
+                                        <span class="text-[11px] font-semibold text-amber-700 uppercase tracking-wider block">Rusak Ringan</span>
+                                        <span class="text-lg font-bold text-slate-900">{{ $minorFac }}</span>
+                                    </div>
+                                    <span class="w-8 h-8 rounded-lg bg-amber-50 text-amber-600 flex items-center justify-center text-sm">⚠️</span>
+                                </div>
+                                <div class="bg-white p-3 rounded-xl border border-red-200/80 flex items-center justify-between">
+                                    <div>
+                                        <span class="text-[11px] font-semibold text-red-700 uppercase tracking-wider block">Tidak Berfungsi</span>
+                                        <span class="text-lg font-bold text-slate-900">{{ $brokenFac }}</span>
+                                    </div>
+                                    <span class="w-8 h-8 rounded-lg bg-red-50 text-red-600 flex items-center justify-center text-sm">🚨</span>
+                                </div>
+                            </div>
+
+                            @if($totalFac > 0)
+                                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                                    @foreach($detailShelter->facilities as $facility)
+                                        <div class="bg-white rounded-xl border border-slate-200/90 p-4 shadow-2xs hover:shadow-sm transition flex flex-col justify-between space-y-3">
+                                            <div class="flex items-start justify-between gap-2">
+                                                <div class="flex items-center space-x-2.5">
+                                                    <div class="w-9 h-9 rounded-xl bg-slate-100 flex items-center justify-center text-lg shrink-0">
+                                                        {{ $facility->type_icon }}
+                                                    </div>
+                                                    <div>
+                                                        <h4 class="text-sm font-bold text-slate-900 leading-tight">
+                                                            {{ $facility->type_label }}
+                                                        </h4>
+                                                        <span class="text-[11px] text-slate-500">
+                                                            <strong class="text-slate-700">{{ $facility->units }}</strong> unit &bull; Kapasitas <strong class="text-slate-700">{{ number_format($facility->capacity) }}</strong> {{ $facility->capacity_unit }}
+                                                        </span>
+                                                    </div>
+                                                </div>
+
+                                                <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-semibold border shrink-0 {{ $facility->condition_badge_classes }}">
+                                                    <span class="w-1.5 h-1.5 rounded-full mr-1.5 {{ $facility->condition_dot_class }}"></span>
+                                                    {{ $facility->condition_label }}
+                                                </span>
+                                            </div>
+
+                                            @if($facility->note)
+                                                <p class="text-xs text-slate-600 bg-slate-50 rounded-lg px-3 py-2 border border-slate-100 leading-relaxed">
+                                                    {{ $facility->note }}
+                                                </p>
+                                            @endif
+                                        </div>
+                                    @endforeach
+                                </div>
+                            @else
+                                <div class="bg-white rounded-2xl border border-dashed border-slate-300 p-8 text-center">
+                                    <div class="w-12 h-12 rounded-2xl bg-slate-100 text-slate-400 flex items-center justify-center mx-auto text-xl mb-3">
+                                        🛠️
+                                    </div>
+                                    <h4 class="text-sm font-bold text-slate-800">Belum Ada Data Fasilitas Posko</h4>
+                                    <p class="text-xs text-slate-500 mt-1 max-w-sm mx-auto">
+                                        Posko ini belum memiliki catatan fasilitas (MCK, Dapur Umum, Pos Kesehatan, Listrik, Air Bersih, Ruang Laktasi, Area Ramah Anak).
+                                    </p>
+                                </div>
+                            @endif
+                        @else
+                            <!-- Tab Informasi & Lokasi Posko -->
+                            <div class="bg-white rounded-2xl border border-slate-200 p-5 space-y-4">
+                                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs sm:text-sm">
+                                    <div>
+                                        <span class="text-[11px] font-semibold text-slate-400 uppercase tracking-wider block">Alamat Lengkap</span>
+                                        <p class="text-slate-800 font-medium mt-0.5">{{ $detailShelter->address }}</p>
+                                    </div>
+                                    <div>
+                                        <span class="text-[11px] font-semibold text-slate-400 uppercase tracking-wider block">Kontak Narahubung</span>
+                                        <p class="text-slate-800 font-mono font-semibold mt-0.5">{{ $detailShelter->contact }}</p>
+                                    </div>
+                                    <div>
+                                        <span class="text-[11px] font-semibold text-slate-400 uppercase tracking-wider block">Titik Koordinat GPS</span>
+                                        <p class="text-slate-800 font-mono mt-0.5">{{ $detailShelter->lat }}, {{ $detailShelter->lng }}</p>
+                                        <a href="{{ $detailShelter->google_maps_url }}" target="_blank" class="inline-flex items-center space-x-1 text-xs font-semibold text-blue-600 hover:text-blue-800 mt-1">
+                                            <span>Buka di Google Maps</span>
+                                            <span>&rarr;</span>
+                                        </a>
+                                    </div>
+                                    <div>
+                                        <span class="text-[11px] font-semibold text-slate-400 uppercase tracking-wider block">Daya Tampung & Pengungsi</span>
+                                        <p class="text-slate-800 font-semibold mt-0.5">
+                                            {{ number_format($detailShelter->occupancy) }} / {{ number_format($detailShelter->capacity) }} jiwa ({{ $detailShelter->occupancy_percentage }}%)
+                                        </p>
+                                        <p class="text-xs text-slate-500">Sisa kuota: {{ number_format($detailShelter->remaining_capacity) }} jiwa</p>
+                                    </div>
+                                </div>
+
+                                @if($detailShelter->status === 'ditutup' && $detailShelter->close_reason)
+                                    <div class="p-3 rounded-xl bg-slate-100 border border-slate-200 text-xs text-slate-700">
+                                        <strong class="block text-slate-900 mb-0.5">Alasan Penutupan Posko:</strong>
+                                        {{ $detailShelter->close_reason }}
+                                    </div>
+                                @endif
+                            </div>
+                        @endif
+                    </div>
+
+                    <!-- Modal Footer -->
+                    <div class="bg-slate-50 px-6 py-3.5 border-t border-slate-200/80 flex items-center justify-between">
+                        <span class="text-[11px] text-slate-500">
+                            PBI-05 Modul B &bull; Kelayakan Fasilitas Posko
+                        </span>
+                        <button 
+                            type="button" 
+                            @click="open = false; $wire.closeDetailModal()"
+                            class="px-4 py-2 bg-slate-800 hover:bg-slate-900 text-white text-xs sm:text-sm font-semibold rounded-xl shadow-xs transition cursor-pointer"
+                        >
+                            Tutup
+                        </button>
+                    </div>
+                @endif
             </div>
         </div>
     </div>

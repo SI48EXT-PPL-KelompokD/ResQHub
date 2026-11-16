@@ -61,6 +61,30 @@ class Shelter extends Model
     }
 
     /**
+     * Jumlah fasilitas yang berstatus "Tidak Berfungsi" pada posko ini.
+     */
+    public function getBrokenFacilitiesCountAttribute(): int
+    {
+        if ($this->relationLoaded('facilities')) {
+            return $this->facilities->where('condition', 'tidak_berfungsi')->count();
+        }
+
+        return $this->facilities()->broken()->count();
+    }
+
+    /**
+     * Jumlah fasilitas yang perlu perhatian (Rusak Ringan / Tidak Berfungsi).
+     */
+    public function getNeedsAttentionFacilitiesCountAttribute(): int
+    {
+        if ($this->relationLoaded('facilities')) {
+            return $this->facilities->whereIn('condition', ['rusak_ringan', 'tidak_berfungsi'])->count();
+        }
+
+        return $this->facilities()->needsAttention()->count();
+    }
+
+    /**
      * Memeriksa apakah status posko dapat diubah menjadi "Ditutup".
      * Aturan bisnis PBI-04:
      * - Status "Ditutup" hanya dapat dipilih bila tidak ada pengungsi aktif (occupancy == 0).

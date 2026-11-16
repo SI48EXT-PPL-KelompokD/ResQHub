@@ -84,7 +84,7 @@ class ShelterSearch extends Component
 
     public function render()
     {
-        $query = Shelter::query()->with(['disasterEvent', 'coordinator']);
+        $query = Shelter::query()->with(['disasterEvent', 'coordinator', 'facilities']);
 
         // Filter status operasional posko
         if ($this->capacityFilter === 'ditutup') {

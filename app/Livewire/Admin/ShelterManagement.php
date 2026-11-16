@@ -45,6 +45,11 @@ class ShelterManagement extends Component
     public bool $deletingShelterCanBeDeleted = true;
     public array $deletingShelterBlockReasons = [];
 
+    // Modal state (Detail Posko & Tab Fasilitas - PBI-05 / SCRUM-25)
+    public bool $showDetailModal = false;
+    public ?int $detailShelterId = null;
+    public string $detailActiveTab = 'facilities'; // 'info' | 'facilities'
+
     // Modal state (Update Okupansi Pengungsi)
     public bool $showOccupancyModal = false;
     public ?int $selectedShelterId = null;
@@ -517,11 +522,59 @@ class ShelterManagement extends Component
         ];
     }
 
+    /**
+     * Buka modal detail posko beserta tab daftar fasilitas (PBI-05 / SCRUM-25).
+     */
+    public function openDetailModal(int $shelterId, string $tab = 'facilities'): void
+    {
+        $user = auth()->user();
+        $query = Shelter::query();
+        if (! $user->isAdmin()) {
+            $query->where('coordinator_id', $user->id);
+        }
+
+        $shelter = $query->findOrFail($shelterId);
+
+        $this->detailShelterId = $shelter->id;
+        $this->detailActiveTab = in_array($tab, ['info', 'facilities']) ? $tab : 'facilities';
+        $this->showDetailModal = true;
+    }
+
+    /**
+     * Ganti tab aktif pada modal detail posko.
+     */
+    public function setDetailTab(string $tab): void
+    {
+        $this->detailActiveTab = in_array($tab, ['info', 'facilities']) ? $tab : 'facilities';
+    }
+
+    /**
+     * Tutup modal detail posko.
+     */
+    public function closeDetailModal(): void
+    {
+        $this->showDetailModal = false;
+        $this->detailShelterId = null;
+    }
+
+    /**
+     * Ambil objek posko lengkap beserta fasilitas untuk modal detail.
+     */
+    public function getDetailShelterProperty(): ?Shelter
+    {
+        if (! $this->detailShelterId) {
+            return null;
+        }
+
+        return Shelter::with(['disasterEvent', 'coordinator', 'facilities'])
+            ->find($this->detailShelterId);
+    }
+
     public function render()
     {
         $user = auth()->user();
 
-        $query = Shelter::query()->with(['disasterEvent', 'coordinator']);
+        $query = Shelter::query()->with(['disasterEvent', 'coordinator', 'facilities']);
 
         // Jika bukan admin (koordinator posko), batasi hanya melihat posko kelolaan sendiri
         if (! $user->isAdmin()) {
@@ -581,9 +634,10 @@ class ShelterManagement extends Component
         $activeEvents = DisasterEvent::active()->orderBy('name')->get();
 
         return view('livewire.admin.shelter-management', [
-            'shelters'     => $shelters,
-            'activeEvents' => $activeEvents,
-            'stats'        => $stats,
+            'shelters'      => $shelters,
+            'activeEvents'  => $activeEvents,
+            'stats'         => $stats,
+            'detailShelter' => $this->detailShelter,
         ]);
     }
 }

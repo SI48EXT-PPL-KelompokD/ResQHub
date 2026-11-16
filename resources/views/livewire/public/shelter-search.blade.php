@@ -375,6 +375,29 @@
                                 </div>
                             </div>
 
+                            <!-- Ringkasan Fasilitas Posko (PBI-05 / SCRUM-25) -->
+                            <div class="pt-0.5">
+                                <span class="block text-[11px] font-semibold text-slate-500 uppercase tracking-wider mb-1.5">
+                                    Fasilitas Tersedia ({{ $shelter->facilities->count() }})
+                                </span>
+                                @if($shelter->facilities->isNotEmpty())
+                                    <div class="flex flex-wrap gap-1.5">
+                                        @foreach($shelter->facilities as $facility)
+                                            <span 
+                                                class="inline-flex items-center space-x-1 px-2 py-0.5 rounded-lg text-[11px] font-medium border {{ $facility->condition_badge_classes }}"
+                                                title="{{ $facility->type_label }} ({{ $facility->units }} unit) - Kondisi: {{ $facility->condition_label }}{{ $facility->note ? ' - ' . $facility->note : '' }}"
+                                            >
+                                                <span>{{ $facility->type_icon }}</span>
+                                                <span>{{ $facility->type_label }}</span>
+                                                <span class="opacity-75 text-[10px]">({{ $facility->condition_label }})</span>
+                                            </span>
+                                        @endforeach
+                                    </div>
+                                @else
+                                    <span class="text-[11px] text-slate-400 italic">Belum ada data fasilitas tercatat.</span>
+                                @endif
+                            </div>
+
                             <!-- Card Action Buttons -->
                             <div class="flex items-center justify-between pt-1 gap-2">
                                 <button 
