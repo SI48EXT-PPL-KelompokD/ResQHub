@@ -9,6 +9,8 @@ use App\Livewire\Report\CreateReport;
 use App\Livewire\Report\EditReport;
 use App\Livewire\Report\MyReports;
 use App\Livewire\Report\ShowReport;
+use App\Livewire\Report\VerificationQueue;
+use App\Livewire\Report\VerifyReport;
 
 // Root redirect
 Route::get('/', function () {
@@ -35,5 +37,11 @@ Route::middleware(['auth'])->prefix('admin')->name('admin.')->group(function () 
         Route::get('/laporan/buat', CreateReport::class)->name('reports.create');
         Route::get('/laporan/{report}', ShowReport::class)->name('reports.show');
         Route::get('/laporan/{report}/ubah', EditReport::class)->name('reports.edit');
+    });
+
+    // Modul A - Verifikasi Laporan Kejadian (PBI-01) untuk Admin Pusdalops
+    Route::middleware('role:admin')->group(function () {
+        Route::get('/verifikasi-laporan', VerificationQueue::class)->name('reports.verification');
+        Route::get('/verifikasi-laporan/{report}', VerifyReport::class)->name('reports.verify');
     });
 });

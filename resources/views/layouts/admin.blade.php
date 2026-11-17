@@ -186,15 +186,15 @@
                     <!-- Modul A: SOS Masuk & Laporan (Ivan) -->
                     @if (Auth::user()->canAccessModule('modul_a'))
                         <a 
-                            href="{{ Auth::user()->isWarga() ? route('admin.reports.index') : '#' }}" 
-                            @if (Auth::user()->isWarga()) wire:navigate @endif
+                            href="{{ Auth::user()->isWarga() ? route('admin.reports.index') : (Auth::user()->isAdmin() ? route('admin.reports.verification') : '#') }}" 
+                            @if (Auth::user()->isWarga() || Auth::user()->isAdmin()) wire:navigate @endif
                             class="flex items-center space-x-3 px-3 py-2.5 rounded-xl text-sm font-medium transition duration-150 group {{ request()->routeIs('admin.reports*') ? 'bg-blue-50 text-blue-700 font-semibold shadow-xs' : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900' }}"
                             title="Modul A - SOS & Laporan"
                         >
                             <svg class="w-5 h-5 text-rose-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
                             </svg>
-                            <span class="flex-1">{{ Auth::user()->isWarga() ? 'Kirim SOS & Lapor' : 'SOS Masuk' }}</span>
+                            <span class="flex-1">{{ Auth::user()->isWarga() ? 'Kirim SOS & Lapor' : (Auth::user()->isAdmin() ? 'Laporan & SOS Masuk' : 'SOS Masuk') }}</span>
                             <span class="text-xs bg-rose-100 text-rose-700 px-2 py-0.5 rounded-full font-bold">2 Baru</span>
                         </a>
                     @endif
