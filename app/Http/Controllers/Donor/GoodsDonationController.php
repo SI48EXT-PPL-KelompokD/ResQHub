@@ -36,7 +36,9 @@ class GoodsDonationController
     {
         Gate::authorize('create', GoodsDonation::class);
 
-        $need = AidNeed::query()->where('status', 'terbuka')->findOrFail($request->integer('aid_need'));
+        $need = $request->filled('aid_need')
+            ? AidNeed::query()->where('status', 'terbuka')->findOrFail($request->integer('aid_need'))
+            : AidNeed::query()->where('status', 'terbuka')->firstOrFail();
 
         return view('donor.goods-donations.create', [
             'need' => $need,

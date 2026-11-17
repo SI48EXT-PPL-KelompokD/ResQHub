@@ -2,10 +2,12 @@
 
 namespace App\Livewire\Admin;
 
-use Livewire\Component;
+use App\Models\GoodsDonation;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Livewire\Attributes\Layout;
 use Livewire\Attributes\Title;
-use Illuminate\Support\Facades\DB;
+use Livewire\Component;
 
 #[Layout('layouts.admin')]
 #[Title('Dashboard Pusdalops')]
@@ -64,6 +66,15 @@ class Dashboard extends Component
             ->where('status', 'aktif')
             ->first();
 
+        // 6. Riwayat Janji Donasi Barang (khusus Donatur)
+        $myGoodsDonations = Auth::user()?->isDonatur()
+            ? GoodsDonation::withDisplay()
+                ->ownedBy(Auth::user())
+                ->latest('goods_donations.id')
+                ->take(3)
+                ->get()
+            : collect();
+
         return view('livewire.admin.dashboard', [
             'totalCapacity' => $totalCapacity,
             'totalOccupancy' => $totalOccupancy,
@@ -75,6 +86,7 @@ class Dashboard extends Component
             'urgentNeeds' => $urgentNeeds,
             'lowStocks' => $lowStocks,
             'activeEvent' => $activeEvent,
+            'myGoodsDonations' => $myGoodsDonations,
         ]);
     }
 }

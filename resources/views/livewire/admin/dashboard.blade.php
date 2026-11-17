@@ -40,12 +40,17 @@
                     <span>Status: Siap Ditugaskan</span>
                 </span>
             @elseif (Auth::user()->isDonatur())
-                <button class="inline-flex items-center space-x-2 px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white text-xs sm:text-sm font-semibold rounded-xl shadow-xs transition duration-150">
+                <a href="{{ route('donor.goods-donations.index') }}"
+                   class="inline-flex items-center space-x-2 px-4 py-2 bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 text-xs sm:text-sm font-semibold rounded-xl shadow-xs transition duration-150">
+                    <span>Donasi Barang Saya</span>
+                </a>
+                <a href="#kebutuhan-mendesak"
+                   class="inline-flex items-center space-x-2 px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white text-xs sm:text-sm font-semibold rounded-xl shadow-xs transition duration-150">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
                     </svg>
                     <span>Salurkan Donasi</span>
-                </button>
+                </a>
             @elseif (Auth::user()->isNakes())
                 <span class="inline-flex items-center space-x-1.5 px-3 py-1.5 bg-teal-50 text-teal-700 border border-teal-200 rounded-xl text-xs font-semibold">
                     <span>Tim Medis Siaga Posko</span>
@@ -153,98 +158,156 @@
     <!-- Main Section: Grid 2 Columns (Left: SOS Table, Right: Urgent Needs & Map Preview) -->
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
 
-        <!-- Left 2 Cols: SOS Masuk Table -->
-        <div class="lg:col-span-2 bg-white rounded-2xl border border-slate-200/80 shadow-2xs overflow-hidden flex flex-col">
-            <div class="p-5 border-b border-slate-100 flex items-center justify-between">
-                <div>
-                    <h2 class="text-base font-bold text-slate-900 tracking-tight">SOS Masuk</h2>
-                    <p class="text-xs text-slate-500">Daftar permintaan darurat dari warga terdampak</p>
+        <!-- Left 2 Cols: SOS Masuk (Non-Donatur) / Stok Menipis (Donatur) -->
+        @if (Auth::user()->isDonatur())
+            <div class="lg:col-span-2 bg-white rounded-2xl border border-slate-200/80 shadow-2xs overflow-hidden flex flex-col self-start">
+                <div class="p-5 border-b border-slate-100 flex items-center justify-between">
+                    <div>
+                        <h2 class="text-base font-bold text-slate-900 tracking-tight">Stok Menipis</h2>
+                        <p class="text-xs text-slate-500">Barang logistik yang berada di bawah ambang batas minimum</p>
+                    </div>
+                    <a href="#kebutuhan-mendesak" class="text-xs font-semibold text-blue-600 hover:text-blue-700 hover:underline">
+                        Kebutuhan mendesak
+                    </a>
                 </div>
-                <a href="#" class="text-xs font-semibold text-blue-600 hover:text-blue-700 hover:underline">
-                    Lihat semua
-                </a>
-            </div>
 
-            <div class="overflow-x-auto flex-1">
-                <table class="w-full text-left text-xs sm:text-sm">
-                    <thead class="bg-slate-50/80 text-slate-500 text-[11px] font-semibold uppercase tracking-wider border-b border-slate-100">
-                        <tr>
-                            <th class="py-3 px-4">Waktu</th>
-                            <th class="py-3 px-4">Pemohon</th>
-                            <th class="py-3 px-4">Jenis</th>
-                            <th class="py-3 px-4 text-center">Orang</th>
-                            <th class="py-3 px-4">Status</th>
-                            <th class="py-3 px-4 text-right">Aksi</th>
-                        </tr>
-                    </thead>
-                    <tbody class="divide-y divide-slate-100">
-                        @forelse ($recentSos as $sos)
-                            <tr class="hover:bg-slate-50/60 transition">
-                                <td class="py-3 px-4 font-mono text-xs font-semibold text-slate-700">
-                                    {{ \Carbon\Carbon::parse($sos->created_at)->format('H.i') }}
-                                </td>
-                                <td class="py-3 px-4">
-                                    <span class="font-semibold text-slate-800 block">{{ $sos->requester_name }}</span>
-                                    <span class="text-[11px] text-slate-400 block truncate max-w-[180px]">{{ $sos->note }}</span>
-                                </td>
-                                <td class="py-3 px-4">
-                                    <span class="capitalize px-2 py-0.5 rounded-md font-medium text-xs bg-slate-100 text-slate-700">
-                                        {{ $sos->help_type }}
-                                    </span>
-                                </td>
-                                <td class="py-3 px-4 text-center font-semibold text-slate-700">
-                                    {{ $sos->people_count }}
-                                    @if ($sos->has_vulnerable)
-                                        <span class="block text-[10px] text-purple-600 font-medium">rentan</span>
-                                    @endif
-                                </td>
-                                <td class="py-3 px-4">
-                                    @if ($sos->status === 'baru')
-                                        <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-rose-50 text-rose-700 border border-rose-200/80">
-                                            <span class="w-1.5 h-1.5 rounded-full bg-rose-500 mr-1.5"></span>
-                                            Baru
-                                        </span>
-                                    @elseif ($sos->status === 'ditangani')
-                                        <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-blue-50 text-blue-700 border border-blue-200/80">
-                                            <span class="w-1.5 h-1.5 rounded-full bg-blue-500 mr-1.5"></span>
-                                            Ditangani
-                                        </span>
-                                    @else
-                                        <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200/80">
-                                            <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 mr-1.5"></span>
-                                            Selesai
-                                        </span>
-                                    @endif
-                                </td>
-                                <td class="py-3 px-4 text-right">
-                                    @if ($sos->status === 'baru')
-                                        <button class="px-2.5 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-medium rounded-lg shadow-2xs transition">
-                                            Buat Tugas
-                                        </button>
-                                    @else
-                                        <button class="px-2.5 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-medium rounded-lg transition">
-                                            Detail
-                                        </button>
-                                    @endif
-                                </td>
-                            </tr>
-                        @empty
+                <div class="overflow-x-auto flex-1">
+                    <table class="w-full text-left text-xs sm:text-sm">
+                        <thead class="bg-slate-50/80 text-slate-500 text-[11px] font-semibold uppercase tracking-wider border-b border-slate-100">
                             <tr>
-                                <td colspan="6" class="py-8 text-center text-slate-400 text-sm">
-                                    Belum ada permintaan darurat SOS saat ini.
-                                </td>
+                                <th class="py-3 px-4">Nama Barang</th>
+                                <th class="py-3 px-4">Posko</th>
+                                <th class="py-3 px-4 text-center">Sisa Stok</th>
+                                <th class="py-3 px-4 text-center">Ambang Batas</th>
+                                <th class="py-3 px-4">Estimasi Habis</th>
                             </tr>
-                        @endforelse
-                    </tbody>
-                </table>
+                        </thead>
+                        <tbody class="divide-y divide-slate-100">
+                            @forelse ($lowStocks as $stock)
+                                <tr class="hover:bg-slate-50/60 transition">
+                                    <td class="py-3 px-4 font-semibold text-slate-800">
+                                        {{ $stock->item_name }}
+                                        <span class="block text-[11px] text-slate-400 capitalize">{{ $stock->category }}</span>
+                                    </td>
+                                    <td class="py-3 px-4 text-slate-600">
+                                        {{ $stock->shelter_name }}
+                                    </td>
+                                    <td class="py-3 px-4 text-center font-bold text-rose-600">
+                                        {{ $stock->quantity }} {{ $stock->unit }}
+                                    </td>
+                                    <td class="py-3 px-4 text-center text-slate-500">
+                                        {{ $stock->min_threshold }} {{ $stock->unit }}
+                                    </td>
+                                    <td class="py-3 px-4">
+                                        <span class="px-2 py-0.5 rounded text-xs font-medium bg-amber-50 text-amber-700">
+                                            ~1,5 s.d. 2 hari
+                                        </span>
+                                    </td>
+                                </tr>
+                            @empty
+                                <tr>
+                                    <td colspan="5" class="py-8 text-center text-slate-400 text-xs">
+                                        Seluruh stok logistik masih berada di atas batas aman.
+                                    </td>
+                                </tr>
+                            @endforelse
+                        </tbody>
+                    </table>
+                </div>
             </div>
-        </div>
+        @else
+            <div class="lg:col-span-2 bg-white rounded-2xl border border-slate-200/80 shadow-2xs overflow-hidden flex flex-col">
+                <div class="p-5 border-b border-slate-100 flex items-center justify-between">
+                    <div>
+                        <h2 class="text-base font-bold text-slate-900 tracking-tight">SOS Masuk</h2>
+                        <p class="text-xs text-slate-500">Daftar permintaan darurat dari warga terdampak</p>
+                    </div>
+                    <a href="#" class="text-xs font-semibold text-blue-600 hover:text-blue-700 hover:underline">
+                        Lihat semua
+                    </a>
+                </div>
+
+                <div class="overflow-x-auto flex-1">
+                    <table class="w-full text-left text-xs sm:text-sm">
+                        <thead class="bg-slate-50/80 text-slate-500 text-[11px] font-semibold uppercase tracking-wider border-b border-slate-100">
+                            <tr>
+                                <th class="py-3 px-4">Waktu</th>
+                                <th class="py-3 px-4">Pemohon</th>
+                                <th class="py-3 px-4">Jenis</th>
+                                <th class="py-3 px-4 text-center">Orang</th>
+                                <th class="py-3 px-4">Status</th>
+                                <th class="py-3 px-4 text-right">Aksi</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-slate-100">
+                            @forelse ($recentSos as $sos)
+                                <tr class="hover:bg-slate-50/60 transition">
+                                    <td class="py-3 px-4 font-mono text-xs font-semibold text-slate-700">
+                                        {{ \Carbon\Carbon::parse($sos->created_at)->format('H.i') }}
+                                    </td>
+                                    <td class="py-3 px-4">
+                                        <span class="font-semibold text-slate-800 block">{{ $sos->requester_name }}</span>
+                                        <span class="text-[11px] text-slate-400 block truncate max-w-[180px]">{{ $sos->note }}</span>
+                                    </td>
+                                    <td class="py-3 px-4">
+                                        <span class="capitalize px-2 py-0.5 rounded-md font-medium text-xs bg-slate-100 text-slate-700">
+                                            {{ $sos->help_type }}
+                                        </span>
+                                    </td>
+                                    <td class="py-3 px-4 text-center font-semibold text-slate-700">
+                                        {{ $sos->people_count }}
+                                        @if ($sos->has_vulnerable)
+                                            <span class="block text-[10px] text-purple-600 font-medium">rentan</span>
+                                        @endif
+                                    </td>
+                                    <td class="py-3 px-4">
+                                        @if ($sos->status === 'baru')
+                                            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-rose-50 text-rose-700 border border-rose-200/80">
+                                                <span class="w-1.5 h-1.5 rounded-full bg-rose-500 mr-1.5"></span>
+                                                Baru
+                                            </span>
+                                        @elseif ($sos->status === 'ditangani')
+                                            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-blue-50 text-blue-700 border border-blue-200/80">
+                                                <span class="w-1.5 h-1.5 rounded-full bg-blue-500 mr-1.5"></span>
+                                                Ditangani
+                                            </span>
+                                        @else
+                                            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200/80">
+                                                <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 mr-1.5"></span>
+                                                Selesai
+                                            </span>
+                                        @endif
+                                    </td>
+                                    <td class="py-3 px-4 text-right">
+                                        @if ($sos->status === 'baru')
+                                            <button class="px-2.5 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-medium rounded-lg shadow-2xs transition">
+                                                Buat Tugas
+                                            </button>
+                                        @else
+                                            <button class="px-2.5 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-medium rounded-lg transition">
+                                                Detail
+                                            </button>
+                                        @endif
+                                    </td>
+                                </tr>
+                            @empty
+                                <tr>
+                                    <td colspan="6" class="py-8 text-center text-slate-400 text-sm">
+                                        Belum ada permintaan darurat SOS saat ini.
+                                    </td>
+                                </tr>
+                            @endforelse
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        @endif
 
         <!-- Right 1 Col: Kebutuhan Mendesak & Peta Posko -->
         <div class="space-y-6">
 
             <!-- Kebutuhan Mendesak Card -->
-            <div class="bg-white rounded-2xl border border-slate-200/80 shadow-2xs p-5">
+            <div id="kebutuhan-mendesak" class="bg-white rounded-2xl border border-slate-200/80 shadow-2xs p-5">
                 <div class="flex items-center justify-between mb-4">
                     <div>
                         <h2 class="text-base font-bold text-slate-900 tracking-tight">Kebutuhan Mendesak</h2>
@@ -260,6 +323,7 @@
                         @php
                             $fulfilledPct = $need->qty_needed > 0 ? min(100, round(($need->qty_fulfilled / $need->qty_needed) * 100)) : 0;
                             $pledgedPct = $need->qty_needed > 0 ? min(100, round((($need->qty_fulfilled + $need->qty_pledged) / $need->qty_needed) * 100)) : 0;
+                            $remaining = max(0, $need->qty_needed - $need->qty_pledged);
                         @endphp
                         <div class="p-3.5 rounded-xl bg-slate-50/70 border border-slate-100 hover:bg-slate-50 transition">
                             <div class="flex items-start justify-between">
@@ -287,12 +351,82 @@
                                     <div class="bg-blue-600 h-2 rounded-full absolute left-0" style="width: {{ $fulfilledPct }}%"></div>
                                 </div>
                             </div>
+
+                            @if (Auth::user()->isDonatur())
+                                <div class="mt-3">
+                                    @if ($remaining > 0)
+                                        <a href="{{ route('donor.goods-donations.create', ['aid_need' => $need->id]) }}"
+                                           class="inline-flex items-center px-3 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold transition">
+                                            Donasikan
+                                        </a>
+                                    @else
+                                        <span class="text-[11px] font-medium text-slate-400">Kuota dijanjikan penuh</span>
+                                    @endif
+                                </div>
+                            @endif
                         </div>
                     @empty
                         <p class="text-center py-4 text-xs text-slate-400">Tidak ada kebutuhan mendesak saat ini.</p>
                     @endforelse
                 </div>
             </div>
+
+            @if (Auth::user()->isDonatur())
+                <!-- Riwayat Donasi Barang Saya Card -->
+                <div class="bg-white rounded-2xl border border-slate-200/80 shadow-2xs p-5">
+                    <div class="flex items-center justify-between mb-4">
+                        <div>
+                            <h2 class="text-base font-bold text-slate-900 tracking-tight">Riwayat Donasi</h2>
+                            <p class="text-xs text-slate-500">Janji donasi barang terbaru Anda</p>
+                        </div>
+                        <a href="{{ route('donor.goods-donations.index') }}" class="text-xs font-semibold text-blue-600 hover:text-blue-700 hover:underline">
+                            Semua
+                        </a>
+                    </div>
+
+                    @php
+                        $donationBadges = [
+                            'dijanjikan' => 'bg-blue-100 text-blue-800',
+                            'diterima' => 'bg-green-100 text-green-800',
+                            'disalurkan' => 'bg-green-100 text-green-800',
+                            'dibatalkan' => 'bg-gray-100 text-gray-700',
+                        ];
+                    @endphp
+
+                    <div class="space-y-3">
+                        @forelse ($myGoodsDonations as $donation)
+                            <a href="{{ route('donor.goods-donations.show', $donation) }}"
+                               class="block p-3.5 rounded-xl bg-slate-50/70 border border-slate-100 hover:bg-slate-50 transition">
+                                <div class="flex items-start justify-between gap-2">
+                                    <p class="text-xs sm:text-sm font-semibold text-slate-900">
+                                        {{ $donation->code }} · {{ $donation->item_name }} {{ $donation->quantity }} {{ $donation->item_unit }}
+                                    </p>
+                                    <span class="shrink-0 rounded-md px-2 py-0.5 text-[11px] font-medium {{ $donationBadges[$donation->status->value] }}">
+                                        {{ $donation->status->label() }}
+                                    </span>
+                                </div>
+                                <p class="text-[11px] text-slate-500 mt-1">
+                                    @switch($donation->status->value)
+                                        @case('dijanjikan')
+                                            {{ $donation->shelter_name }} · perkiraan tiba {{ $donation->est_arrival->locale('id')->translatedFormat('j M') }}
+                                            @break
+                                        @case('diterima')
+                                            Diterima di {{ $donation->shelter_name }}
+                                            @break
+                                        @case('disalurkan')
+                                            Disalurkan dari {{ $donation->shelter_name }}
+                                            @break
+                                        @default
+                                            {{ Str::startsWith($donation->cancel_reason, 'Dibatalkan otomatis') ? $donation->cancel_reason : 'Dibatalkan: '.$donation->cancel_reason }}
+                                    @endswitch
+                                </p>
+                            </a>
+                        @empty
+                            <p class="text-center py-4 text-xs text-slate-400">Belum ada janji donasi.</p>
+                        @endforelse
+                    </div>
+                </div>
+            @endif
 
             <!-- Peta Posko & SOS Quick Preview -->
             <div class="bg-white rounded-2xl border border-slate-200/80 shadow-2xs p-5">
@@ -332,6 +466,7 @@
 
     </div>
 
+    @if (! Auth::user()->isDonatur())
     <!-- Bottom Section: Stok Menipis Table -->
     <div class="bg-white rounded-2xl border border-slate-200/80 shadow-2xs overflow-hidden">
         <div class="p-5 border-b border-slate-100 flex items-center justify-between">
@@ -394,5 +529,6 @@
             </table>
         </div>
     </div>
+    @endif
 
 </div>

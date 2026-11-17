@@ -126,15 +126,15 @@
                     <!-- Modul E & F: Penerimaan Donasi (Ariq & Arifin) -->
                     @if (Auth::user()->canAccessModule('modul_e'))
                         <a 
-                            href="#" 
-                            class="flex items-center space-x-3 px-3 py-2.5 rounded-xl text-sm font-medium text-slate-600 hover:bg-slate-50 hover:text-slate-900 transition duration-150 group"
-                            title="Modul E & F - Penerimaan Donasi"
+                            href="{{ Auth::user()->isDonatur() ? route('donor.goods-donations.index') : '#' }}" 
+                            class="flex items-center space-x-3 px-3 py-2.5 rounded-xl text-sm font-medium transition duration-150 group {{ request()->routeIs('donor.goods-donations.*') ? 'bg-blue-50 text-blue-700 font-semibold shadow-xs' : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900' }}"
+                            title="{{ Auth::user()->isDonatur() ? 'Modul E - Donasi Barang Saya' : 'Modul E & F - Penerimaan Donasi' }}"
                         >
-                            <svg class="w-5 h-5 text-slate-400 group-hover:text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <svg class="w-5 h-5 {{ request()->routeIs('donor.goods-donations.*') ? 'text-blue-600' : 'text-slate-400 group-hover:text-slate-600' }}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
                             </svg>
-                            <span class="flex-1">Penerimaan Donasi</span>
-                            <span class="text-[10px] bg-slate-100 text-slate-500 px-1.5 py-0.5 rounded font-mono">Modul E/F</span>
+                            <span class="flex-1">{{ Auth::user()->isDonatur() ? 'Donasi Barang Saya' : 'Penerimaan Donasi' }}</span>
+                            <span class="text-[10px] bg-slate-100 text-slate-500 px-1.5 py-0.5 rounded font-mono">{{ Auth::user()->isDonatur() ? 'Modul E' : 'Modul E/F' }}</span>
                         </a>
                     @endif
 
@@ -303,7 +303,8 @@
 
             <!-- Main Dynamic Page Slot -->
             <main class="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8">
-                {{ $slot }}
+                {{ $slot ?? '' }}
+                @yield('content')
             </main>
 
         </div>
