@@ -56,6 +56,7 @@
 
     <!-- Peta Sebaran per Status -->
     <section
+        wire:ignore
         class="bg-white rounded-2xl border border-slate-200/80 p-4 sm:p-5 space-y-3"
         x-data="{
             map: null,
@@ -122,7 +123,7 @@
                 <span class="inline-flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-rose-500"></span>Ditolak</span>
             </div>
         </div>
-        <div wire:ignore class="rounded-xl overflow-hidden border border-slate-200 bg-slate-100">
+        <div class="rounded-xl overflow-hidden border border-slate-200 bg-slate-100">
             <div x-ref="mapContainer" class="w-full" style="height: 300px; min-height: 300px;"></div>
         </div>
     </section>
