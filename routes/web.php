@@ -5,6 +5,7 @@ use App\Http\Controllers\Auth\LoginController;
 use App\Livewire\Auth\Register;
 use App\Livewire\Admin\Dashboard;
 use App\Livewire\Admin\UserManagement;
+use App\Http\Controllers\Donor\GoodsDonationController;
 use App\Livewire\Admin\DonationAccountManagement;
 
 // Root redirect
@@ -29,6 +30,12 @@ Route::middleware(['auth'])->prefix('admin')->name('admin.')->group(function () 
     Route::get('/donation-accounts', DonationAccountManagement::class)
         ->middleware('role:admin')
         ->name('donation-accounts');
+});
+
+// Donatur: janji donasi barang (PBI-13)
+Route::middleware(['auth', 'role:donatur'])->prefix('donor')->name('donor.')->group(function () {
+    Route::resource('goods-donations', GoodsDonationController::class)
+        ->parameters(['goods-donations' => 'goodsDonation']);
 });
 
 
