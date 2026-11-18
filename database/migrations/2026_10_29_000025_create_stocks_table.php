@@ -14,6 +14,7 @@ return new class extends Migration
             $table->foreignId('item_id')->constrained('items')->cascadeOnDelete();
             $table->integer('quantity')->default(0);
             $table->integer('min_threshold')->default(10);
+            $table->softDeletes();
             $table->timestamps();
 
             $table->unique(['shelter_id', 'item_id']);

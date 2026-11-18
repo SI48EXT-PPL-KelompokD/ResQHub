@@ -101,6 +101,11 @@ class User extends Authenticatable
         return $this->hasOne(VolunteerProfile::class);
     }
 
+    public function coordinatedShelters(): \Illuminate\Database\Eloquent\Relations\HasMany
+    {
+        return $this->hasMany(Shelter::class, 'coordinator_id');
+    }
+
     public function canAccessModule(string $module): bool
     {
         if ($this->isAdmin()) {
