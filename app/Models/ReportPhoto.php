@@ -4,7 +4,6 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Support\Facades\Storage;
 
 class ReportPhoto extends Model
 {
@@ -18,8 +17,12 @@ class ReportPhoto extends Model
         return $this->belongsTo(DisasterReport::class, 'disaster_report_id');
     }
 
+    /**
+     * URL foto mengikuti alamat yang sedang dibuka (bukan APP_URL),
+     * sama seperti foto fasilitas posko, agar tetap tampil saat diakses dari HP atau tunnel.
+     */
     public function getUrlAttribute(): string
     {
-        return Storage::disk('public')->url($this->path);
+        return asset('storage/'.ltrim($this->path, '/'));
     }
 }
