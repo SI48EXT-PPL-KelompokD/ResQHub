@@ -4,6 +4,41 @@
 @source '../../storage/framework/views/*.php';
 
 @theme {
-    --font-sans: 'Instrument Sans', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji',
+    --font-sans: 'Public Sans', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji',
         'Segoe UI Symbol', 'Noto Color Emoji';
+
+    /* Warna diambil dari logo ResQHub */
+    --color-brand-50: #eef3fe;
+    --color-brand-100: #dbe6fd;
+    --color-brand-600: #1756e3;
+    --color-brand-700: #1246bd;
+    --color-ink: #0f2a52;
+    --color-paper: #f6f5f1;
+    --color-line: #dedcd4;
+}
+
+@layer components {
+    .rq-label {
+        @apply mb-1.5 block text-sm font-semibold text-ink;
+    }
+
+    .rq-input {
+        @apply block h-11 w-full rounded-md border border-slate-300 bg-white px-3 text-[15px] text-ink placeholder:text-slate-400 focus:border-brand-600 focus:ring-2 focus:ring-brand-600/20 focus:outline-none;
+    }
+
+    .rq-error {
+        @apply mt-1.5 block text-sm text-red-700;
+    }
+
+    .rq-btn {
+        @apply inline-flex h-11 cursor-pointer items-center justify-center rounded-md bg-brand-600 px-5 whitespace-nowrap text-[15px] font-semibold text-white transition-colors hover:bg-brand-700 focus-visible:ring-2 focus-visible:ring-brand-600 focus-visible:ring-offset-2 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-60;
+    }
+
+    .rq-btn-outline {
+        @apply inline-flex h-11 cursor-pointer items-center justify-center rounded-md border border-ink/25 bg-white px-5 whitespace-nowrap text-[15px] font-semibold text-ink transition-colors hover:border-ink hover:bg-paper focus-visible:ring-2 focus-visible:ring-brand-600 focus-visible:ring-offset-2 focus-visible:outline-none;
+    }
+
+    .rq-link {
+        @apply font-semibold text-brand-600 underline decoration-brand-600/30 underline-offset-4 hover:text-brand-700 hover:decoration-brand-700;
+    }
 }
