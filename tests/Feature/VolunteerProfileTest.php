@@ -26,7 +26,21 @@ class VolunteerProfileTest extends TestCase
 
     private function relawanTanpaTugasAktif(): User
     {
-        return User::where('email', 'relawan.agus@resqhub.id')->firstOrFail();
+        $relawan = User::factory()->create([
+            'role' => 'relawan',
+            'regency' => 'Kabupaten Bandung',
+        ]);
+
+        $profile = $relawan->volunteerProfile()->create([
+            'domicile_lat' => -6.9915,
+            'domicile_lng' => 107.6300,
+            'radius_km' => 15,
+            'availability' => 'siap',
+        ]);
+
+        $profile->skills()->attach(7);
+
+        return $relawan;
     }
 
     public function test_dashboard_relawan_menampilkan_komponen_profil_keahlian(): void
