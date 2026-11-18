@@ -2,6 +2,9 @@
 
 namespace App\Providers;
 
+use App\Models\DonationAccount;
+use App\Policies\DonationAccountPolicy;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Event;
@@ -36,5 +39,7 @@ class AppServiceProvider extends ServiceProvider
                 }
             }
         });
+
+        Gate::policy(DonationAccount::class, DonationAccountPolicy::class);
     }
 }

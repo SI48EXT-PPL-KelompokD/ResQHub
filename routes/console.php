@@ -15,3 +15,5 @@ Artisan::command('warnings:expire', function (EarlyWarningService $service) {
 })->purpose('Tandai peringatan dini yang melewati masa berlaku sebagai kedaluwarsa');
 
 Schedule::command('warnings:expire')->everyFiveMinutes();
+
+Schedule::command('goods-donations:cancel-overdue')->dailyAt('01:00')->withoutOverlapping();
