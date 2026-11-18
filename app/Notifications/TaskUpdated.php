@@ -20,14 +20,21 @@ class TaskUpdated extends Notification
     public function toArray(object $notifiable): array
     {
         $cancelled = $this->task->status === 'dibatalkan';
+        $completed = $this->task->status === 'selesai';
 
         return [
-            'type' => $cancelled ? 'task_cancelled' : 'task_updated',
+            'type' => match (true) {
+                $cancelled => 'task_cancelled',
+                $completed => 'task_completed',
+                default => 'task_updated',
+            },
             'task_id' => $this->task->id,
             'title' => $this->task->title,
-            'message' => $cancelled
-                ? 'Tugas "'.$this->task->title.'" dibatalkan oleh koordinator.'
-                : 'Detail tugas "'.$this->task->title.'" berubah. Periksa deskripsi, lokasi, kuota, dan jadwal terbaru.',
+            'message' => match (true) {
+                $cancelled => 'Tugas "'.$this->task->title.'" dibatalkan oleh koordinator.',
+                $completed => 'Tugas "'.$this->task->title.'" sudah ditandai selesai. Terima kasih atas kontribusi Anda.',
+                default => 'Detail tugas "'.$this->task->title.'" berubah. Periksa deskripsi, lokasi, kuota, dan jadwal terbaru.',
+            },
             'start_at' => $this->task->start_at?->toIso8601String(),
             'end_at' => $this->task->end_at?->toIso8601String(),
         ];
