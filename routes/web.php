@@ -4,6 +4,7 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\HealthCheckController;
 use App\Http\Controllers\RefugeeController;
+use App\Http\Controllers\Admin\AidNeedController;
 use App\Livewire\Auth\Register;
 use App\Livewire\Admin\Dashboard;
 use App\Livewire\Admin\HealthCheckManagement;
@@ -17,6 +18,7 @@ use App\Livewire\Report\MyReports;
 use App\Livewire\Report\ShowReport;
 use App\Http\Controllers\Donor\GoodsDonationController;
 use App\Livewire\Admin\DonationAccountManagement;
+use App\Http\Controllers\Admin\ItemController;
 
 // Rute Publik (Warga & Pengunjung) - PBI-04 Pencarian Posko Terdekat (Haversine)
 Route::get('/posko', ShelterSearch::class)->name('public.shelters');
@@ -75,6 +77,21 @@ Route::middleware(['auth'])->prefix('admin')->name('admin.')->group(function () 
     Route::get('/donation-accounts', DonationAccountManagement::class)
         ->middleware('role:admin')
         ->name('donation-accounts');
+
+    // Modul D: Katalog barang (PBI-10) dan kebutuhan posko (PBI-11)
+    Route::get('/items/create', [ItemController::class, 'create'])->name('items.create');
+    Route::get('/items', [ItemController::class, 'index'])->name('items.index');
+    Route::post('/items', [ItemController::class, 'store'])->name('items.store');
+    Route::get('/items/{item}/edit', [ItemController::class, 'edit'])->name('items.edit');
+    Route::put('/items/{item}', [ItemController::class, 'update'])->name('items.update');
+    Route::delete('/items/{item}', [ItemController::class, 'destroy'])->name('items.destroy');
+    Route::patch('/items/{item}/activate', [ItemController::class, 'activate'])->name('items.activate');
+
+    Route::middleware(['role:koordinator'])->group(function () {
+        Route::resource('needs', AidNeedController::class)
+            ->except(['show'])
+            ->parameters(['needs' => 'aid_need']);
+    });
 });
 
 // Donatur: janji donasi barang (PBI-13)
@@ -83,4 +100,5 @@ Route::middleware(['auth', 'role:donatur'])->prefix('donor')->name('donor.')->gr
         ->parameters(['goods-donations' => 'goodsDonation']);
 });
 
-
+// Papan kebutuhan publik (PBI-11)
+Route::get('/needs', [AidNeedController::class, 'publicIndex'])->name('needs.public');
