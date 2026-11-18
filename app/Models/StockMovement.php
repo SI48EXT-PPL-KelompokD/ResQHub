@@ -63,3 +63,4 @@ class StockMovement extends Model
         return ($this->quantity > 0 ? '+' : '') . $this->quantity;
     }
 }
+

@@ -152,3 +152,4 @@ class StockService
         return (bool) $stock->delete();
     }
 }
+

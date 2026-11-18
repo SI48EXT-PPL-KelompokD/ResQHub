@@ -38,3 +38,4 @@ class Shelter extends Model
         return $this->hasMany(Distribution::class);
     }
 }
+

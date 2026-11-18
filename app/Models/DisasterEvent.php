@@ -17,3 +17,4 @@ class DisasterEvent extends Model
         return $this->hasMany(Shelter::class);
     }
 }
+

@@ -136,3 +136,4 @@ class Stock extends Model
         return $this->quantity == 0 && ! $this->hasOpenNeeds();
     }
 }
+
