@@ -8,6 +8,7 @@ use App\Models\DisasterReport;
 use App\Models\User;
 use App\Notifications\DisasterReportVerifiedNotification;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
@@ -64,16 +65,35 @@ class DisasterReportService
      */
     public function listForAdmin(array $filters = [], int $perPage = 10): LengthAwarePaginator
     {
-        return DisasterReport::query()
+        return $this->adminFilteredQuery($filters)
             ->with(['reporter', 'photos'])
-            ->when($filters['disaster_type'] ?? null, fn ($q, $type) => $q->where('disaster_type', $type))
-            ->when($filters['status'] ?? null, fn ($q, $status) => $q->where('status', $status))
-            ->when($filters['area'] ?? null, fn ($q, $area) => $q->where('address', 'like', '%'.$area.'%'))
-            ->when($filters['date_from'] ?? null, fn ($q, $date) => $q->whereDate('occurred_at', '>=', $date))
-            ->when($filters['date_to'] ?? null, fn ($q, $date) => $q->whereDate('occurred_at', '<=', $date))
             ->orderByRaw('case when status = ? then 0 else 1 end', [DisasterReport::STATUS_PENDING])
             ->latest()
             ->paginate($perPage);
+    }
+
+    /**
+     * AC 2: Titik laporan untuk peta sebaran per status, mengikuti filter yang sama dengan daftar admin.
+     *
+     * @param  array{disaster_type?: string|null, status?: string|null, area?: string|null, date_from?: string|null, date_to?: string|null}  $filters
+     * @return Collection<int, array{id: int, title: string, status: string, status_label: string, lat: float, lng: float}>
+     */
+    public function mapPointsForAdmin(array $filters = [], int $limit = 500): Collection
+    {
+        return $this->adminFilteredQuery($filters)
+            ->latest()
+            ->limit($limit)
+            ->get(['id', 'title', 'status', 'lat', 'lng'])
+            ->map(fn (DisasterReport $report) => [
+                'id' => $report->id,
+                'title' => $report->title,
+                'status' => $report->status,
+                'status_label' => $report->status_label,
+                'lat' => $report->lat,
+                'lng' => $report->lng,
+            ])
+            ->values()
+            ->toBase();
     }
 
     /**
@@ -253,6 +273,19 @@ class DisasterReportService
             + cos(deg2rad($lat1)) * cos(deg2rad($lat2)) * sin($dLng / 2) ** 2;
 
         return $earthRadiusKm * 2 * atan2(sqrt($a), sqrt(1 - $a));
+    }
+
+    /**
+     * @param  array<string, mixed>  $filters
+     */
+    private function adminFilteredQuery(array $filters): Builder
+    {
+        return DisasterReport::query()
+            ->when($filters['disaster_type'] ?? null, fn ($q, $type) => $q->where('disaster_type', $type))
+            ->when($filters['status'] ?? null, fn ($q, $status) => $q->where('status', $status))
+            ->when($filters['area'] ?? null, fn ($q, $area) => $q->where('address', 'like', '%'.$area.'%'))
+            ->when($filters['date_from'] ?? null, fn ($q, $date) => $q->whereDate('occurred_at', '>=', $date))
+            ->when($filters['date_to'] ?? null, fn ($q, $date) => $q->whereDate('occurred_at', '<=', $date));
     }
 
     private function ensureEditable(User $user, DisasterReport $report): void
