@@ -317,6 +317,77 @@ class ShelterFacilityTest extends TestCase
             ->assertHasErrors(['facility_photo']);
     }
 
+    public function test_coordinator_cannot_read_other_shelter_by_tampering_detail_state(): void
+    {
+        $siti = User::where('email', 'koordinator.siti@resqhub.id')->first();
+        $budi = User::where('email', 'koordinator.budi@resqhub.id')->first();
+        $budiShelter = Shelter::where('coordinator_id', $budi->id)->first();
+
+        Livewire::actingAs($siti)
+            ->test(ShelterManagement::class)
+            ->set('detailShelterId', $budiShelter->id)
+            ->set('showDetailModal', true)
+            ->assertDontSee('4 bilik pria, 4 bilik wanita');
+    }
+
+    public function test_removing_existing_photo_deletes_the_file(): void
+    {
+        Storage::fake('public');
+
+        $siti = User::where('email', 'koordinator.siti@resqhub.id')->first();
+        $shelter = Shelter::where('coordinator_id', $siti->id)->first();
+        $facility = $shelter->facilities()->where('type', 'mck')->first();
+        $path = UploadedFile::fake()->image('mck.jpg')->store('facilities', 'public');
+        $facility->update(['photo_path' => $path]);
+
+        Livewire::actingAs($siti)
+            ->test(ShelterManagement::class)
+            ->call('openDetailModal', $shelter->id, 'facilities')
+            ->call('openFacilityEditForm', $facility->id)
+            ->call('markRemoveExistingFacilityPhoto')
+            ->call('saveFacility')
+            ->assertHasNoErrors();
+
+        $this->assertNull($facility->fresh()->photo_path);
+        Storage::disk('public')->assertMissing($path);
+    }
+
+    public function test_deleting_a_shelter_also_removes_its_facility_photos(): void
+    {
+        Storage::fake('public');
+
+        $siti = User::where('email', 'koordinator.siti@resqhub.id')->first();
+        $shelter = Shelter::create([
+            'disaster_event_id' => DisasterEvent::where('status', 'aktif')->first()->id,
+            'coordinator_id'    => $siti->id,
+            'name'              => 'Posko Salah Input',
+            'address'           => 'Jl. Salah Input',
+            'lat'               => -6.98,
+            'lng'               => 107.62,
+            'capacity'          => 50,
+            'occupancy'         => 0,
+            'contact'           => '08123456789',
+            'status'            => 'aktif',
+        ]);
+        $path = UploadedFile::fake()->image('dapur.jpg')->store('facilities', 'public');
+        ShelterFacility::create([
+            'shelter_id' => $shelter->id,
+            'type'       => 'dapur_umum',
+            'units'      => 1,
+            'capacity'   => 10,
+            'condition'  => 'baik',
+            'photo_path' => $path,
+        ]);
+
+        Livewire::actingAs($siti)
+            ->test(ShelterManagement::class)
+            ->call('confirmDelete', $shelter->id)
+            ->call('destroy');
+
+        $this->assertDatabaseMissing('shelters', ['id' => $shelter->id]);
+        Storage::disk('public')->assertMissing($path);
+    }
+
     public function test_unauthorized_coordinator_cannot_save_facility_for_other_shelter(): void
     {
         $budi = User::where('email', 'koordinator.budi@resqhub.id')->first();
