@@ -27,8 +27,8 @@ class AuthAndDashboardTest extends TestCase
     {
         $response = $this->get('/register');
         $response->assertStatus(200);
-        $response->assertSee('Registrasi Akun Baru');
-        $response->assertSee('Pilih Peran / Hak Akses Akun');
+        $response->assertSee('Daftar sebagai apa?');
+        $response->assertDontSee('Admin Pusdalops</span>', false);
     }
 
     public function test_admin_can_access_dashboard_and_user_management(): void
@@ -49,8 +49,8 @@ class AuthAndDashboardTest extends TestCase
 
         $response = $this->actingAs($relawan)->get('/admin/dashboard');
         $response->assertStatus(200);
-        $response->assertSee('Tugas Relawan');
-        $response->assertSee('SOS Masuk');
+        $response->assertSee('Tugas Saya');
+        $response->assertDontSee('Modul G');
         $response->assertDontSee('Manajemen Pengguna');
     }
 
@@ -69,10 +69,11 @@ class AuthAndDashboardTest extends TestCase
         $response->assertRedirect(route('admin.dashboard'));
     }
 
-    public function test_authenticated_user_accessing_root_redirects_to_dashboard(): void
+    public function test_authenticated_user_can_open_public_home_with_dashboard_link(): void
     {
         $admin = User::where('role', 'admin')->first();
         $response = $this->actingAs($admin)->get('/');
-        $response->assertRedirect(route('admin.dashboard'));
+        $response->assertOk();
+        $response->assertSee('Buka Dashboard');
     }
 }

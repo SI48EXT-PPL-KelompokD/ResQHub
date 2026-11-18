@@ -34,7 +34,7 @@
     <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
             <h1 class="text-2xl font-bold tracking-tight text-slate-900">Rekening Donasi Resmi</h1>
-            <p class="text-sm text-slate-500 mt-0.5">PBI-14 · Rekening penyelenggara yang ditampilkan di halaman donasi dana</p>
+            <p class="text-sm text-slate-500 mt-0.5">Rekening penyelenggara yang ditampilkan di halaman donasi dana</p>
         </div>
 
         <button 

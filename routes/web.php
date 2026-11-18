@@ -2,6 +2,8 @@
 
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Auth\LoginController;
+use App\Http\Controllers\Auth\PasswordResetController;
+use App\Http\Controllers\HomeController;
 use App\Http\Controllers\HealthCheckController;
 use App\Http\Controllers\RefugeeController;
 use App\Http\Controllers\Admin\AidNeedController;
@@ -26,18 +28,18 @@ use App\Livewire\Admin\AidNeedForm;
 // Rute Publik (Warga & Pengunjung) - PBI-04 Pencarian Posko Terdekat (Haversine)
 Route::get('/posko', ShelterSearch::class)->name('public.shelters');
 
-// Root redirect
-Route::get('/', function () {
-    return auth()->check()
-        ? redirect()->route('admin.dashboard')
-        : redirect()->route('login');
-});
+// Beranda publik
+Route::get('/', [HomeController::class, 'index'])->name('home');
 
 // Autentikasi Tamu (Guest)
 Route::middleware(['guest'])->group(function () {
     Route::get('/login', [LoginController::class, 'showLoginForm'])->name('login');
     Route::post('/login', [LoginController::class, 'login']);
     Route::get('/register', Register::class)->name('register');
+    Route::get('/lupa-kata-sandi', [PasswordResetController::class, 'create'])->name('password.request');
+    Route::post('/lupa-kata-sandi', [PasswordResetController::class, 'store'])->middleware('throttle:6,1')->name('password.email');
+    Route::get('/atur-ulang-kata-sandi/{token}', [PasswordResetController::class, 'edit'])->name('password.reset');
+    Route::post('/atur-ulang-kata-sandi', [PasswordResetController::class, 'update'])->middleware('throttle:6,1')->name('password.update');
 });
 
 Route::post('/logout', [LoginController::class, 'logout'])->name('logout');

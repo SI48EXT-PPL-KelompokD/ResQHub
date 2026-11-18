@@ -240,8 +240,8 @@
         <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
             
             <!-- LEFT COLUMN: Sticky Interactive Leaflet Map (5 cols) -->
-            <div class="lg:col-span-5 lg:sticky lg:top-24 space-y-3">
-                <div class="bg-white rounded-2xl border border-slate-200 shadow-md overflow-hidden">
+            <div class="lg:col-span-5 lg:sticky lg:top-20 space-y-3">
+                <div class="bg-white rounded-2xl border border-slate-200 shadow-md overflow-hidden lg:flex lg:flex-col lg:h-[calc(100dvh-6rem)]">
                     
                     <!-- Map Header -->
                     <div class="p-3.5 bg-slate-50 border-b border-slate-200 flex items-center justify-between">
@@ -263,8 +263,8 @@
                     </div>
 
                     <!-- Leaflet Container -->
-                    <div wire:ignore class="relative">
-                        <div x-ref="leafletContainer" class="w-full h-80 sm:h-96 lg:h-[460px] z-0 bg-slate-100"></div>
+                    <div wire:ignore class="relative lg:flex-1 lg:min-h-0">
+                        <div x-ref="leafletContainer" class="w-full h-80 sm:h-96 lg:absolute lg:inset-0 lg:h-full z-0 bg-slate-100"></div>
                         
                         <!-- Floating Map Legend -->
                         <div class="absolute bottom-3 left-3 right-3 z-10 pointer-events-none">
@@ -570,7 +570,7 @@
                                     </div>
                                 </div>
                                 <div class="pt-2">
-                                    <a href="${this.escapeHtml(s.google_maps_url)}" target="_blank" rel="noopener noreferrer" class="block text-center py-1.5 px-3 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg text-xs shadow-xs">
+                                    <a href="${this.escapeHtml(s.google_maps_url)}" target="_blank" rel="noopener noreferrer" style="color: #ffffff" class="block text-center py-1.5 px-3 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg text-xs shadow-xs">
                                         Arahkan Navigasi ➔
                                     </a>
                                 </div>

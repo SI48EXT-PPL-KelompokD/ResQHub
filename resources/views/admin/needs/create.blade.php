@@ -1,7 +1,6 @@
 @component('layouts.admin')
     <div class="mx-auto max-w-3xl space-y-6">
         <div class="space-y-1">
-            <p class="text-sm font-medium text-blue-600">Modul D · Kebutuhan</p>
             <h1 class="text-2xl font-bold text-slate-900">Tambah Kebutuhan Bantuan</h1>
             <p class="text-sm text-slate-600">Pilih barang dari katalog dan jelaskan kebutuhan posko yang masih terbuka.</p>
         </div>
