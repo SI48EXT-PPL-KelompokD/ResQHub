@@ -13,7 +13,7 @@
         <div>
             <h1 class="text-xl font-bold tracking-tight text-slate-900">Tugas Relawan</h1>
             <p class="mt-0.5 text-xs text-slate-500">
-                PBI-20 &middot; Buat tugas, dapatkan rekomendasi relawan yang cocok, dan kirim penawaran
+                Buat tugas, dapatkan rekomendasi relawan yang cocok, dan kirim penawaran
             </p>
         </div>
 
