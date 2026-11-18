@@ -128,6 +128,14 @@ class Shelter extends Model
     }
 
     /**
+     * Stok logistik yang tersimpan di posko ini.
+     */
+    public function stocks(): HasMany
+    {
+        return $this->hasMany(Stock::class, 'shelter_id');
+    }
+
+    /**
      * Fasilitas yang tersedia di posko ini.
      */
     public function facilities(): HasMany

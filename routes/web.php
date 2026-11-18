@@ -20,13 +20,17 @@ use App\Http\Controllers\Donor\GoodsDonationController;
 use App\Livewire\Admin\DonationAccountManagement;
 use App\Http\Controllers\Admin\ItemController;
 use App\Livewire\Volunteer\TaskManager;
+use App\Livewire\Admin\StockManagement;
+use App\Livewire\Admin\AidNeedForm;
 
 // Rute Publik (Warga & Pengunjung) - PBI-04 Pencarian Posko Terdekat (Haversine)
 Route::get('/posko', ShelterSearch::class)->name('public.shelters');
 
 // Root redirect
 Route::get('/', function () {
-    return redirect()->route('login');
+    return auth()->check()
+        ? redirect()->route('admin.dashboard')
+        : redirect()->route('login');
 });
 
 // Autentikasi Tamu (Guest)
@@ -96,6 +100,12 @@ Route::middleware(['auth'])->prefix('admin')->name('admin.')->group(function () 
 
     // Modul G: Tugas relawan (PBI-20)
     Route::get('/tasks', TaskManager::class)->name('tasks');
+
+    // Modul F: Stok Logistik Posko (PBI-16)
+    Route::middleware(['role:admin,koordinator'])->group(function () {
+        Route::get('/stocks', StockManagement::class)->name('stocks.index');
+        Route::get('/aid-needs/create', AidNeedForm::class)->name('aid-needs.create');
+    });
 });
 
 // Donatur: janji donasi barang (PBI-13)

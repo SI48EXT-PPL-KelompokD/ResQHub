@@ -132,9 +132,9 @@
         </div>
 
         <!-- Card 4: Stok Menipis -->
-        <div class="bg-white rounded-2xl p-5 border border-slate-200/80 shadow-2xs hover:border-slate-300 transition">
+        <a href="{{ route('admin.stocks.index') }}" wire:navigate class="bg-white rounded-2xl p-5 border border-slate-200/80 shadow-2xs hover:border-amber-300 hover:bg-amber-50/10 transition block group cursor-pointer">
             <div class="flex items-center justify-between text-slate-500 mb-2">
-                <span class="text-xs font-semibold text-slate-500 uppercase tracking-wider">Stok Menipis</span>
+                <span class="text-xs font-semibold text-slate-500 group-hover:text-amber-700 uppercase tracking-wider">Stok Menipis</span>
                 <span class="p-1.5 rounded-lg bg-amber-50 text-amber-600">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
@@ -145,13 +145,13 @@
                 <span class="text-3xl font-extrabold text-amber-600 tracking-tight">{{ $lowStockCount }}</span>
                 <span class="text-sm font-medium text-slate-400">item darurat</span>
             </div>
-            <p class="mt-3 text-xs text-slate-500">
-                Estimasi habis dalam 2 hari ke depan
+            <p class="mt-3 text-xs text-slate-500 group-hover:text-amber-700">
+                Estimasi habis dalam 2 hari ke depan &rarr;
             </p>
             <div class="w-full bg-slate-100 rounded-full h-1.5 mt-2">
                 <div class="bg-amber-500 h-1.5 rounded-full" style="width: 45%"></div>
             </div>
-        </div>
+        </a>
 
     </div>
 
@@ -496,8 +496,8 @@
                 <h2 class="text-base font-bold text-slate-900 tracking-tight">Stok Menipis</h2>
                 <p class="text-xs text-slate-500">Barang logistik yang berada di bawah ambang batas minimum</p>
             </div>
-            <a href="#" class="text-xs font-semibold text-blue-600 hover:text-blue-700 hover:underline">
-                Stok & penyaluran
+            <a href="{{ route('admin.stocks.index') }}" wire:navigate class="text-xs font-semibold text-blue-600 hover:text-blue-700 hover:underline">
+                Buka Kelola Stok &rarr;
             </a>
         </div>
 
@@ -531,13 +531,17 @@
                             </td>
                             <td class="py-3 px-4">
                                 <span class="px-2 py-0.5 rounded text-xs font-medium bg-amber-50 text-amber-700">
-                                    ~1,5 s.d. 2 hari
+                                    Menipis (&lt; ambang)
                                 </span>
                             </td>
                             <td class="py-3 px-4 text-right">
-                                <button class="px-2.5 py-1.5 bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 text-xs font-medium rounded-lg shadow-2xs transition">
+                                <a 
+                                    href="{{ route('admin.aid-needs.create', ['item_id' => $stock->item_id, 'shelter_id' => $stock->shelter_id]) }}" 
+                                    wire:navigate
+                                    class="inline-block px-2.5 py-1.5 bg-white hover:bg-blue-50 text-blue-700 border border-blue-200 text-xs font-medium rounded-lg shadow-2xs transition"
+                                >
                                     Ajukan Kebutuhan
-                                </button>
+                                </a>
                             </td>
                         </tr>
                     @empty
