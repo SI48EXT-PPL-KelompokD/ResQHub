@@ -10,7 +10,9 @@ use App\Livewire\Admin\AidNeedForm;
 
 // Root redirect
 Route::get('/', function () {
-    return redirect()->route('login');
+    return auth()->check()
+        ? redirect()->route('admin.dashboard')
+        : redirect()->route('login');
 });
 
 // Autentikasi Tamu (Guest)
