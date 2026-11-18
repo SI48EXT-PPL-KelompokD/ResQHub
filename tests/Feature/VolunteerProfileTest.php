@@ -182,7 +182,31 @@ class VolunteerProfileTest extends TestCase
             ->assertHasErrors(['str_number' => 'required']);
     }
 
-    public function test_profil_tidak_dapat_dihapus_saat_ada_tugas_berjalan(): void
+    public function test_profil_dengan_tugas_berjalan_tetap_dapat_dihapus(): void
+    {
+        $relawan = $this->relawanAktif();
+        $this->actingAs($relawan);
+
+        $profileId = $relawan->volunteerProfile->id;
+
+        Livewire::test(ProfileManager::class)
+            ->call('openProfile')
+            ->call('requestDelete')
+            ->assertSet('showDeleteModal', true)
+            ->call('deleteProfile')
+            ->assertSet('showDeleteModal', false)
+            ->assertSee('Profil relawan berhasil dihapus.');
+
+        $this->assertSoftDeleted('volunteer_profiles', ['id' => $profileId]);
+
+        $this->assertDatabaseHas('task_assignments', [
+            'volunteer_task_id' => 1,
+            'volunteer_profile_id' => $profileId,
+            'status' => 'ditolak',
+        ]);
+    }
+
+    public function test_tugas_yang_kehilangan_relawan_kembali_terbuka(): void
     {
         $relawan = $this->relawanAktif();
         $this->actingAs($relawan);
@@ -190,10 +214,9 @@ class VolunteerProfileTest extends TestCase
         Livewire::test(ProfileManager::class)
             ->call('openProfile')
             ->call('requestDelete')
-            ->assertSet('showDeleteModal', false)
-            ->assertSee('tidak dapat dihapus');
+            ->call('deleteProfile');
 
-        $this->assertNotNull($relawan->fresh()->volunteerProfile);
+        $this->assertDatabaseHas('volunteer_tasks', ['id' => 1, 'status' => 'terbuka']);
     }
 
     public function test_profil_tanpa_tugas_berjalan_dapat_dihapus_soft_delete(): void

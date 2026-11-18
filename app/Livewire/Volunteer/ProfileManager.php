@@ -3,6 +3,7 @@
 namespace App\Livewire\Volunteer;
 
 use App\Models\Skill;
+use App\Models\TaskAssignment;
 use App\Models\VolunteerProfile;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
@@ -211,9 +212,9 @@ class ProfileManager extends Component
 
     public function requestDelete(): void
     {
-        if ($this->hasActiveTask()) {
+        if (! $this->profile()) {
             $this->showDeleteModal = false;
-            $this->notify('Profil tidak dapat dihapus selama masih ada tugas berjalan.', 'error');
+            $this->notify('Belum ada profil relawan untuk dihapus.', 'error');
 
             return;
         }
@@ -228,20 +229,56 @@ class ProfileManager extends Component
 
     public function deleteProfile(): void
     {
-        if ($this->hasActiveTask()) {
+        $profile = $this->profile();
+
+        if (! $profile) {
             $this->showDeleteModal = false;
-            $this->notify('Profil tidak dapat dihapus selama masih ada tugas berjalan.', 'error');
+            $this->notify('Belum ada profil relawan untuk dihapus.', 'error');
 
             return;
         }
 
-        $profile = $this->profile();
-        $profile?->delete();
+        $this->cancelActiveAssignments($profile);
+
+        $profile->delete();
 
         $this->showDeleteModal = false;
         $this->mode = 'view';
         $this->fillFromProfile();
         $this->notify('Profil relawan berhasil dihapus. Riwayat tugas tetap tersimpan.');
+    }
+
+    /**
+     * Batalkan penugasan aktif sebelum profil dihapus agar data tidak menggantung.
+     * Tugas yang kehilangan relawan otomatis kembali berstatus terbuka.
+     */
+    private function cancelActiveAssignments(VolunteerProfile $profile): void
+    {
+        $assignments = TaskAssignment::where('volunteer_profile_id', $profile->id)
+            ->whereIn('status', ['ditawarkan', 'diterima'])
+            ->with('volunteerTask')
+            ->get();
+
+        foreach ($assignments as $assignment) {
+            $assignment->update([
+                'status' => 'ditolak',
+                'reject_reason' => 'Profil relawan dihapus.',
+            ]);
+
+            $task = $assignment->volunteerTask;
+
+            if (! $task || $task->status !== 'berjalan') {
+                continue;
+            }
+
+            $accepted = $task->assignments()
+                ->whereIn('status', ['diterima', 'selesai'])
+                ->count();
+
+            if ($accepted < $task->quota) {
+                $task->update(['status' => 'terbuka']);
+            }
+        }
     }
 
     public function hasActiveTask(): bool
@@ -258,6 +295,22 @@ class ProfileManager extends Component
             ->whereIn('task_assignments.status', ['ditawarkan', 'diterima'])
             ->whereIn('volunteer_tasks.status', ['terbuka', 'berjalan'])
             ->exists();
+    }
+
+    public function activeTaskCount(): int
+    {
+        $profile = $this->profile();
+
+        if (! $profile) {
+            return 0;
+        }
+
+        return DB::table('task_assignments')
+            ->join('volunteer_tasks', 'volunteer_tasks.id', '=', 'task_assignments.volunteer_task_id')
+            ->where('task_assignments.volunteer_profile_id', $profile->id)
+            ->whereIn('task_assignments.status', ['ditawarkan', 'diterima'])
+            ->whereIn('volunteer_tasks.status', ['terbuka', 'berjalan'])
+            ->count();
     }
 
     public function taskHistory()
@@ -307,6 +360,7 @@ class ProfileManager extends Component
             'skills' => Skill::orderBy('id')->get(),
             'taskHistory' => $this->taskHistory(),
             'hasActiveTask' => $this->hasActiveTask(),
+            'activeTaskCount' => $this->activeTaskCount(),
             'medicalSelected' => $this->hasMedicalSkill(),
             'regencyOptions' => $regencyOptions,
         ]);
