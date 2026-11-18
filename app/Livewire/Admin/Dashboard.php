@@ -2,13 +2,14 @@
 
 namespace App\Livewire\Admin;
 
+use App\Models\GoodsDonation;
 use App\Models\User;
 use App\Services\HealthCheckService;
-use Livewire\Component;
-use Livewire\Attributes\Layout;
-use Livewire\Attributes\Title;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Livewire\Attributes\Layout;
+use Livewire\Attributes\Title;
+use Livewire\Component;
 
 #[Layout('layouts.admin')]
 #[Title('Dashboard Pusdalops')]
@@ -74,6 +75,15 @@ class Dashboard extends Component
             ? app(HealthCheckService::class)->getDailyTriageSummary($user)
             : null;
 
+        // 7. Riwayat Janji Donasi Barang (khusus Donatur)
+        $myGoodsDonations = Auth::user()?->isDonatur()
+            ? GoodsDonation::withDisplay()
+                ->ownedBy(Auth::user())
+                ->latest('goods_donations.id')
+                ->take(3)
+                ->get()
+            : collect();
+
         return view('livewire.admin.dashboard', [
             'triageSummary' => $triageSummary,
             'totalCapacity' => $totalCapacity,
@@ -86,6 +96,7 @@ class Dashboard extends Component
             'urgentNeeds' => $urgentNeeds,
             'lowStocks' => $lowStocks,
             'activeEvent' => $activeEvent,
+            'myGoodsDonations' => $myGoodsDonations,
         ]);
     }
 }

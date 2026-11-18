@@ -15,6 +15,8 @@ use App\Livewire\Report\CreateReport;
 use App\Livewire\Report\EditReport;
 use App\Livewire\Report\MyReports;
 use App\Livewire\Report\ShowReport;
+use App\Http\Controllers\Donor\GoodsDonationController;
+use App\Livewire\Admin\DonationAccountManagement;
 
 // Rute Publik (Warga & Pengunjung) - PBI-04 Pencarian Posko Terdekat (Haversine)
 Route::get('/posko', ShelterSearch::class)->name('public.shelters');
@@ -68,4 +70,17 @@ Route::middleware(['auth'])->prefix('admin')->name('admin.')->group(function () 
         Route::get('/laporan/{report}', ShowReport::class)->name('reports.show');
         Route::get('/laporan/{report}/ubah', EditReport::class)->name('reports.edit');
     });
+
+    //Donation Accounts
+    Route::get('/donation-accounts', DonationAccountManagement::class)
+        ->middleware('role:admin')
+        ->name('donation-accounts');
 });
+
+// Donatur: janji donasi barang (PBI-13)
+Route::middleware(['auth', 'role:donatur'])->prefix('donor')->name('donor.')->group(function () {
+    Route::resource('goods-donations', GoodsDonationController::class)
+        ->parameters(['goods-donations' => 'goodsDonation']);
+});
+
+
