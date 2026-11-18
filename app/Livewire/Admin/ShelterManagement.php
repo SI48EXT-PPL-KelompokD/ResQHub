@@ -4,7 +4,11 @@ namespace App\Livewire\Admin;
 
 use App\Models\DisasterEvent;
 use App\Models\Shelter;
+use App\Models\ShelterFacility;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Validation\Rule;
 use Livewire\Component;
+use Livewire\WithFileUploads;
 use Livewire\WithPagination;
 use Livewire\Attributes\Layout;
 use Livewire\Attributes\Title;
@@ -14,6 +18,7 @@ use Livewire\Attributes\Title;
 class ShelterManagement extends Component
 {
     use WithPagination;
+    use WithFileUploads;
 
     // Filter & Search
     public string $search = '';
@@ -49,6 +54,18 @@ class ShelterManagement extends Component
     public bool $showDetailModal = false;
     public ?int $detailShelterId = null;
     public string $detailActiveTab = 'facilities'; // 'info' | 'facilities'
+
+    // Form state (Tambah / Edit Kondisi & Foto Fasilitas Posko - PBI-05 / SCRUM-25)
+    public string $facilityFormMode = ''; // '' | 'create' | 'edit'
+    public ?int $editingFacilityId = null;
+    public string $facility_type = '';
+    public $facility_units = 1;
+    public $facility_capacity = 0;
+    public string $facility_condition = 'baik';
+    public string $facility_note = '';
+    public $facility_photo = null;
+    public ?string $existing_facility_photo_path = null;
+    public bool $remove_existing_facility_photo = false;
 
     // Modal state (Update Okupansi Pengungsi)
     public bool $showOccupancyModal = false;
@@ -523,9 +540,9 @@ class ShelterManagement extends Component
     }
 
     /**
-     * Buka modal detail posko beserta tab daftar fasilitas (PBI-05 / SCRUM-25).
+     * Ambil objek posko dengan pemeriksaan otorisasi koordinator pemilik atau admin.
      */
-    public function openDetailModal(int $shelterId, string $tab = 'facilities'): void
+    protected function findAuthorizedShelter(int $shelterId): Shelter
     {
         $user = auth()->user();
         $query = Shelter::query();
@@ -533,10 +550,19 @@ class ShelterManagement extends Component
             $query->where('coordinator_id', $user->id);
         }
 
-        $shelter = $query->findOrFail($shelterId);
+        return $query->findOrFail($shelterId);
+    }
+
+    /**
+     * Buka modal detail posko beserta tab daftar fasilitas (PBI-05 / SCRUM-25).
+     */
+    public function openDetailModal(int $shelterId, string $tab = 'facilities'): void
+    {
+        $shelter = $this->findAuthorizedShelter($shelterId);
 
         $this->detailShelterId = $shelter->id;
         $this->detailActiveTab = in_array($tab, ['info', 'facilities']) ? $tab : 'facilities';
+        $this->resetFacilityForm();
         $this->showDetailModal = true;
     }
 
@@ -546,6 +572,9 @@ class ShelterManagement extends Component
     public function setDetailTab(string $tab): void
     {
         $this->detailActiveTab = in_array($tab, ['info', 'facilities']) ? $tab : 'facilities';
+        if ($this->detailActiveTab !== 'facilities') {
+            $this->resetFacilityForm();
+        }
     }
 
     /**
@@ -555,6 +584,185 @@ class ShelterManagement extends Component
     {
         $this->showDetailModal = false;
         $this->detailShelterId = null;
+        $this->resetFacilityForm();
+    }
+
+    /**
+     * Reset seluruh state form fasilitas posko.
+     */
+    protected function resetFacilityForm(): void
+    {
+        $this->facilityFormMode = '';
+        $this->editingFacilityId = null;
+        $this->facility_type = '';
+        $this->facility_units = 1;
+        $this->facility_capacity = 0;
+        $this->facility_condition = 'baik';
+        $this->facility_note = '';
+        $this->facility_photo = null;
+        $this->existing_facility_photo_path = null;
+        $this->remove_existing_facility_photo = false;
+        $this->resetValidation([
+            'facility_type',
+            'facility_units',
+            'facility_capacity',
+            'facility_condition',
+            'facility_note',
+            'facility_photo',
+        ]);
+    }
+
+    /**
+     * Buka form tambah fasilitas baru pada posko yang sedang dibuka.
+     */
+    public function openFacilityCreateForm(): void
+    {
+        $shelter = $this->findAuthorizedShelter((int) $this->detailShelterId);
+        $this->resetFacilityForm();
+        $this->detailActiveTab = 'facilities';
+
+        // Pilih otomatis jenis fasilitas pertama yang belum terdaftar jika tersedia
+        $existingTypes = $shelter->facilities()->pluck('type')->toArray();
+        $availableTypes = array_diff(array_keys(ShelterFacility::TYPES), $existingTypes);
+        $this->facility_type = ! empty($availableTypes) ? (string) reset($availableTypes) : '';
+
+        $this->facilityFormMode = 'create';
+    }
+
+    /**
+     * Buka form edit kondisi, jumlah, dan foto bukti fasilitas posko.
+     */
+    public function openFacilityEditForm(int $facilityId): void
+    {
+        $shelter = $this->findAuthorizedShelter((int) $this->detailShelterId);
+        $facility = ShelterFacility::where('shelter_id', $shelter->id)->findOrFail($facilityId);
+
+        $this->resetFacilityForm();
+        $this->detailActiveTab = 'facilities';
+        $this->editingFacilityId = $facility->id;
+        $this->facility_type = $facility->type;
+        $this->facility_units = $facility->units;
+        $this->facility_capacity = $facility->capacity;
+        $this->facility_condition = $facility->condition;
+        $this->facility_note = (string) ($facility->note ?? '');
+        $this->existing_facility_photo_path = $facility->photo_path;
+        $this->facilityFormMode = 'edit';
+    }
+
+    /**
+     * Batalkan input tambah/edit fasilitas dan kembali ke daftar fasilitas.
+     */
+    public function cancelFacilityForm(): void
+    {
+        $this->resetFacilityForm();
+    }
+
+    /**
+     * Tandai foto fasilitas eksisting untuk dihapus saat disimpan.
+     */
+    public function markRemoveExistingFacilityPhoto(): void
+    {
+        $this->remove_existing_facility_photo = true;
+        $this->existing_facility_photo_path = null;
+    }
+
+    /**
+     * Simpan fasilitas baru atau perbarui kondisi & foto bukti fasilitas posko (PBI-05 / SCRUM-25).
+     */
+    public function saveFacility(): void
+    {
+        $shelter = $this->findAuthorizedShelter((int) $this->detailShelterId);
+        $isEdit = $this->facilityFormMode === 'edit' && $this->editingFacilityId !== null;
+
+        $uniqueRule = Rule::unique('shelter_facilities', 'type')
+            ->where(fn ($q) => $q->where('shelter_id', $shelter->id));
+
+        if ($isEdit) {
+            $uniqueRule->ignore($this->editingFacilityId);
+        }
+
+        $this->validate([
+            'facility_type' => [
+                'required',
+                Rule::in(array_keys(ShelterFacility::TYPES)),
+                $uniqueRule,
+            ],
+            'facility_units'     => 'required|integer|min:1|max:10000',
+            'facility_capacity'  => 'required|integer|min:0|max:100000',
+            'facility_condition' => ['required', Rule::in(array_keys(ShelterFacility::CONDITIONS))],
+            'facility_note'      => 'nullable|string|max:255',
+            'facility_photo'     => 'nullable|image|mimes:jpg,jpeg,png,webp|max:2048',
+        ], [
+            'facility_type.required'      => 'Pilih jenis fasilitas posko.',
+            'facility_type.in'            => 'Jenis fasilitas posko tidak valid.',
+            'facility_type.unique'        => 'Jenis fasilitas ini sudah terdaftar pada posko ini (tidak boleh duplikat).',
+            'facility_units.required'     => 'Jumlah unit fasilitas wajib diisi.',
+            'facility_units.integer'      => 'Jumlah unit fasilitas harus berupa bilangan bulat.',
+            'facility_units.min'          => 'Jumlah unit fasilitas minimal 1.',
+            'facility_capacity.required'  => 'Kapasitas layanan fasilitas wajib diisi.',
+            'facility_capacity.integer'   => 'Kapasitas layanan harus berupa bilangan bulat.',
+            'facility_capacity.min'       => 'Kapasitas layanan tidak boleh negatif.',
+            'facility_condition.required' => 'Pilih kondisi kelayakan fasilitas.',
+            'facility_condition.in'       => 'Kondisi fasilitas tidak valid.',
+            'facility_note.max'           => 'Catatan kondisi maksimal 255 karakter.',
+            'facility_photo.image'        => 'Bukti foto harus berupa file gambar yang valid.',
+            'facility_photo.mimes'        => 'Format foto harus JPG, JPEG, PNG, atau WebP.',
+            'facility_photo.max'          => 'Ukuran file foto bukti kondisi maksimal 2 MB.',
+        ]);
+
+        if ($isEdit) {
+            $facility = ShelterFacility::where('shelter_id', $shelter->id)
+                ->findOrFail($this->editingFacilityId);
+            $photoPath = $facility->photo_path;
+
+            if ($this->remove_existing_facility_photo && $photoPath) {
+                Storage::disk('public')->delete($photoPath);
+                $photoPath = null;
+            }
+
+            if ($this->facility_photo) {
+                if ($photoPath) {
+                    Storage::disk('public')->delete($photoPath);
+                }
+                $photoPath = $this->facility_photo->store('facilities', 'public');
+            }
+
+            $facility->update([
+                'type'       => $this->facility_type,
+                'units'      => (int) $this->facility_units,
+                'capacity'   => (int) $this->facility_capacity,
+                'condition'  => $this->facility_condition,
+                'note'       => trim($this->facility_note) !== '' ? trim($this->facility_note) : null,
+                'photo_path' => $photoPath,
+            ]);
+
+            $label = $facility->type_label;
+            $actionMessage = $this->facility_condition === 'tidak_berfungsi'
+                ? "Kondisi fasilitas '{$label}' diperbarui menjadi Tidak Berfungsi. Segera jadwalkan perbaikan!"
+                : "Data dan kondisi fasilitas '{$label}' berhasil diperbarui.";
+        } else {
+            $photoPath = $this->facility_photo
+                ? $this->facility_photo->store('facilities', 'public')
+                : null;
+
+            $facility = ShelterFacility::create([
+                'shelter_id' => $shelter->id,
+                'type'       => $this->facility_type,
+                'units'      => (int) $this->facility_units,
+                'capacity'   => (int) $this->facility_capacity,
+                'condition'  => $this->facility_condition,
+                'note'       => trim($this->facility_note) !== '' ? trim($this->facility_note) : null,
+                'photo_path' => $photoPath,
+            ]);
+
+            $actionMessage = "Fasilitas '{$facility->type_label}' berhasil ditambahkan ke posko '{$shelter->name}'.";
+        }
+
+        $this->resetFacilityForm();
+        $this->notification = [
+            'type'    => $facility->condition === 'tidak_berfungsi' ? 'warning' : 'success',
+            'message' => $actionMessage,
+        ];
     }
 
     /**

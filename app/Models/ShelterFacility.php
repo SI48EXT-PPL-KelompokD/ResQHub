@@ -141,6 +141,18 @@ class ShelterFacility extends Model
     }
 
     /**
+     * URL publik foto bukti kondisi fasilitas (jika tersedia).
+     */
+    public function getPhotoUrlAttribute(): ?string
+    {
+        if (! $this->photo_path) {
+            return null;
+        }
+
+        return asset('storage/' . ltrim($this->photo_path, '/'));
+    }
+
+    /**
      * Scope fasilitas yang berstatus "Tidak Berfungsi".
      */
     public function scopeBroken(Builder $query): Builder

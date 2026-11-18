@@ -12,13 +12,17 @@
             x-transition:leave="transition ease-in duration-200"
             x-transition:leave-start="opacity-100 translate-y-0 scale-100"
             x-transition:leave-end="opacity-0 translate-y-2 scale-95"
-            class="fixed top-20 right-6 z-[110] max-w-sm w-full p-4 rounded-xl shadow-lg border {{ $notification['type'] === 'error' ? 'bg-red-50 border-red-200 text-red-800' : 'bg-emerald-50 border-emerald-200 text-emerald-800' }}"
+            class="fixed top-20 right-6 z-[110] max-w-sm w-full p-4 rounded-xl shadow-lg border {{ $notification['type'] === 'error' ? 'bg-red-50 border-red-200 text-red-800' : ($notification['type'] === 'warning' ? 'bg-amber-50 border-amber-200 text-amber-800' : 'bg-emerald-50 border-emerald-200 text-emerald-800') }}"
         >
             <div class="flex items-start justify-between space-x-3">
                 <div class="flex items-center space-x-2">
                     @if ($notification['type'] === 'error')
                         <svg class="w-5 h-5 text-red-600 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                    @elseif ($notification['type'] === 'warning')
+                        <svg class="w-5 h-5 text-amber-600 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
                         </svg>
                     @else
                         <svg class="w-5 h-5 text-emerald-600 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1507,83 +1511,339 @@
                     </div>
 
                     <!-- Tab Content Body -->
-                    <div class="p-6 max-h-[65vh] overflow-y-auto bg-slate-50/40">
+                    <div class="p-5 sm:p-6 max-h-[72vh] overflow-y-auto bg-slate-50/40">
                         @if($detailActiveTab === 'facilities')
-                            <!-- Ringkasan Kondisi Fasilitas -->
                             @php
                                 $totalFac = $detailShelter->facilities->count();
                                 $goodFac = $detailShelter->facilities->where('condition', 'baik')->count();
                                 $minorFac = $detailShelter->facilities->where('condition', 'rusak_ringan')->count();
                                 $brokenFac = $detailShelter->facilities->where('condition', 'tidak_berfungsi')->count();
+                                $registeredTypes = $detailShelter->facilities->pluck('type')->toArray();
+                                $canAddMore = $totalFac < count(\App\Models\ShelterFacility::TYPES);
                             @endphp
 
-                            <div class="grid grid-cols-3 gap-3 mb-5">
-                                <div class="bg-white p-3 rounded-xl border border-emerald-200/80 flex items-center justify-between">
-                                    <div>
-                                        <span class="text-[11px] font-semibold text-emerald-700 uppercase tracking-wider block">Baik</span>
-                                        <span class="text-lg font-bold text-slate-900">{{ $goodFac }}</span>
+                            @if($facilityFormMode !== '')
+                                <!-- Form Tambah / Ubah Kondisi & Foto Fasilitas Posko (Selasa 17 Nov & Rabu 18 Nov - SCRUM-25) -->
+                                <form wire:submit.prevent="saveFacility" class="bg-white rounded-2xl border border-slate-200 shadow-xs p-4 sm:p-5 space-y-3">
+                                    <div class="flex items-center justify-between pb-3 border-b border-slate-100">
+                                        <div>
+                                            <h4 class="text-sm sm:text-base font-bold text-slate-900">
+                                                {{ $facilityFormMode === 'edit' ? '✏️ Perbarui Kondisi & Bukti Foto Fasilitas' : '➕ Tambah Fasilitas Posko Baru' }}
+                                            </h4>
+                                            <p class="text-[11px] text-slate-500 mt-0.5">
+                                                {{ $facilityFormMode === 'edit' ? 'Ubah jumlah unit, kondisi kelayakan, catatan, dan unggah foto bukti kondisi terbaru.' : 'Setiap jenis fasilitas hanya boleh didaftarkan satu kali per posko.' }}
+                                            </p>
+                                        </div>
+                                        <button
+                                            type="button"
+                                            wire:click="cancelFacilityForm"
+                                            class="text-xs font-semibold text-slate-500 hover:text-slate-800 px-2.5 py-1 rounded-lg hover:bg-slate-100 transition cursor-pointer"
+                                        >
+                                            &larr; Kembali ke Daftar
+                                        </button>
                                     </div>
-                                    <span class="w-8 h-8 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center text-sm">✅</span>
-                                </div>
-                                <div class="bg-white p-3 rounded-xl border border-amber-200/80 flex items-center justify-between">
-                                    <div>
-                                        <span class="text-[11px] font-semibold text-amber-700 uppercase tracking-wider block">Rusak Ringan</span>
-                                        <span class="text-lg font-bold text-slate-900">{{ $minorFac }}</span>
-                                    </div>
-                                    <span class="w-8 h-8 rounded-lg bg-amber-50 text-amber-600 flex items-center justify-center text-sm">⚠️</span>
-                                </div>
-                                <div class="bg-white p-3 rounded-xl border border-red-200/80 flex items-center justify-between">
-                                    <div>
-                                        <span class="text-[11px] font-semibold text-red-700 uppercase tracking-wider block">Tidak Berfungsi</span>
-                                        <span class="text-lg font-bold text-slate-900">{{ $brokenFac }}</span>
-                                    </div>
-                                    <span class="w-8 h-8 rounded-lg bg-red-50 text-red-600 flex items-center justify-center text-sm">🚨</span>
-                                </div>
-                            </div>
 
-                            @if($totalFac > 0)
-                                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
-                                    @foreach($detailShelter->facilities as $facility)
-                                        <div class="bg-white rounded-xl border border-slate-200/90 p-4 shadow-2xs hover:shadow-sm transition flex flex-col justify-between space-y-3">
-                                            <div class="flex items-start justify-between gap-2">
-                                                <div class="flex items-center space-x-2.5">
-                                                    <div class="w-9 h-9 rounded-xl bg-slate-100 flex items-center justify-center text-lg shrink-0">
-                                                        {{ $facility->type_icon }}
-                                                    </div>
-                                                    <div>
-                                                        <h4 class="text-sm font-bold text-slate-900 leading-tight">
-                                                            {{ $facility->type_label }}
-                                                        </h4>
-                                                        <span class="text-[11px] text-slate-500">
-                                                            <strong class="text-slate-700">{{ $facility->units }}</strong> unit &bull; Kapasitas <strong class="text-slate-700">{{ number_format($facility->capacity) }}</strong> {{ $facility->capacity_unit }}
-                                                        </span>
+                                    <!-- Jenis Fasilitas -->
+                                    <div>
+                                        <label class="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1.5">
+                                            Jenis Fasilitas <span class="text-red-500">*</span>
+                                        </label>
+                                        <select
+                                            wire:model="facility_type"
+                                            class="w-full py-2.5 px-3 text-xs sm:text-sm rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-600 bg-slate-50 focus:bg-white transition"
+                                        >
+                                            <option value="">-- Pilih Jenis Fasilitas --</option>
+                                            @foreach(\App\Models\ShelterFacility::TYPES as $typeKey => $typeLabel)
+                                                @php
+                                                    $alreadyExists = in_array($typeKey, $registeredTypes) && !($facilityFormMode === 'edit' && $facility_type === $typeKey);
+                                                @endphp
+                                                <option value="{{ $typeKey }}">
+                                                    {{ \App\Models\ShelterFacility::TYPE_ICONS[$typeKey] ?? '🛠️' }} {{ $typeLabel }}{{ $alreadyExists ? ' (Sudah Terdaftar)' : '' }}
+                                                </option>
+                                            @endforeach
+                                        </select>
+                                        @error('facility_type')
+                                            <span class="text-xs text-red-600 mt-1 block font-medium">{{ $message }}</span>
+                                        @enderror
+                                    </div>
+
+                                    <!-- Jumlah Unit & Kapasitas Layanan -->
+                                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                        <div>
+                                            <label class="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1.5">
+                                                Jumlah Unit <span class="text-red-500">*</span>
+                                            </label>
+                                            <input
+                                                type="number"
+                                                min="1"
+                                                wire:model="facility_units"
+                                                required
+                                                class="w-full py-2.5 px-3 text-xs sm:text-sm rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-600 transition"
+                                            />
+                                            @error('facility_units')
+                                                <span class="text-xs text-red-600 mt-1 block font-medium">{{ $message }}</span>
+                                            @enderror
+                                        </div>
+
+                                        <div>
+                                            <label class="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1.5">
+                                                Kapasitas Layanan <span class="text-red-500">*</span>
+                                            </label>
+                                            <input
+                                                type="number"
+                                                min="0"
+                                                wire:model="facility_capacity"
+                                                required
+                                                class="w-full py-2.5 px-3 text-xs sm:text-sm rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-600 transition"
+                                            />
+                                            <p class="text-[11px] text-slate-400 mt-0.5">Estimasi pengguna / porsi / liter yang dapat dilayani.</p>
+                                            @error('facility_capacity')
+                                                <span class="text-xs text-red-600 mt-1 block font-medium">{{ $message }}</span>
+                                            @enderror
+                                        </div>
+                                    </div>
+
+                                    <!-- Kondisi Fasilitas -->
+                                    <div>
+                                        <label class="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1.5">
+                                            Kondisi Kelayakan Saat Ini <span class="text-red-500">*</span>
+                                        </label>
+                                        <div class="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+                                            <label class="flex items-center space-x-2 p-2.5 rounded-xl border cursor-pointer transition {{ $facility_condition === 'baik' ? 'bg-emerald-50 border-emerald-300 text-emerald-900 font-semibold' : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50' }}">
+                                                <input type="radio" value="baik" wire:model.live="facility_condition" class="text-emerald-600 focus:ring-emerald-500">
+                                                <span class="text-xs">✅ Baik</span>
+                                            </label>
+                                            <label class="flex items-center space-x-2 p-2.5 rounded-xl border cursor-pointer transition {{ $facility_condition === 'rusak_ringan' ? 'bg-amber-50 border-amber-300 text-amber-900 font-semibold' : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50' }}">
+                                                <input type="radio" value="rusak_ringan" wire:model.live="facility_condition" class="text-amber-600 focus:ring-amber-500">
+                                                <span class="text-xs">⚠️ Rusak Ringan</span>
+                                            </label>
+                                            <label class="flex items-center space-x-2 p-2.5 rounded-xl border cursor-pointer transition {{ $facility_condition === 'tidak_berfungsi' ? 'bg-red-50 border-red-300 text-red-900 font-semibold' : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50' }}">
+                                                <input type="radio" value="tidak_berfungsi" wire:model.live="facility_condition" class="text-red-600 focus:ring-red-500">
+                                                <span class="text-xs">🚨 Tidak Berfungsi</span>
+                                            </label>
+                                        </div>
+                                        @if($facility_condition === 'tidak_berfungsi')
+                                            <p class="text-[11px] text-red-600 font-medium mt-1.5">
+                                                ⚠️ Status "Tidak Berfungsi" akan memunculkan penanda peringatan agar segera ditangani.
+                                            </p>
+                                        @endif
+                                        @error('facility_condition')
+                                            <span class="text-xs text-red-600 mt-1 block font-medium">{{ $message }}</span>
+                                        @enderror
+                                    </div>
+
+                                    <!-- Catatan Kondisi -->
+                                    <div>
+                                        <label class="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1.5">
+                                            Catatan Kondisi (Opsional)
+                                        </label>
+                                        <textarea
+                                            wire:model="facility_note"
+                                            rows="2"
+                                            placeholder="Contoh: 1 pompa air tersumbat atau kabel genset perlu diganti..."
+                                            class="w-full py-2 px-3 text-xs sm:text-sm rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-600 transition"
+                                        ></textarea>
+                                        @error('facility_note')
+                                            <span class="text-xs text-red-600 mt-1 block font-medium">{{ $message }}</span>
+                                        @enderror
+                                    </div>
+
+                                    <!-- Upload Bukti Foto Kondisi (Opsional - Rabu 18 Nov) -->
+                                    <div class="p-3.5 rounded-xl bg-slate-50/90 border border-slate-200/80 space-y-2.5">
+                                        <div class="flex items-center justify-between">
+                                            <label class="block text-xs font-semibold text-slate-700 uppercase tracking-wider">
+                                                Bukti Foto Kondisi (Opsional)
+                                            </label>
+                                            <span class="text-[11px] text-slate-400">JPG, PNG, WebP &bull; Maks 2 MB</span>
+                                        </div>
+
+                                        <input
+                                            type="file"
+                                            wire:model="facility_photo"
+                                            accept="image/jpeg,image/png,image/webp"
+                                            class="block w-full text-xs text-slate-600 file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 cursor-pointer"
+                                        />
+
+                                        <div wire:loading wire:target="facility_photo" class="text-xs text-blue-600 font-medium">
+                                            ⏳ Mengunggah pratinjau foto...
+                                        </div>
+
+                                        @if ($facility_photo)
+                                            @if (method_exists($facility_photo, 'isPreviewable') && $facility_photo->isPreviewable())
+                                                <div class="pt-1 flex items-center space-x-3">
+                                                    <img src="{{ $facility_photo->temporaryUrl() }}" alt="Preview Foto Baru" class="w-20 h-20 object-cover rounded-xl border border-slate-200 shadow-2xs" />
+                                                    <div class="text-xs text-slate-600">
+                                                        <span class="font-semibold text-emerald-700 block">Foto baru siap disimpan</span>
+                                                        <button type="button" wire:click="$set('facility_photo', null)" class="text-red-600 hover:underline text-[11px] mt-0.5 cursor-pointer">
+                                                            Hapus pilihan foto
+                                                        </button>
                                                     </div>
                                                 </div>
-
-                                                <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-semibold border shrink-0 {{ $facility->condition_badge_classes }}">
-                                                    <span class="w-1.5 h-1.5 rounded-full mr-1.5 {{ $facility->condition_dot_class }}"></span>
-                                                    {{ $facility->condition_label }}
-                                                </span>
-                                            </div>
-
-                                            @if($facility->note)
-                                                <p class="text-xs text-slate-600 bg-slate-50 rounded-lg px-3 py-2 border border-slate-100 leading-relaxed">
-                                                    {{ $facility->note }}
-                                                </p>
+                                            @else
+                                                <div class="pt-1 text-xs text-amber-700 font-medium">
+                                                    File dipilih: {{ $facility_photo->getClientOriginalName() }} (hanya format gambar JPG/PNG/WebP yang didukung).
+                                                </div>
                                             @endif
-                                        </div>
-                                    @endforeach
-                                </div>
-                            @else
-                                <div class="bg-white rounded-2xl border border-dashed border-slate-300 p-8 text-center">
-                                    <div class="w-12 h-12 rounded-2xl bg-slate-100 text-slate-400 flex items-center justify-center mx-auto text-xl mb-3">
-                                        🛠️
+                                        @elseif ($existing_facility_photo_path && !$remove_existing_facility_photo)
+                                            <div class="pt-1 flex items-center space-x-3">
+                                                <img src="{{ asset('storage/' . ltrim($existing_facility_photo_path, '/')) }}" alt="Foto Saat Ini" class="w-20 h-20 object-cover rounded-xl border border-slate-200 shadow-2xs" />
+                                                <div class="text-xs text-slate-600">
+                                                    <span class="font-semibold text-slate-800 block">Foto kondisi tersimpan</span>
+                                                    <button type="button" wire:click="markRemoveExistingFacilityPhoto" class="text-red-600 hover:underline text-[11px] mt-0.5 cursor-pointer">
+                                                        Hapus foto ini
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        @endif
+
+                                        @error('facility_photo')
+                                            <span class="text-xs text-red-600 mt-1 block font-medium">{{ $message }}</span>
+                                        @enderror
                                     </div>
-                                    <h4 class="text-sm font-bold text-slate-800">Belum Ada Data Fasilitas Posko</h4>
-                                    <p class="text-xs text-slate-500 mt-1 max-w-sm mx-auto">
-                                        Posko ini belum memiliki catatan fasilitas (MCK, Dapur Umum, Pos Kesehatan, Listrik, Air Bersih, Ruang Laktasi, Area Ramah Anak).
+
+                                    <!-- Form Actions -->
+                                    <div class="flex items-center justify-end space-x-2 pt-2 border-t border-slate-100">
+                                        <button
+                                            type="button"
+                                            wire:click="cancelFacilityForm"
+                                            class="px-4 py-2 text-xs sm:text-sm font-semibold text-slate-600 hover:text-slate-800 hover:bg-slate-100 rounded-xl transition cursor-pointer"
+                                        >
+                                            Batal
+                                        </button>
+                                        <button
+                                            type="submit"
+                                            wire:loading.attr="disabled"
+                                            wire:target="saveFacility,facility_photo"
+                                            class="inline-flex items-center space-x-1.5 px-5 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs sm:text-sm font-semibold rounded-xl shadow-xs transition cursor-pointer disabled:opacity-50"
+                                        >
+                                            <span wire:loading.remove wire:target="saveFacility">
+                                                {{ $facilityFormMode === 'edit' ? 'Simpan Perubahan Kondisi' : 'Simpan Fasilitas' }}
+                                            </span>
+                                            <span wire:loading wire:target="saveFacility">Menyimpan...</span>
+                                        </button>
+                                    </div>
+                                </form>
+                            @else
+                                <!-- Header Aksi + Ringkasan Kondisi Fasilitas -->
+                                <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-4">
+                                    <p class="text-xs text-slate-600">
+                                        Daftar kelayakan sarana &amp; prasarana pada posko ini.
                                     </p>
+                                    <button
+                                        type="button"
+                                        wire:click="openFacilityCreateForm"
+                                        @if(!$canAddMore) disabled title="Seluruh 7 jenis fasilitas sudah terdaftar" @endif
+                                        class="inline-flex items-center space-x-1.5 px-3.5 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold rounded-xl shadow-xs transition cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed self-start sm:self-auto"
+                                    >
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+                                        </svg>
+                                        <span>Tambah Fasilitas</span>
+                                    </button>
                                 </div>
+
+                                <div class="grid grid-cols-3 gap-3 mb-5">
+                                    <div class="bg-white p-3 rounded-xl border border-emerald-200/80 flex items-center justify-between">
+                                        <div>
+                                            <span class="text-[11px] font-semibold text-emerald-700 uppercase tracking-wider block">Baik</span>
+                                            <span class="text-lg font-bold text-slate-900">{{ $goodFac }}</span>
+                                        </div>
+                                        <span class="w-8 h-8 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center text-sm">✅</span>
+                                    </div>
+                                    <div class="bg-white p-3 rounded-xl border border-amber-200/80 flex items-center justify-between">
+                                        <div>
+                                            <span class="text-[11px] font-semibold text-amber-700 uppercase tracking-wider block">Rusak Ringan</span>
+                                            <span class="text-lg font-bold text-slate-900">{{ $minorFac }}</span>
+                                        </div>
+                                        <span class="w-8 h-8 rounded-lg bg-amber-50 text-amber-600 flex items-center justify-center text-sm">⚠️</span>
+                                    </div>
+                                    <div class="bg-white p-3 rounded-xl border border-red-200/80 flex items-center justify-between">
+                                        <div>
+                                            <span class="text-[11px] font-semibold text-red-700 uppercase tracking-wider block">Tidak Berfungsi</span>
+                                            <span class="text-lg font-bold text-slate-900">{{ $brokenFac }}</span>
+                                        </div>
+                                        <span class="w-8 h-8 rounded-lg bg-red-50 text-red-600 flex items-center justify-center text-sm">🚨</span>
+                                    </div>
+                                </div>
+
+                                @if($totalFac > 0)
+                                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                                        @foreach($detailShelter->facilities as $facility)
+                                            <div class="bg-white rounded-xl border p-4 shadow-2xs hover:shadow-sm transition flex flex-col justify-between space-y-3 {{ $facility->condition === 'tidak_berfungsi' ? 'border-red-300 ring-1 ring-red-100' : 'border-slate-200/90' }}">
+                                                <div class="flex items-start justify-between gap-2">
+                                                    <div class="flex items-center space-x-2.5">
+                                                        <div class="w-9 h-9 rounded-xl bg-slate-100 flex items-center justify-center text-lg shrink-0">
+                                                            {{ $facility->type_icon }}
+                                                        </div>
+                                                        <div>
+                                                            <h4 class="text-sm font-bold text-slate-900 leading-tight">
+                                                                {{ $facility->type_label }}
+                                                            </h4>
+                                                            <span class="text-[11px] text-slate-500">
+                                                                <strong class="text-slate-700">{{ $facility->units }}</strong> unit &bull; Kapasitas <strong class="text-slate-700">{{ number_format($facility->capacity) }}</strong> {{ $facility->capacity_unit }}
+                                                            </span>
+                                                        </div>
+                                                    </div>
+
+                                                    <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-semibold border shrink-0 {{ $facility->condition_badge_classes }}">
+                                                        <span class="w-1.5 h-1.5 rounded-full mr-1.5 {{ $facility->condition_dot_class }}"></span>
+                                                        {{ $facility->condition_label }}
+                                                    </span>
+                                                </div>
+
+                                                @if($facility->note)
+                                                    <p class="text-xs text-slate-600 bg-slate-50 rounded-lg px-3 py-2 border border-slate-100 leading-relaxed">
+                                                        {{ $facility->note }}
+                                                    </p>
+                                                @endif
+
+                                                @if($facility->photo_url)
+                                                    <div class="flex items-center space-x-2.5 bg-slate-50/80 p-2 rounded-xl border border-slate-100">
+                                                        <a href="{{ $facility->photo_url }}" target="_blank" rel="noopener noreferrer" class="shrink-0">
+                                                            <img src="{{ $facility->photo_url }}" alt="Bukti foto {{ $facility->type_label }}" class="w-12 h-12 object-cover rounded-lg border border-slate-200" />
+                                                        </a>
+                                                        <div class="text-[11px] text-slate-500 leading-snug">
+                                                            <span class="font-semibold text-slate-700 block">Bukti Foto Kondisi</span>
+                                                            <a href="{{ $facility->photo_url }}" target="_blank" rel="noopener noreferrer" class="text-blue-600 hover:underline">
+                                                                Lihat ukuran penuh &rarr;
+                                                            </a>
+                                                        </div>
+                                                    </div>
+                                                @endif
+
+                                                <div class="pt-1 border-t border-slate-100 flex items-center justify-end">
+                                                    <button
+                                                        type="button"
+                                                        wire:click="openFacilityEditForm({{ $facility->id }})"
+                                                        class="inline-flex items-center space-x-1 px-2.5 py-1 text-[11px] font-semibold text-amber-700 bg-amber-50 hover:bg-amber-100 border border-amber-200/80 rounded-lg transition cursor-pointer"
+                                                    >
+                                                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                                                        </svg>
+                                                        <span>Ubah Kondisi &amp; Foto</span>
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        @endforeach
+                                    </div>
+                                @else
+                                    <div class="bg-white rounded-2xl border border-dashed border-slate-300 p-8 text-center">
+                                        <div class="w-12 h-12 rounded-2xl bg-slate-100 text-slate-400 flex items-center justify-center mx-auto text-xl mb-3">
+                                            🛠️
+                                        </div>
+                                        <h4 class="text-sm font-bold text-slate-800">Belum Ada Data Fasilitas Posko</h4>
+                                        <p class="text-xs text-slate-500 mt-1 max-w-sm mx-auto mb-4">
+                                            Posko ini belum memiliki catatan fasilitas (MCK, Dapur Umum, Pos Kesehatan, Listrik, Air Bersih, Ruang Laktasi, Area Ramah Anak).
+                                        </p>
+                                        <button
+                                            type="button"
+                                            wire:click="openFacilityCreateForm"
+                                            class="inline-flex items-center space-x-1.5 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold rounded-xl shadow-xs transition cursor-pointer"
+                                        >
+                                            <span>+ Tambah Fasilitas Pertama</span>
+                                        </button>
+                                    </div>
+                                @endif
                             @endif
                         @else
                             <!-- Tab Informasi & Lokasi Posko -->
