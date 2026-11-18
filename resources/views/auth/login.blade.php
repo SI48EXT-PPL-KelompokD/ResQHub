@@ -97,6 +97,20 @@
         <div class="lg:w-1/2 flex items-center justify-center p-6 sm:p-12 bg-slate-50/80">
             <div class="w-full max-w-md">
 
+                <!-- Emergency Banner for Public Evacuation -->
+                <div class="mb-4 p-3.5 bg-blue-50/90 border border-blue-200/90 rounded-2xl flex items-center justify-between text-xs shadow-2xs">
+                    <div class="flex items-center space-x-2.5">
+                        <span class="text-xl">🚨</span>
+                        <div>
+                            <span class="font-bold text-blue-900 block">Butuh Posko Evakuasi Darurat?</span>
+                            <span class="text-blue-700">Cari posko terdekat langsung tanpa perlu login.</span>
+                        </div>
+                    </div>
+                    <a href="{{ route('public.shelters') }}" class="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-xl shrink-0 transition shadow-xs">
+                        Cari Posko &rarr;
+                    </a>
+                </div>
+
                 <!-- Main Card -->
                 <div class="bg-white rounded-2xl shadow-sm border border-slate-200/80 p-8 sm:p-10">
                     <div class="mb-8">
