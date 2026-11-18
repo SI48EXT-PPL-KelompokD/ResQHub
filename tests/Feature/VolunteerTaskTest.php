@@ -283,6 +283,29 @@ class VolunteerTaskTest extends TestCase
         $this->assertSame($before + 1, $relawan->notifications()->count());
     }
 
+    public function test_ubah_tugas_dapat_sekaligus_mengirim_penawaran_baru(): void
+    {
+        $relawan = $this->relawanBaru('Relawan Tambahan', -6.9900, 107.6200, 1);
+        $task = $this->tugasBaru(['quota' => 2, 'title' => 'Tugas Tambah Relawan']);
+
+        $this->actingAs($this->koordinator());
+
+        Livewire::test(TaskManager::class)
+            ->call('openEdit', $task->id)
+            ->assertSet('showForm', true)
+            ->set('skillId', 1)
+            ->call('toggleProfile', $relawan->id)
+            ->call('saveChanges')
+            ->assertHasNoErrors();
+
+        $this->assertDatabaseHas('task_assignments', [
+            'volunteer_task_id' => $task->id,
+            'volunteer_profile_id' => $relawan->id,
+            'status' => 'ditawarkan',
+        ]);
+        $this->assertCount(1, $relawan->user->notifications);
+    }
+
     public function test_relawan_menerima_penawaran_dan_tugas_menjadi_berjalan(): void
     {
         $relawan = $this->relawan();

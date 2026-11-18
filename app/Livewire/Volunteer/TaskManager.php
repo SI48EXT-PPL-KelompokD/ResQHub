@@ -364,9 +364,48 @@ class TaskManager extends Component
             ->get()
             ->each(fn (TaskAssignment $assignment) => $assignment->volunteerProfile?->user?->notify(new TaskUpdated($task)));
 
-        $this->notify("Perubahan tugas \"{$task->title}\" disimpan dan relawan yang ditugaskan diberi notifikasi.");
+        $offered = $this->sendOffersToSelected($task);
+
+        $this->notify($offered > 0
+            ? "Perubahan tugas \"{$task->title}\" disimpan, {$offered} penawaran baru dikirim, dan relawan yang ditugaskan diberi notifikasi."
+            : "Perubahan tugas \"{$task->title}\" disimpan dan relawan yang ditugaskan diberi notifikasi.");
 
         $this->closePanel();
+    }
+
+    private function sendOffersToSelected(VolunteerTask $task): int
+    {
+        if (empty($this->selectedProfiles)) {
+            return 0;
+        }
+
+        $taken = $task->assignments()
+            ->whereIn('status', ['ditawarkan', 'diterima', 'selesai'])
+            ->count();
+
+        $remaining = max(0, $task->quota - $taken);
+
+        if ($remaining === 0) {
+            return 0;
+        }
+
+        $profiles = VolunteerProfile::with('user')
+            ->whereIn('id', array_slice($this->selectedProfiles, 0, $remaining))
+            ->get();
+
+        foreach ($profiles as $profile) {
+            TaskAssignment::updateOrCreate(
+                [
+                    'volunteer_task_id' => $task->id,
+                    'volunteer_profile_id' => $profile->id,
+                ],
+                ['status' => 'ditawarkan', 'reject_reason' => null]
+            );
+
+            $profile->user?->notify(new TaskOfferReceived($task));
+        }
+
+        return $profiles->count();
     }
 
     public function cancelTask(int $taskId): void
