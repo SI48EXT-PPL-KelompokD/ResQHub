@@ -49,6 +49,13 @@ class TaskManager extends Component
 
     public array $selectedProfiles = [];
 
+    // Pembatalan tugas
+    public bool $showCancelModal = false;
+
+    public ?int $cancelTaskId = null;
+
+    public string $cancelReason = '';
+
     public ?string $notification = null;
 
     public string $notificationType = 'success';
@@ -519,28 +526,97 @@ class TaskManager extends Component
         $this->detailId = $task->id;
     }
 
+    public function requestCancel(int $taskId): void
+    {
+        if (! $this->isCoordinator()) {
+            return;
+        }
+
+        $task = VolunteerTask::find($taskId);
+
+        if (! $task) {
+            return;
+        }
+
+        if ($task->status !== 'terbuka') {
+            $this->notify('Hanya tugas yang belum berjalan yang dapat dibatalkan. Tugas berjalan diselesaikan lewat Selesaikan Tugas.', 'error');
+
+            return;
+        }
+
+        $this->cancelTaskId = $task->id;
+        $this->cancelReason = '';
+        $this->showCancelModal = true;
+        $this->resetValidation('cancelReason');
+    }
+
+    public function dismissCancelModal(): void
+    {
+        $this->showCancelModal = false;
+        $this->cancelTaskId = null;
+        $this->cancelReason = '';
+        $this->resetValidation('cancelReason');
+    }
+
     public function cancelTask(int $taskId): void
     {
         if (! $this->isCoordinator()) {
             return;
         }
 
-        $task = VolunteerTask::findOrFail($taskId);
-
-        if ($task->status === 'selesai') {
-            $this->notify('Tugas yang sudah selesai tidak dapat dibatalkan.', 'error');
+        if ($this->cancelTaskId !== $taskId) {
+            $this->requestCancel($taskId);
 
             return;
         }
 
-        $task->update(['status' => 'dibatalkan', 'cancel_reason' => 'Dibatalkan oleh koordinator.']);
+        $this->validate(
+            ['cancelReason' => ['required', 'string', 'min:5', 'max:255']],
+            [
+                'cancelReason.required' => 'Alasan pembatalan wajib diisi.',
+                'cancelReason.min' => 'Alasan pembatalan minimal 5 karakter.',
+                'cancelReason.max' => 'Alasan pembatalan maksimal 255 karakter.',
+            ]
+        );
 
-        $task->assignments()
-            ->with('volunteerProfile.user')
-            ->get()
-            ->each(fn (TaskAssignment $assignment) => $assignment->volunteerProfile?->user?->notify(new TaskUpdated($task)));
+        $task = VolunteerTask::findOrFail($taskId);
 
-        $this->notify("Tugas \"{$task->title}\" dibatalkan.");
+        if ($task->status !== 'terbuka') {
+            $this->notify('Tugas yang sudah berjalan atau sudah selesai tidak dapat dibatalkan.', 'error');
+            $this->dismissCancelModal();
+
+            return;
+        }
+
+        $reason = trim($this->cancelReason);
+
+        DB::transaction(function () use ($task, $reason) {
+            $task->update([
+                'status' => 'dibatalkan',
+                'cancel_reason' => $reason,
+            ]);
+
+            $assignments = $task->assignments()
+                ->with('volunteerProfile.user')
+                ->get();
+
+            foreach ($assignments as $assignment) {
+                if (in_array($assignment->status, ['ditolak', 'selesai'], true)) {
+                    continue;
+                }
+
+                $assignment->update([
+                    'status' => 'ditolak',
+                    'reject_reason' => 'Tugas dibatalkan: '.$reason,
+                ]);
+            }
+
+            $assignments
+                ->each(fn (TaskAssignment $assignment) => $assignment->volunteerProfile?->user?->notify(new TaskUpdated($task)));
+        });
+
+        $this->dismissCancelModal();
+        $this->notify("Tugas \"{$task->title}\" dibatalkan. Seluruh penawaran ikut dibatalkan dan relawan sudah diberi notifikasi.");
         $this->closePanel();
     }
 

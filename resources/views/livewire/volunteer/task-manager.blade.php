@@ -113,7 +113,7 @@
                                             @endif
 
                                             @if ($task->status === 'terbuka')
-                                                <button type="button" wire:click="cancelTask({{ $task->id }})"
+                                                <button type="button" wire:click="requestCancel({{ $task->id }})"
                                                         class="rounded-[4px] bg-rose-600 px-2.5 py-1 text-[10px] font-medium text-white transition hover:bg-rose-700">
                                                     Batalkan
                                                 </button>
@@ -383,6 +383,12 @@
                                         <dt class="text-slate-400">Lokasi</dt>
                                         <dd class="text-right font-medium text-slate-700">{{ $detailTask->lat }}, {{ $detailTask->lng }}</dd>
                                     </div>
+                                    @if ($detailTask->status === 'dibatalkan' && $detailTask->cancel_reason)
+                                        <div class="flex justify-between gap-3">
+                                            <dt class="text-slate-400">Alasan batal</dt>
+                                            <dd class="text-right font-medium text-rose-600">{{ $detailTask->cancel_reason }}</dd>
+                                        </div>
+                                    @endif
                                 </dl>
 
                                 <div class="overflow-hidden rounded-[4px] border border-slate-200">
@@ -421,11 +427,19 @@
                                 </div>
 
                                 @if ($this->isCoordinator() && in_array($detailTask->status, ['terbuka', 'berjalan'], true))
-                                    <button type="button" wire:click="completeTask({{ $detailTask->id }})"
-                                            wire:confirm="Tandai tugas ini selesai? Relawan yang ditugaskan akan menerima notifikasi."
-                                            class="w-full rounded-[4px] bg-emerald-600 py-2 text-[11px] font-medium text-white transition hover:bg-emerald-700">
-                                        Selesaikan Tugas
-                                    </button>
+                                    <div class="space-y-2">
+                                        <button type="button" wire:click="completeTask({{ $detailTask->id }})"
+                                                wire:confirm="Tandai tugas ini selesai? Relawan yang ditugaskan akan menerima notifikasi."
+                                                class="w-full rounded-[4px] bg-emerald-600 py-2 text-[11px] font-medium text-white transition hover:bg-emerald-700">
+                                            Selesaikan Tugas
+                                        </button>
+                                        @if ($detailTask->status === 'terbuka')
+                                            <button type="button" wire:click="requestCancel({{ $detailTask->id }})"
+                                                    class="w-full rounded-[4px] bg-rose-600 py-2 text-[11px] font-medium text-white transition hover:bg-rose-700">
+                                                Batalkan Tugas
+                                            </button>
+                                        @endif
+                                    </div>
                                 @endif
 
                                 <button type="button" wire:click="closePanel"
@@ -452,6 +466,39 @@
             </div>
         </div>
     </div>
+
+    {{-- Modal alasan pembatalan --}}
+    @if ($showCancelModal)
+        <div class="fixed inset-0 z-[70] flex items-center justify-center p-4" role="dialog" aria-modal="true">
+            <div class="absolute inset-0 bg-slate-900/50" wire:click="dismissCancelModal"></div>
+            <div class="relative w-full max-w-sm rounded-[4px] bg-white p-4 shadow-lg">
+                <h3 class="text-sm font-semibold text-slate-900">Batalkan tugas?</h3>
+                <p class="mt-2 text-[11px] leading-relaxed text-slate-400">
+                    Seluruh penawaran relawan pada tugas ini ikut dibatalkan dan setiap relawan menerima notifikasi
+                    berisi alasan pembatalan.
+                </p>
+
+                <div class="mt-3">
+                    <label class="mb-1 block text-[11px] font-semibold text-slate-700">Alasan pembatalan</label>
+                    <textarea wire:model="cancelReason" rows="3" maxlength="255"
+                              placeholder="Contoh: Posko sudah ditutup karena banjir surut."
+                              class="w-full rounded-[4px] border border-slate-300 px-2.5 py-1.5 text-[11px] text-slate-800 focus:border-blue-500 focus:outline-none"></textarea>
+                    @error('cancelReason')<p class="mt-1 text-xs text-rose-500">{{ $message }}</p>@enderror
+                </div>
+
+                <div class="mt-4 flex justify-end gap-2">
+                    <button type="button" wire:click="dismissCancelModal"
+                            class="rounded-[4px] border border-slate-300 bg-white px-3.5 py-1.5 text-[11px] font-medium text-slate-700 transition hover:bg-slate-50">
+                        Kembali
+                    </button>
+                    <button type="button" wire:click="cancelTask({{ $cancelTaskId }})" wire:loading.attr="disabled" wire:target="cancelTask"
+                            class="rounded-[4px] bg-rose-600 px-3.5 py-1.5 text-[11px] font-medium text-white transition hover:bg-rose-700 disabled:opacity-60">
+                        Batalkan Tugas
+                    </button>
+                </div>
+            </div>
+        </div>
+    @endif
 
     {{-- Notifikasi --}}
     @if ($notification)
