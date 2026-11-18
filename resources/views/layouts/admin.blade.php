@@ -156,11 +156,12 @@
                     <!-- Modul G: Tugas Relawan (Novendini) -->
                     @if (Auth::user()->canAccessModule('modul_g'))
                         <a 
-                            href="#" 
-                            class="flex items-center space-x-3 px-3 py-2.5 rounded-xl text-sm font-medium text-slate-600 hover:bg-slate-50 hover:text-slate-900 transition duration-150 group"
+                            href="{{ route('admin.tasks') }}" 
+                            wire:navigate
+                            class="flex items-center space-x-3 px-3 py-2.5 rounded-xl text-sm font-medium transition duration-150 {{ request()->routeIs('admin.tasks') ? 'bg-blue-50 text-blue-700 font-semibold shadow-xs' : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900' }} group"
                             title="Modul G - Tugas Relawan"
                         >
-                            <svg class="w-5 h-5 text-slate-400 group-hover:text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <svg class="w-5 h-5 {{ request()->routeIs('admin.tasks') ? 'text-blue-600' : 'text-slate-400 group-hover:text-slate-600' }}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
                             </svg>
                             <span class="flex-1">{{ Auth::user()->isRelawan() ? 'Tugas Saya' : 'Tugas Relawan' }}</span>
