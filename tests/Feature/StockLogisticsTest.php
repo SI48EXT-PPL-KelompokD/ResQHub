@@ -421,6 +421,37 @@ class StockLogisticsTest extends TestCase
         ]);
     }
 
+    public function test_can_open_pbi11_modal_and_submit_need(): void
+    {
+        $stock = Stock::create([
+            'shelter_id' => $this->shelter->id,
+            'item_id' => $this->riceItem->id,
+            'quantity' => 15,
+            'min_threshold' => 100,
+        ]);
+
+        Livewire::actingAs($this->coordinator)
+            ->test(StockManagement::class)
+            ->call('openNeedModal', $stock->id)
+            ->assertSet('showNeedModal', true)
+            ->assertSet('needItemId', $stock->item_id)
+            ->assertSet('needShelterId', $stock->shelter_id)
+            ->assertSee('Beras Medium')
+            ->set('needQty', 85)
+            ->set('needPriority', 'tinggi')
+            ->call('submitAidNeed')
+            ->assertHasNoErrors()
+            ->assertSet('showNeedModal', false);
+
+        $this->assertDatabaseHas('aid_needs', [
+            'shelter_id' => $stock->shelter_id,
+            'item_id' => $stock->item_id,
+            'qty_needed' => 85,
+            'priority' => 'tinggi',
+            'status' => 'terbuka',
+        ]);
+    }
+
     /**
      * 6. Form PBI-11 (Ajukan Kebutuhan) dengan barang terisi
      */

@@ -64,6 +64,8 @@ class StockManagement extends Component
     // Form: Ajukan Kebutuhan (PBI-11)
     public string|int $needShelterId = '';
     public string|int $needItemId = '';
+    public ?Item $needItem = null;
+    public ?Shelter $needShelter = null;
     public string|int $needQty = '';
     public string $needPriority = 'normal';
     public ?string $needDeadline = null;
@@ -388,6 +390,8 @@ class StockManagement extends Component
 
         $this->needShelterId = $stock->shelter_id;
         $this->needItemId = $stock->item_id;
+        $this->needItem = $stock->item;
+        $this->needShelter = $stock->shelter;
         $this->needQty = max(1, $stock->min_threshold - $stock->quantity);
         $this->needPriority = $stock->quantity <= 0 ? 'mendesak' : ($stock->isDepleted() ? 'tinggi' : 'normal');
         $this->needDeadline = Carbon::now()->addDays(3)->format('Y-m-d');
@@ -398,6 +402,8 @@ class StockManagement extends Component
     public function closeNeedModal(): void
     {
         $this->showNeedModal = false;
+        $this->needItem = null;
+        $this->needShelter = null;
         $this->resetValidation();
     }
 
@@ -513,3 +519,4 @@ class StockManagement extends Component
         ]);
     }
 }
+

@@ -877,23 +877,18 @@
                     </button>
                 </div>
 
-                @php
-                    $prefilledItem = Item::find($needItemId);
-                    $prefilledShelter = Shelter::find($needShelterId);
-                @endphp
-
                 <form wire:submit.prevent="submitAidNeed" class="mt-4 space-y-4">
                     
                     <!-- Info Barang & Posko Terisi -->
                     <div class="p-3.5 bg-blue-50/70 border border-blue-200/80 rounded-2xl flex items-center justify-between">
                         <div>
                             <span class="text-[10px] font-bold uppercase text-blue-600 tracking-wider">Barang Bantuan (Terisi Otomatis)</span>
-                            <h4 class="text-sm font-bold text-slate-900 mt-0.5">{{ $prefilledItem->name ?? 'Barang' }}</h4>
-                            <span class="text-xs text-slate-500">{{ $prefilledShelter->name ?? 'Posko' }} • {{ $prefilledItem->category_label ?? '' }}</span>
+                            <h4 class="text-sm font-bold text-slate-900 mt-0.5">{{ $needItem->name ?? 'Barang' }}</h4>
+                            <span class="text-xs text-slate-500">{{ $needShelter->name ?? 'Posko' }} • {{ $needItem->category_label ?? '' }}</span>
                         </div>
                         <div class="text-right">
                             <span class="text-xs font-semibold px-2 py-0.5 bg-white text-blue-700 rounded-md border border-blue-200">
-                                Satuan: {{ $prefilledItem->unit ?? 'Unit' }}
+                                Satuan: {{ $needItem->unit ?? 'Unit' }}
                             </span>
                         </div>
                     </div>
@@ -962,3 +957,4 @@
     @endif
 
 </div>
+
