@@ -64,6 +64,14 @@ class TaskManager extends Component
         if ($this->isCoordinator()) {
             $this->showForm = true;
         }
+
+        $sosId = (int) request()->query('sos');
+
+        if ($sosId > 0 && $this->isCoordinator()) {
+            $this->showForm = true;
+            $this->sosRequestId = $sosId;
+            $this->prefillFromSos();
+        }
     }
 
     public function isCoordinator(): bool
@@ -155,6 +163,11 @@ class TaskManager extends Component
     }
 
     public function updatedSosRequestId(): void
+    {
+        $this->prefillFromSos();
+    }
+
+    public function prefillFromSos(): void
     {
         if (! $this->sosRequestId) {
             return;

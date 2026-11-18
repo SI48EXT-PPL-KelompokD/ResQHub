@@ -306,6 +306,15 @@ class VolunteerTaskTest extends TestCase
         $this->assertCount(1, $relawan->user->notifications);
     }
 
+    public function test_tombol_buat_tugas_pada_sos_membuka_form_terisi(): void
+    {
+        $this->actingAs($this->koordinator())
+            ->get('/admin/tasks?sos=1')
+            ->assertStatus(200)
+            ->assertSee('Buat tugas')
+            ->assertSee('Evakuasi', false);
+    }
+
     public function test_relawan_menerima_penawaran_dan_tugas_menjadi_berjalan(): void
     {
         $relawan = $this->relawan();
