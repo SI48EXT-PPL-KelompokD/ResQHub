@@ -726,6 +726,57 @@ class ShelterManagementTest extends TestCase
             ->assertSee('href="' . route('admin.shelters') . '"', false);
     }
 
+    public function test_closing_error_disappears_after_switching_back_to_active(): void
+    {
+        $koordinator = User::where('role', 'koordinator')->first();
+        $shelter = $this->makeShelter($koordinator, ['occupancy' => 40]);
+
+        Livewire::actingAs($koordinator)
+            ->test(ShelterManagement::class)
+            ->call('openEditModal', $shelter->id)
+            ->set('edit_status', 'ditutup')
+            ->set('edit_close_reason', 'Operasional selesai.')
+            ->call('update')
+            ->assertHasErrors(['edit_status'])
+            ->set('edit_status', 'aktif')
+            ->assertHasNoErrors(['edit_status']);
+    }
+
+    public function test_delete_block_reasons_read_as_proper_sentences(): void
+    {
+        $koordinator = User::where('role', 'koordinator')->first();
+        $shelter = $this->makeShelter($koordinator, ['occupancy' => 25]);
+
+        Livewire::actingAs($koordinator)
+            ->test(ShelterManagement::class)
+            ->call('confirmDelete', $shelter->id)
+            ->assertSee('Masih menampung 25 jiwa pengungsi aktif.')
+            ->assertDontSee('Telah masih menampung');
+    }
+
+    public function test_empty_table_message_distinguishes_filters_from_no_data(): void
+    {
+        $koordinator = User::factory()->create(['role' => 'koordinator']);
+
+        $component = Livewire::actingAs($koordinator)
+            ->test(ShelterManagement::class)
+            ->assertSee('Belum ada posko evakuasi');
+
+        $component->set('search', 'posko yang tidak ada')
+            ->assertSee('Tidak ada posko yang sesuai filter')
+            ->assertDontSee('Belum ada posko evakuasi');
+    }
+
+    public function test_donor_sidebar_links_to_the_public_shelter_map(): void
+    {
+        $donatur = User::where('role', 'donatur')->first();
+
+        $this->actingAs($donatur)->get('/admin/dashboard')
+            ->assertOk()
+            ->assertSee('Peta Publik')
+            ->assertDontSee('href="' . route('admin.shelters') . '"', false);
+    }
+
     public function test_activity_log_seeder_keeps_every_row(): void
     {
         $this->assertDatabaseCount('activity_logs', 4);

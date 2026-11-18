@@ -330,6 +330,23 @@ class ShelterFacilityTest extends TestCase
             ->assertDontSee('4 bilik pria, 4 bilik wanita');
     }
 
+    public function test_photo_error_disappears_after_choosing_a_valid_file(): void
+    {
+        Storage::fake('public');
+
+        $siti = User::where('email', 'koordinator.siti@resqhub.id')->first();
+        $shelter = Shelter::where('coordinator_id', $siti->id)->first();
+
+        Livewire::actingAs($siti)
+            ->test(ShelterManagement::class)
+            ->call('openDetailModal', $shelter->id, 'facilities')
+            ->call('openFacilityCreateForm')
+            ->set('facility_photo', UploadedFile::fake()->create('dokumen.pdf', 100, 'application/pdf'))
+            ->assertHasErrors(['facility_photo'])
+            ->set('facility_photo', UploadedFile::fake()->image('bukti.jpg'))
+            ->assertHasNoErrors(['facility_photo']);
+    }
+
     public function test_removing_existing_photo_deletes_the_file(): void
     {
         Storage::fake('public');
