@@ -3,12 +3,13 @@
         userLat: @entangle('userLat'),
         userLng: @entangle('userLng'),
         userLocationName: @entangle('userLocationName'),
-        markers: {{ json_encode($mapMarkers) }},
         selectedId: @entangle('selectedShelterId')
     })"
+    data-markers="{{ $mapMarkers->toJson() }}"
     x-init="initMap()"
     @user-location-updated.window="onUserLocationUpdated($event.detail)"
     @focus-shelter-marker.window="focusMarker($event.detail)"
+    @shelter-markers-updated.window="onMarkersUpdated($event.detail.markers)"
     class="space-y-6 pb-12"
 >
     <!-- Top Hero & Search Bar -->
@@ -361,9 +362,9 @@
                                             ⛔ <strong class="text-red-700 font-semibold">Kapasitas Penuh</strong> (0 jiwa tersedia)
                                         @endif
                                     </span>
-                                    @if($shelter->contact)
-                                        <a 
-                                            href="tel:{{ $shelter->contact }}" 
+                                    @if($shelter->contact_phone)
+                                        <a
+                                            href="tel:{{ $shelter->contact_phone }}"
                                             class="inline-flex items-center space-x-1 text-blue-600 hover:text-blue-800 font-semibold"
                                         >
                                             <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -371,6 +372,8 @@
                                             </svg>
                                             <span>{{ $shelter->contact }}</span>
                                         </a>
+                                    @elseif($shelter->contact)
+                                        <span class="font-semibold text-slate-600">{{ $shelter->contact }}</span>
                                     @endif
                                 </div>
                             </div>
@@ -466,7 +469,7 @@
                 userLat: config.userLat,
                 userLng: config.userLng,
                 userLocationName: config.userLocationName,
-                markersData: config.markers,
+                markersData: [],
                 selectedId: config.selectedId,
                 map: null,
                 leafletMarkers: {},
@@ -474,7 +477,15 @@
                 isLocating: false,
                 searchLocationQuery: '',
 
+                // Data posko berasal dari input pengguna, wajib di-escape sebelum masuk popup HTML Leaflet
+                escapeHtml(value) {
+                    const replacements = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' };
+                    return String(value ?? '').replace(/[&<>"']/g, (char) => replacements[char]);
+                },
+
                 initMap() {
+                    this.markersData = JSON.parse(this.$root.dataset.markers || '[]');
+
                     this.$nextTick(() => {
                         if (!this.$refs.leafletContainer || typeof L === 'undefined') return;
 
@@ -514,7 +525,7 @@
                         .bindPopup(`
                             <div class="p-2 text-xs">
                                 <strong class="text-blue-700 block">📍 Posisi Acuan Anda</strong>
-                                <span class="text-slate-600">${this.userLocationName}</span>
+                                <span class="text-slate-600">${this.escapeHtml(this.userLocationName)}</span>
                             </div>
                         `);
 
@@ -541,13 +552,13 @@
 
                         const popupHtml = `
                             <div class="p-3 text-xs max-w-xs space-y-1.5">
-                                <span class="px-2 py-0.5 rounded text-[10px] font-bold ${s.badge_classes}">${s.status_label}</span>
-                                <h4 class="font-bold text-sm text-slate-900 leading-snug mt-1">${s.name}</h4>
-                                <p class="text-slate-500 text-[11px]">${s.address}</p>
+                                <span class="px-2 py-0.5 rounded text-[10px] font-bold ${this.escapeHtml(s.badge_classes)}">${this.escapeHtml(s.status_label)}</span>
+                                <h4 class="font-bold text-sm text-slate-900 leading-snug mt-1">${this.escapeHtml(s.name)}</h4>
+                                <p class="text-slate-500 text-[11px]">${this.escapeHtml(s.address)}</p>
                                 <div class="bg-slate-50 p-2 rounded-lg border border-slate-200 text-[11px] space-y-1">
                                     <div class="flex justify-between">
                                         <span>Jarak:</span>
-                                        <strong class="text-blue-700">📍 ${s.formatted_distance}</strong>
+                                        <strong class="text-blue-700">📍 ${this.escapeHtml(s.formatted_distance)}</strong>
                                     </div>
                                     <div class="flex justify-between">
                                         <span>Okupansi:</span>
@@ -559,7 +570,7 @@
                                     </div>
                                 </div>
                                 <div class="pt-2">
-                                    <a href="${s.google_maps_url}" target="_blank" class="block text-center py-1.5 px-3 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg text-xs shadow-xs">
+                                    <a href="${this.escapeHtml(s.google_maps_url)}" target="_blank" rel="noopener noreferrer" class="block text-center py-1.5 px-3 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg text-xs shadow-xs">
                                         Arahkan Navigasi ➔
                                     </a>
                                 </div>
@@ -627,13 +638,20 @@
                     }
                 },
 
+                onMarkersUpdated(markers) {
+                    const nextMarkers = markers || [];
+
+                    // Hindari menggambar ulang pin (dan menutup popup) bila datanya tidak berubah
+                    if (JSON.stringify(nextMarkers) === JSON.stringify(this.markersData)) return;
+
+                    this.markersData = nextMarkers;
+                    this.renderMarkers();
+                },
+
                 focusMarker(detail) {
                     if (!this.map) return;
+                    this.map.once('moveend', () => this.leafletMarkers[detail.id]?.openPopup());
                     this.map.flyTo([detail.lat, detail.lng], 15);
-                    const marker = this.leafletMarkers[detail.id];
-                    if (marker) {
-                        setTimeout(() => marker.openPopup(), 400);
-                    }
                 },
 
                 fitAllMarkers() {

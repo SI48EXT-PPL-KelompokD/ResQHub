@@ -375,16 +375,18 @@
                             <td class="py-4 px-4 sm:px-6 text-right">
                                 <div class="inline-flex items-center space-x-1">
                                     <!-- Tombol Update Okupansi Pengungsi -->
-                                    <button 
-                                        type="button"
-                                        wire:click="openOccupancyModal({{ $shelter->id }})"
-                                        class="p-1.5 text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 rounded-lg transition cursor-pointer"
-                                        title="Update Jumlah Pengungsi Aktif"
-                                    >
-                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
-                                        </svg>
-                                    </button>
+                                    @if($shelter->status !== 'ditutup')
+                                        <button
+                                            type="button"
+                                            wire:click="openOccupancyModal({{ $shelter->id }})"
+                                            class="p-1.5 text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 rounded-lg transition cursor-pointer"
+                                            title="Update Jumlah Pengungsi Aktif"
+                                        >
+                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
+                                            </svg>
+                                        </button>
+                                    @endif
 
                                     <!-- Tombol Ubah / Edit Posko (SCRUM-55, SCRUM-56) -->
                                     @if(auth()->user()->isAdmin() || $shelter->coordinator_id === auth()->id())
@@ -456,7 +458,7 @@
         x-show="open"
         x-cloak
         x-effect="if (open) { setTimeout(() => window.dispatchEvent(new CustomEvent('render-shelter-map')), 250); }"
-        @keydown.escape.window="open = false; $wire.closeCreateModal()"
+        @keydown.escape.window="if (open) { open = false; $wire.closeCreateModal() }"
         class="fixed inset-0 z-50 overflow-y-auto"
         role="dialog" 
         aria-modal="true"
@@ -799,7 +801,7 @@
         x-data="{ open: $wire.entangle('showOccupancyModal') }"
         x-show="open"
         x-cloak
-        @keydown.escape.window="open = false; $wire.closeOccupancyModal()"
+        @keydown.escape.window="if (open) { open = false; $wire.closeOccupancyModal() }"
         class="fixed inset-0 z-50 overflow-y-auto"
         role="dialog" 
         aria-modal="true"
@@ -873,9 +875,11 @@
                                     Jumlah Pengungsi Aktif (Jiwa) <span class="text-red-500">*</span>
                                 </label>
                                 <input 
-                                    type="number" 
+                                    type="number"
                                     min="0"
-                                    wire:model.live="newOccupancy" 
+                                    max="{{ $selectedShelterCapacity }}"
+                                    step="1"
+                                    wire:model.live="newOccupancy"
                                     required 
                                     placeholder="Contoh: 150" 
                                     class="w-full py-2.5 px-3 text-sm font-semibold rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-transparent transition"
@@ -952,7 +956,7 @@
         x-show="open"
         x-cloak
         x-effect="if (open) { setTimeout(() => window.dispatchEvent(new CustomEvent('render-shelter-edit-map')), 250); }"
-        @keydown.escape.window="open = false; $wire.closeEditModal()"
+        @keydown.escape.window="if (open) { open = false; $wire.closeEditModal() }"
         class="fixed inset-0 z-50 overflow-y-auto"
         role="dialog" 
         aria-modal="true"
@@ -1025,12 +1029,12 @@
                                     Kejadian Bencana Terkait <span class="text-red-500">*</span>
                                 </label>
                                 <select 
-                                    wire:model="edit_disaster_event_id" 
-                                    required 
+                                    wire:model="edit_disaster_event_id"
+                                    required
                                     class="w-full py-2.5 px-3 text-xs sm:text-sm rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-transparent transition bg-slate-50 hover:bg-white focus:bg-white"
                                 >
                                     <option value="">-- Pilih Kejadian Bencana Aktif --</option>
-                                    @foreach ($activeEvents as $event)
+                                    @foreach ($editEvents as $event)
                                         <option value="{{ $event->id }}">
                                             {{ $event->name }} ({{ ucfirst($event->disaster_type) }} - {{ $event->regency }})
                                         </option>
@@ -1299,7 +1303,7 @@
         x-data="{ open: $wire.entangle('showDeleteModal') }"
         x-show="open"
         x-cloak
-        @keydown.escape.window="open = false; $wire.closeDeleteModal()"
+        @keydown.escape.window="if (open) { open = false; $wire.closeDeleteModal() }"
         class="fixed inset-0 z-50 overflow-y-auto"
         role="dialog" 
         aria-modal="true"
@@ -1403,7 +1407,7 @@
                             </button>
                             <button 
                                 type="button" 
-                                wire:click="closeDeleteModal(); openEditModal({{ $deletingShelterId }})"
+                                wire:click="closeShelterInstead"
                                 class="px-4 py-2 bg-amber-500 hover:bg-amber-600 text-white text-xs sm:text-sm font-semibold rounded-xl shadow-xs transition cursor-pointer"
                             >
                                 Tutup Posko Sebagai Gantinya
@@ -1420,7 +1424,7 @@
         x-data="{ open: $wire.entangle('showDetailModal') }"
         x-show="open"
         x-cloak
-        @keydown.escape.window="open = false; $wire.closeDetailModal()"
+        @keydown.escape.window="if (open) { open = false; $wire.closeDetailModal() }"
         class="fixed inset-0 z-50 overflow-y-auto"
         role="dialog" 
         aria-modal="true"
@@ -1923,6 +1927,12 @@
             getLngProp() { return this.prefix ? this.prefix + 'lng' : 'lng'; },
             getAddrProp() { return this.prefix ? this.prefix + 'address' : 'address'; },
 
+            // Nama tempat dari Nominatim adalah data eksternal, wajib di-escape sebelum masuk popup HTML
+            escapeHtml(value) {
+                const replacements = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' };
+                return String(value ?? '').replace(/[&<>"']/g, (char) => replacements[char]);
+            },
+
             init() {
                 const wireLat = this.$wire.get(this.getLatProp());
                 const wireLng = this.$wire.get(this.getLngProp());
@@ -2101,7 +2111,7 @@
                 if (this.map && this.marker) {
                     this.map.flyTo([lat, lon], 16, { animate: true, duration: 1.0 });
                     this.marker.setLatLng([lat, lon]);
-                    this.marker.bindPopup(`<b>${item.display_name.split(',')[0]}</b><br>${item.display_name}`).openPopup();
+                    this.marker.bindPopup(`<b>${this.escapeHtml(item.display_name.split(',')[0])}</b><br>${this.escapeHtml(item.display_name)}`).openPopup();
                 }
 
                 this.updateCoordinates(lat, lon);

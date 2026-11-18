@@ -56,8 +56,8 @@ class ActivityLogSeeder extends Seeder
                 'updated_at' => $now->copy()->subDays(2)->addHours(1),
             ],
             [
-                'id' => 2,
-                'user_id' => 2, // Koordinator Budi
+                'id' => 4,
+                'user_id' => 3, // Koordinator Siti (pengelola posko fasilitas ini)
                 'subject_type' => 'App\\Models\\ShelterFacility',
                 'subject_id' => 8,
                 'action' => 'updated_facility_condition',

@@ -14,7 +14,7 @@ use Livewire\Attributes\Layout;
 use Livewire\Attributes\Title;
 
 #[Layout('layouts.admin')]
-#[Title('Manajemen Posko Evakuasi - ResQHub')]
+#[Title('Manajemen Posko Evakuasi')]
 class ShelterManagement extends Component
 {
     use WithPagination;
@@ -190,7 +190,8 @@ class ShelterManagement extends Component
         $this->edit_capacity = $shelter->capacity;
         $this->edit_contact = $shelter->contact;
         $this->edit_occupancy = $shelter->occupancy;
-        $this->edit_status = $shelter->status;
+        // Status "penuh" dihitung otomatis dari okupansi, pada form tampil sebagai posko beroperasi
+        $this->edit_status = $shelter->status === 'ditutup' ? 'ditutup' : 'aktif';
         $this->edit_close_reason = $shelter->close_reason ?? '';
 
         $this->showEditModal = true;
@@ -267,6 +268,7 @@ class ShelterManagement extends Component
                 'required',
                 'integer',
                 'min:' . $minCapacity,
+                'max:1000000',
             ],
             'edit_contact'  => 'required|string|max:50',
             'edit_status'   => 'required|in:aktif,penuh,ditutup',
@@ -282,6 +284,7 @@ class ShelterManagement extends Component
             'edit_lng.required'               => 'Titik koordinat longitude wajib ditentukan.',
             'edit_capacity.required'          => 'Kapasitas daya tampung posko wajib diisi.',
             'edit_capacity.min'               => "Kapasitas posko tidak boleh lebih kecil dari jumlah pengungsi aktif saat ini ({$shelter->occupancy} jiwa).",
+            'edit_capacity.max'               => 'Kapasitas daya tampung maksimal 1.000.000 jiwa.',
             'edit_contact.required'           => 'Nomor kontak narahubung posko wajib diisi.',
             'edit_status.required'            => 'Status operasional posko wajib ditentukan.',
             'edit_status.in'                  => 'Pilihan status operasional posko tidak valid.',
@@ -361,6 +364,18 @@ class ShelterManagement extends Component
     }
 
     /**
+     * Alihkan dialog hapus ke form ubah dengan status "Ditutup" sudah terpilih.
+     */
+    public function closeShelterInstead(): void
+    {
+        $shelterId = (int) $this->deletingShelterId;
+
+        $this->closeDeleteModal();
+        $this->openEditModal($shelterId);
+        $this->edit_status = 'ditutup';
+    }
+
+    /**
      * Hapus posko evakuasi.
      * Aturan bisnis PBI-04:
      * - Posko hanya dapat dihapus bila belum pernah memiliki pengungsi, kebutuhan, atau stok logistik.
@@ -387,9 +402,16 @@ class ShelterManagement extends Component
         }
 
         $name = $shelter->name;
+        $facilityPhotos = $shelter->facilities()->whereNotNull('photo_path')->pluck('photo_path')->all();
+
         $shelter->delete();
 
+        if (! empty($facilityPhotos)) {
+            Storage::disk('public')->delete($facilityPhotos);
+        }
+
         $this->closeDeleteModal();
+        $this->resetPage();
         $this->dispatch('shelter-deleted');
 
         $this->notification = [
@@ -436,21 +458,22 @@ class ShelterManagement extends Component
      */
     public function updateOccupancy(): void
     {
-        $this->validate([
-            'newOccupancy' => 'required|numeric|min:0',
-        ], [
-            'newOccupancy.required' => 'Jumlah pengungsi aktif wajib diisi.',
-            'newOccupancy.numeric'  => 'Jumlah pengungsi harus berupa angka valid.',
-            'newOccupancy.min'      => 'Jumlah pengungsi tidak boleh kurang dari 0.',
-        ]);
+        $shelter = $this->findAuthorizedShelter((int) $this->selectedShelterId);
 
-        $user = auth()->user();
-        $query = Shelter::query();
-        if (! $user->isAdmin()) {
-            $query->where('coordinator_id', $user->id);
+        if ($shelter->status === 'ditutup') {
+            $this->addError('newOccupancy', 'Posko yang sudah ditutup tidak dapat menerima pengungsi. Buka kembali posko terlebih dahulu.');
+            return;
         }
 
-        $shelter = $query->findOrFail($this->selectedShelterId);
+        $this->validate([
+            'newOccupancy' => ['required', 'integer', 'min:0', 'max:' . $shelter->capacity],
+        ], [
+            'newOccupancy.required' => 'Jumlah pengungsi aktif wajib diisi.',
+            'newOccupancy.integer'  => 'Jumlah pengungsi harus berupa bilangan bulat.',
+            'newOccupancy.min'      => 'Jumlah pengungsi tidak boleh kurang dari 0.',
+            'newOccupancy.max'      => "Jumlah pengungsi tidak boleh melebihi kapasitas posko ({$shelter->capacity} jiwa).",
+        ]);
+
         $occupancyVal = (int) $this->newOccupancy;
 
         // Aturan sinkronisasi status:
@@ -502,7 +525,7 @@ class ShelterManagement extends Component
             'address' => 'required|string|max:255',
             'lat' => 'required|numeric|between:-90,90',
             'lng' => 'required|numeric|between:-180,180',
-            'capacity' => 'required|integer|min:1',
+            'capacity' => 'required|integer|min:1|max:1000000',
             'contact' => 'required|string|max:50',
         ], [
             'disaster_event_id.required' => 'Pilih kejadian bencana terkait.',
@@ -513,6 +536,7 @@ class ShelterManagement extends Component
             'lng.required' => 'Titik koordinat longitude wajib ditentukan.',
             'capacity.required' => 'Kapasitas daya tampung posko wajib diisi.',
             'capacity.min' => 'Kapasitas daya tampung harus lebih dari 0 jiwa.',
+            'capacity.max' => 'Kapasitas daya tampung maksimal 1.000.000 jiwa.',
             'contact.required' => 'Nomor kontak narahubung posko wajib diisi.',
         ]);
 
@@ -713,18 +737,13 @@ class ShelterManagement extends Component
         if ($isEdit) {
             $facility = ShelterFacility::where('shelter_id', $shelter->id)
                 ->findOrFail($this->editingFacilityId);
-            $photoPath = $facility->photo_path;
-
-            if ($this->remove_existing_facility_photo && $photoPath) {
-                Storage::disk('public')->delete($photoPath);
-                $photoPath = null;
-            }
+            $oldPhotoPath = $facility->photo_path;
+            $photoPath = $oldPhotoPath;
 
             if ($this->facility_photo) {
-                if ($photoPath) {
-                    Storage::disk('public')->delete($photoPath);
-                }
                 $photoPath = $this->facility_photo->store('facilities', 'public');
+            } elseif ($this->remove_existing_facility_photo) {
+                $photoPath = null;
             }
 
             $facility->update([
@@ -735,6 +754,11 @@ class ShelterManagement extends Component
                 'note'       => trim($this->facility_note) !== '' ? trim($this->facility_note) : null,
                 'photo_path' => $photoPath,
             ]);
+
+            // Foto lama baru dihapus setelah data baru berhasil tersimpan
+            if ($oldPhotoPath && $oldPhotoPath !== $photoPath) {
+                Storage::disk('public')->delete($oldPhotoPath);
+            }
 
             $label = $facility->type_label;
             $actionMessage = $this->facility_condition === 'tidak_berfungsi'
@@ -774,8 +798,15 @@ class ShelterManagement extends Component
             return null;
         }
 
-        return Shelter::with(['disasterEvent', 'coordinator', 'facilities'])
-            ->find($this->detailShelterId);
+        $user = auth()->user();
+        $query = Shelter::with(['disasterEvent', 'coordinator', 'facilities']);
+
+        // detailShelterId dapat dimanipulasi dari browser, jadi kepemilikan wajib diperiksa ulang
+        if (! $user->isAdmin()) {
+            $query->where('coordinator_id', $user->id);
+        }
+
+        return $query->find($this->detailShelterId);
     }
 
     public function render()
@@ -824,26 +855,36 @@ class ShelterManagement extends Component
         }
 
         $allShelters = $statsQuery->get();
+        // Posko yang ditutup tidak lagi menyediakan daya tampung
+        $operationalShelters = $allShelters->where('status', '!=', 'ditutup');
         $stats = [
             'total'              => $allShelters->count(),
             'tersedia'           => $allShelters->filter(fn ($s) => $s->capacity_status === 'tersedia')->count(),
             'hampir_penuh'       => $allShelters->filter(fn ($s) => $s->capacity_status === 'hampir_penuh')->count(),
             'penuh'              => $allShelters->filter(fn ($s) => $s->capacity_status === 'penuh')->count(),
             'ditutup'            => $allShelters->filter(fn ($s) => $s->capacity_status === 'ditutup')->count(),
-            'total_capacity'     => $allShelters->sum('capacity'),
-            'total_occupancy'    => $allShelters->sum('occupancy'),
-            'total_remaining'    => $allShelters->sum('remaining_capacity'),
-            'overall_percentage' => $allShelters->sum('capacity') > 0
-                ? round(($allShelters->sum('occupancy') / $allShelters->sum('capacity')) * 100, 1)
+            'total_capacity'     => $operationalShelters->sum('capacity'),
+            'total_occupancy'    => $operationalShelters->sum('occupancy'),
+            'total_remaining'    => $operationalShelters->sum('remaining_capacity'),
+            'overall_percentage' => $operationalShelters->sum('capacity') > 0
+                ? round(($operationalShelters->sum('occupancy') / $operationalShelters->sum('capacity')) * 100, 1)
                 : 0.0,
         ];
 
         $shelters = $query->latest()->paginate(10);
         $activeEvents = DisasterEvent::active()->orderBy('name')->get();
 
+        // Posko pada kejadian yang sudah tidak aktif tetap harus bisa diubah atau ditutup
+        $editEvents = $activeEvents;
+        if ($this->showEditModal && $this->edit_disaster_event_id && ! $activeEvents->contains('id', (int) $this->edit_disaster_event_id)) {
+            $currentEvent = DisasterEvent::find($this->edit_disaster_event_id);
+            $editEvents = $currentEvent ? $activeEvents->concat([$currentEvent]) : $activeEvents;
+        }
+
         return view('livewire.admin.shelter-management', [
             'shelters'      => $shelters,
             'activeEvents'  => $activeEvents,
+            'editEvents'    => $editEvents,
             'stats'         => $stats,
             'detailShelter' => $this->detailShelter,
         ]);
