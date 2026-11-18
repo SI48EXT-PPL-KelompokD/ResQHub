@@ -7,6 +7,10 @@ use App\Livewire\Admin\Dashboard;
 use App\Livewire\Admin\UserManagement;
 use App\Livewire\Admin\ShelterManagement;
 use App\Livewire\Public\ShelterSearch;
+use App\Livewire\Report\CreateReport;
+use App\Livewire\Report\EditReport;
+use App\Livewire\Report\MyReports;
+use App\Livewire\Report\ShowReport;
 
 // Rute Publik (Warga & Pengunjung) - PBI-04 Pencarian Posko Terdekat (Haversine)
 Route::get('/posko', ShelterSearch::class)->name('public.shelters');
@@ -30,4 +34,12 @@ Route::middleware(['auth'])->prefix('admin')->name('admin.')->group(function () 
     Route::get('/dashboard', Dashboard::class)->name('dashboard');
     Route::get('/users', UserManagement::class)->middleware('role:admin')->name('users');
     Route::get('/shelters', ShelterManagement::class)->middleware('role:admin,koordinator')->name('shelters');
+
+    // Modul A - Laporan Kejadian (PBI-01) untuk warga
+    Route::middleware('role:warga')->group(function () {
+        Route::get('/laporan', MyReports::class)->name('reports.index');
+        Route::get('/laporan/buat', CreateReport::class)->name('reports.create');
+        Route::get('/laporan/{report}', ShowReport::class)->name('reports.show');
+        Route::get('/laporan/{report}/ubah', EditReport::class)->name('reports.edit');
+    });
 });

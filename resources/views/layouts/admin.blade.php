@@ -201,8 +201,9 @@
                     <!-- Modul A: SOS Masuk & Laporan (Ivan) -->
                     @if (Auth::user()->canAccessModule('modul_a'))
                         <a 
-                            href="#" 
-                            class="flex items-center space-x-3 px-3 py-2.5 rounded-xl text-sm font-medium text-slate-600 hover:bg-slate-50 hover:text-slate-900 transition duration-150 group"
+                            href="{{ Auth::user()->isWarga() ? route('admin.reports.index') : '#' }}" 
+                            @if (Auth::user()->isWarga()) wire:navigate @endif
+                            class="flex items-center space-x-3 px-3 py-2.5 rounded-xl text-sm font-medium transition duration-150 group {{ request()->routeIs('admin.reports*') ? 'bg-blue-50 text-blue-700 font-semibold shadow-xs' : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900' }}"
                             title="Modul A - SOS & Laporan"
                         >
                             <svg class="w-5 h-5 text-rose-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
