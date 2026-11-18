@@ -36,6 +36,11 @@ class Distribution extends Model
         return $this->belongsTo(Shelter::class, 'shelter_id');
     }
 
+    public function item(): BelongsTo
+    {
+        return $this->belongsTo(Item::class, 'item_id');
+    }
+
     public function refugee(): BelongsTo
     {
         return $this->belongsTo(Refugee::class, 'refugee_id')->withTrashed();

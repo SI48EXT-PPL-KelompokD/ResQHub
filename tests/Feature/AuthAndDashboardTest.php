@@ -61,4 +61,18 @@ class AuthAndDashboardTest extends TestCase
         $response = $this->actingAs($warga)->get('/admin/users');
         $response->assertStatus(403);
     }
+
+    public function test_authenticated_user_accessing_login_redirects_to_dashboard(): void
+    {
+        $admin = User::where('role', 'admin')->first();
+        $response = $this->actingAs($admin)->get('/login');
+        $response->assertRedirect(route('admin.dashboard'));
+    }
+
+    public function test_authenticated_user_accessing_root_redirects_to_dashboard(): void
+    {
+        $admin = User::where('role', 'admin')->first();
+        $response = $this->actingAs($admin)->get('/');
+        $response->assertRedirect(route('admin.dashboard'));
+    }
 }
