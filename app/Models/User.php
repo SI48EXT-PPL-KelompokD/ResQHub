@@ -115,7 +115,7 @@ class User extends Authenticatable
 
         return match ($module) {
             'modul_a' => in_array($this->role, ['relawan', 'warga']),
-            'modul_b' => in_array($this->role, ['koordinator', 'nakes', 'relawan', 'warga']),
+            'modul_b' => in_array($this->role, ['koordinator', 'nakes', 'relawan', 'warga', 'donatur']),
             'modul_c' => in_array($this->role, ['koordinator', 'nakes']),
             'modul_d' => in_array($this->role, ['koordinator', 'nakes', 'donatur']),
             'modul_e' => in_array($this->role, ['donatur']),

@@ -20,6 +20,8 @@ class ShelterManagement extends Component
     use WithPagination;
     use WithFileUploads;
 
+    protected const FACILITY_PHOTO_RULE = 'nullable|image|mimes:jpg,jpeg,png,webp|max:2048';
+
     // Filter & Search
     public string $search = '';
     public string $statusFilter = '';
@@ -207,6 +209,14 @@ class ShelterManagement extends Component
         $this->editingShelterId = null;
         $this->resetEditForm();
         $this->resetValidation();
+    }
+
+    /**
+     * Pesan kesalahan status lama tidak relevan lagi setelah pilihan status diganti.
+     */
+    public function updatedEditStatus(): void
+    {
+        $this->resetValidation(['edit_status', 'edit_close_reason']);
     }
 
     public function resetEditForm(): void
@@ -691,6 +701,27 @@ class ShelterManagement extends Component
     }
 
     /**
+     * Pesan validasi foto bukti kondisi fasilitas.
+     */
+    protected function facilityPhotoMessages(): array
+    {
+        return [
+            'facility_photo.image' => 'Bukti foto harus berupa file gambar yang valid.',
+            'facility_photo.mimes' => 'Format foto harus JPG, JPEG, PNG, atau WebP.',
+            'facility_photo.max'   => 'Ukuran file foto bukti kondisi maksimal 2 MB.',
+        ];
+    }
+
+    /**
+     * Periksa foto segera setelah dipilih agar pesan kesalahan selalu sesuai file terbaru.
+     */
+    public function updatedFacilityPhoto(): void
+    {
+        $this->resetValidation('facility_photo');
+        $this->validateOnly('facility_photo', ['facility_photo' => self::FACILITY_PHOTO_RULE], $this->facilityPhotoMessages());
+    }
+
+    /**
      * Simpan fasilitas baru atau perbarui kondisi & foto bukti fasilitas posko (PBI-05 / SCRUM-25).
      */
     public function saveFacility(): void
@@ -715,7 +746,7 @@ class ShelterManagement extends Component
             'facility_capacity'  => 'required|integer|min:0|max:100000',
             'facility_condition' => ['required', Rule::in(array_keys(ShelterFacility::CONDITIONS))],
             'facility_note'      => 'nullable|string|max:255',
-            'facility_photo'     => 'nullable|image|mimes:jpg,jpeg,png,webp|max:2048',
+            'facility_photo'     => self::FACILITY_PHOTO_RULE,
         ], [
             'facility_type.required'      => 'Pilih jenis fasilitas posko.',
             'facility_type.in'            => 'Jenis fasilitas posko tidak valid.',
@@ -729,9 +760,7 @@ class ShelterManagement extends Component
             'facility_condition.required' => 'Pilih kondisi kelayakan fasilitas.',
             'facility_condition.in'       => 'Kondisi fasilitas tidak valid.',
             'facility_note.max'           => 'Catatan kondisi maksimal 255 karakter.',
-            'facility_photo.image'        => 'Bukti foto harus berupa file gambar yang valid.',
-            'facility_photo.mimes'        => 'Format foto harus JPG, JPEG, PNG, atau WebP.',
-            'facility_photo.max'          => 'Ukuran file foto bukti kondisi maksimal 2 MB.',
+            ...$this->facilityPhotoMessages(),
         ]);
 
         if ($isEdit) {

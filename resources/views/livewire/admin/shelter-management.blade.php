@@ -437,8 +437,13 @@
                                 <svg class="w-10 h-10 mx-auto text-slate-300 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
                                 </svg>
-                                <p class="text-sm font-semibold text-slate-700">Belum ada posko evakuasi</p>
-                                <p class="text-xs text-slate-400 mt-1">Gunakan tombol "Tambah Posko" di atas untuk mendaftarkan posko baru.</p>
+                                @if (trim($search) !== '' || $statusFilter !== '' || $eventFilter !== '' || $capacityFilter !== '')
+                                    <p class="text-sm font-semibold text-slate-700">Tidak ada posko yang sesuai filter</p>
+                                    <p class="text-xs text-slate-400 mt-1">Ubah kata kunci atau filter untuk melihat posko lainnya.</p>
+                                @else
+                                    <p class="text-sm font-semibold text-slate-700">Belum ada posko evakuasi</p>
+                                    <p class="text-xs text-slate-400 mt-1">Gunakan tombol "Tambah Posko" di atas untuk mendaftarkan posko baru.</p>
+                                @endif
                             </td>
                         </tr>
                     @endforelse
@@ -1388,7 +1393,7 @@
                             @foreach($deletingShelterBlockReasons as $reason)
                                 <div class="flex items-start space-x-2">
                                     <span class="text-amber-600 font-bold">•</span>
-                                    <span>Telah {{ $reason }}.</span>
+                                    <span>{{ ucfirst($reason) }}.</span>
                                 </div>
                             @endforeach
                         </div>
