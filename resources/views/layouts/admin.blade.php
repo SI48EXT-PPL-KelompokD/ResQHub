@@ -201,14 +201,15 @@
                     <!-- Modul G: Tugas Relawan (Novendini) -->
                     @if (Auth::user()->canAccessModule('modul_g'))
                         <a 
-                            href="#" 
-                            class="flex items-center space-x-3 px-3 py-2.5 rounded-xl text-sm font-medium text-slate-600 hover:bg-slate-50 hover:text-slate-900 transition duration-150 group"
+                            href="{{ route('admin.tasks') }}" 
+                            wire:navigate
+                            class="flex items-center space-x-3 px-3 py-2.5 rounded-xl text-sm font-medium transition duration-150 {{ request()->routeIs('admin.tasks') ? 'bg-blue-50 text-blue-700 font-semibold shadow-xs' : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900' }} group"
                             title="Modul G - Tugas Relawan"
                         >
-                            <svg class="w-5 h-5 text-slate-400 group-hover:text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <svg class="w-5 h-5 {{ request()->routeIs('admin.tasks') ? 'text-blue-600' : 'text-slate-400 group-hover:text-slate-600' }}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
                             </svg>
-                            <span class="flex-1">{{ Auth::user()->isRelawan() ? 'Tugas Saya' : 'Tugas Relawan' }}</span>
+                            <span class="flex-1">Tugas Relawan</span>
                             <span class="text-[10px] bg-slate-100 text-slate-500 px-1.5 py-0.5 rounded font-mono">Modul G</span>
                         </a>
                     @endif
@@ -332,8 +333,18 @@
                         <span class="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-rose-500 ring-2 ring-white"></span>
                     </button>
 
-                    <!-- User Name & Avatar -->
-                    <div class="flex items-center space-x-3 pl-2 sm:pl-3 border-l border-slate-200">
+                    <!-- User Name & Avatar (Profil Keahlian PBI-19) -->
+                    <div @if (Auth::user()->canManageVolunteerProfile()) x-on:click="$dispatch('open-profile')" @endif
+                         @class([
+                             'flex items-center space-x-3 pl-2 sm:pl-3 border-l border-slate-200',
+                             'cursor-pointer rounded-xl hover:bg-slate-50 transition' => Auth::user()->canManageVolunteerProfile(),
+                         ])
+                         @if (Auth::user()->canManageVolunteerProfile())
+                             role="button"
+                             tabindex="0"
+                             title="Buka profil keahlian"
+                             x-on:keydown.enter="$dispatch('open-profile')"
+                         @endif>
                         <div class="w-8 h-8 rounded-full bg-blue-600 text-white flex items-center justify-center font-bold text-xs shadow-xs">
                             {{ substr(Auth::user()->name ?? 'U', 0, 1) }}
                         </div>
@@ -341,6 +352,11 @@
                             <span class="text-xs font-semibold text-slate-800 block leading-tight">{{ Auth::user()->name ?? 'Pengguna' }}</span>
                             <span class="text-[10px] text-slate-500 block leading-tight">{{ Auth::user()->role_label ?? 'Admin' }}</span>
                         </div>
+                        @if (Auth::user()->canManageVolunteerProfile())
+                            <svg class="hidden sm:block w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                            </svg>
+                        @endif
                     </div>
 
                 </div>
@@ -359,7 +375,11 @@
 
     <!-- Leaflet.js (OpenStreetMap) -->
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
-    
+
+    @if (Auth::user()?->canManageVolunteerProfile())
+        @livewire('volunteer.profile-manager')
+    @endif
+
     @livewireScripts
     @stack('scripts')
 </body>

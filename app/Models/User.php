@@ -146,6 +146,11 @@ class User extends Authenticatable
         return $this->managedShelters()->where('id', $shelter)->exists();
     }
 
+    public function canManageVolunteerProfile(): bool
+    {
+        return in_array($this->role, ['relawan', 'nakes', 'koordinator'], true);
+    }
+
     public function canAccessModule(string $module): bool
     {
         if ($this->isAdmin()) {

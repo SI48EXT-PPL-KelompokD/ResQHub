@@ -299,10 +299,12 @@
                                         @endif
                                     </td>
                                     <td class="py-3 px-4 text-right">
-                                        @if ($sos->status === 'baru')
-                                            <button class="px-2.5 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-medium rounded-lg shadow-2xs transition">
+                                        @if ($sos->status === 'baru' && (Auth::user()->isKoordinator() || Auth::user()->isAdmin()))
+                                            <a href="{{ route('admin.tasks', ['sos' => $sos->id]) }}"
+                                               wire:navigate
+                                               class="inline-block px-2.5 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-medium rounded-lg shadow-2xs transition">
                                                 Buat Tugas
-                                            </button>
+                                            </a>
                                         @else
                                             <button class="px-2.5 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-medium rounded-lg transition">
                                                 Detail
