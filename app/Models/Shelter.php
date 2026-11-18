@@ -120,6 +120,14 @@ class Shelter extends Model
     }
 
     /**
+     * Kebutuhan bantuan yang diajukan posko ini.
+     */
+    public function aidNeeds(): HasMany
+    {
+        return $this->hasMany(AidNeed::class, 'shelter_id');
+    }
+
+    /**
      * Fasilitas yang tersedia di posko ini.
      */
     public function facilities(): HasMany
