@@ -5,6 +5,7 @@ namespace App\Models;
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
@@ -114,7 +115,7 @@ class User extends Authenticatable
 
         return match ($module) {
             'modul_a' => in_array($this->role, ['relawan', 'warga']),
-            'modul_b' => in_array($this->role, ['koordinator', 'nakes', 'relawan', 'warga']),
+            'modul_b' => in_array($this->role, ['koordinator', 'nakes', 'relawan', 'warga', 'donatur']),
             'modul_c' => in_array($this->role, ['koordinator', 'nakes']),
             'modul_d' => in_array($this->role, ['koordinator', 'nakes', 'donatur']),
             'modul_e' => in_array($this->role, ['donatur']),

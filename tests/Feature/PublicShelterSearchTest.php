@@ -235,6 +235,76 @@ class PublicShelterSearchTest extends TestCase
         $this->assertEquals($expectedUrl, $shelter->google_maps_url);
     }
 
+    public function test_search_starts_from_the_first_active_event_location(): void
+    {
+        $event = DisasterEvent::active()->first();
+
+        Livewire::test(ShelterSearch::class)
+            ->assertSet('userLat', (float) $event->lat)
+            ->assertSet('userLng', (float) $event->lng)
+            ->assertSet('userLocationName', $event->name . ' (' . $event->regency . ')');
+    }
+
+    public function test_sort_by_name_and_remaining_capacity_override_distance_order(): void
+    {
+        $byName = Livewire::test(ShelterSearch::class)
+            ->set('sortBy', 'name')
+            ->viewData('shelters')
+            ->pluck('name')
+            ->all();
+
+        $expectedByName = $byName;
+        sort($expectedByName);
+        $this->assertSame($expectedByName, $byName);
+
+        $byCapacity = Livewire::test(ShelterSearch::class)
+            ->set('sortBy', 'capacity')
+            ->viewData('shelters')
+            ->map(fn (Shelter $shelter) => $shelter->remaining_capacity)
+            ->all();
+
+        $expectedByCapacity = $byCapacity;
+        rsort($expectedByCapacity);
+        $this->assertSame($expectedByCapacity, $byCapacity);
+    }
+
+    public function test_map_events_send_named_coordinates_to_the_browser(): void
+    {
+        $shelter = Shelter::first();
+
+        Livewire::test(ShelterSearch::class)
+            ->call('selectShelter', $shelter->id)
+            ->assertDispatched('focus-shelter-marker', id: $shelter->id, lat: (float) $shelter->lat, lng: (float) $shelter->lng)
+            ->call('setUserLocation', -6.9, 107.6, 'Titik Uji')
+            ->assertDispatched('user-location-updated', lat: -6.9, lng: 107.6, name: 'Titik Uji');
+    }
+
+    public function test_map_markers_follow_the_active_filter(): void
+    {
+        Shelter::where('id', '!=', Shelter::first()->id)->update(['name' => 'Posko Lain']);
+        $target = Shelter::first();
+
+        Livewire::test(ShelterSearch::class)
+            ->set('search', $target->name)
+            ->assertDispatched('shelter-markers-updated', function (string $name, array $params) use ($target) {
+                return count($params['markers']) === 1 && $params['markers'][0]['id'] === $target->id;
+            });
+    }
+
+    public function test_invalid_user_coordinates_are_ignored(): void
+    {
+        Livewire::test(ShelterSearch::class)
+            ->call('setUserLocation', 120.0, 500.0, 'Titik Salah')
+            ->assertNotSet('userLocationName', 'Titik Salah');
+    }
+
+    public function test_contact_phone_extracts_a_callable_number(): void
+    {
+        $this->assertSame('081234567802', (new Shelter(['contact' => '081234567802 (Pak Budi)']))->contact_phone);
+        $this->assertSame('+628123456789', (new Shelter(['contact' => '+62 812-3456-789']))->contact_phone);
+        $this->assertNull((new Shelter(['contact' => 'Pak Budi']))->contact_phone);
+    }
+
     public function test_haversine_formula_calculates_accurate_kilometers(): void
     {
         // Jarak Monas Jakarta (-6.175392, 106.827153) ke Gedung Sate Bandung (-6.902484, 107.618810)

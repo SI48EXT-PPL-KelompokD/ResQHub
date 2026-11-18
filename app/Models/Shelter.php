@@ -162,7 +162,10 @@ class Shelter extends Model
             return 0.0;
         }
 
-        return round(($this->occupancy / $this->capacity) * 100, 1);
+        $percentage = round(($this->occupancy / $this->capacity) * 100, 1);
+
+        // Posko yang belum benar-benar penuh tidak boleh tampil 100% akibat pembulatan
+        return $this->occupancy < $this->capacity ? min(99.9, $percentage) : $percentage;
     }
 
     /**
@@ -178,13 +181,12 @@ class Shelter extends Model
             return 'ditutup';
         }
 
-        $percentage = $this->occupancy_percentage;
-
-        if ($percentage >= 100 || $this->status === 'penuh') {
+        if ($this->status === 'penuh' || $this->occupancy >= $this->capacity) {
             return 'penuh';
         }
 
-        if ($percentage >= 80) {
+        // Memakai rasio asli (tanpa pembulatan) agar selaras dengan scopeCapacityStatus
+        if (($this->occupancy / $this->capacity) >= 0.8) {
             return 'hampir_penuh';
         }
 
@@ -282,8 +284,16 @@ class Shelter extends Model
             }
         }
 
+        $cosine = 'cos(radians(?)) * cos(radians(lat)) * cos(radians(lng) - radians(?)) + sin(radians(?)) * sin(radians(lat))';
+
+        // Pembulatan floating point bisa menghasilkan nilai di luar rentang acos (-1 s.d. 1)
+        // saat titik acuan sama dengan titik posko. Fungsi acos SQLite sudah dibatasi di atas.
+        $boundedCosine = $connection->getDriverName() === 'sqlite'
+            ? $cosine
+            : "LEAST(1, GREATEST(-1, {$cosine}))";
+
         // 6371 adalah radius rata-rata bumi dalam kilometer
-        $haversine = "(6371 * acos(cos(radians(?)) * cos(radians(lat)) * cos(radians(lng) - radians(?)) + sin(radians(?)) * sin(radians(lat))))";
+        $haversine = "(6371 * acos({$boundedCosine}))";
 
         $query->select('*')
             ->selectRaw("{$haversine} AS distance", [$lat, $lng, $lat])
@@ -321,6 +331,18 @@ class Shelter extends Model
     public function getGoogleMapsUrlAttribute(): string
     {
         return "https://www.google.com/maps/dir/?api=1&destination={$this->lat},{$this->lng}";
+    }
+
+    /**
+     * Nomor telepon yang dapat dipanggil dari kolom kontak (misal: "0812345 (Pak Budi)" menjadi "0812345").
+     */
+    public function getContactPhoneAttribute(): ?string
+    {
+        if (! preg_match('/\+?\d[\d\s\-]{5,}\d/', (string) $this->contact, $matches)) {
+            return null;
+        }
+
+        return preg_replace('/[\s\-]/', '', $matches[0]);
     }
 
     /**
