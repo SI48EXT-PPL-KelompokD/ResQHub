@@ -150,6 +150,26 @@
 
     </div>
 
+    <!-- Widget Ringkasan Triase Kesehatan Harian (Modul C · PBI-08) -->
+    @if (!empty($triageSummary))
+        <div class="bg-white rounded-2xl p-5 border border-slate-200/80 shadow-2xs flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            <div>
+                <h2 class="text-sm font-bold text-slate-900">Triase Kesehatan Hari Ini</h2>
+                <p class="text-xs text-slate-500 mt-0.5">
+                    {{ $triageSummary['totals']['total'] }} pemeriksaan tercatat · {{ $triageSummary['unreferred_merah'] ?? 0 }} triase merah belum dirujuk
+                </p>
+            </div>
+            <div class="flex items-center flex-wrap gap-2 text-xs font-semibold">
+                <span class="px-2.5 py-1 rounded-full bg-emerald-100 text-emerald-800">Hijau: {{ $triageSummary['totals']['hijau'] }}</span>
+                <span class="px-2.5 py-1 rounded-full bg-amber-100 text-amber-800">Kuning: {{ $triageSummary['totals']['kuning'] }}</span>
+                <span class="px-2.5 py-1 rounded-full bg-red-100 text-red-700">Merah: {{ $triageSummary['totals']['merah'] }}</span>
+                <a href="{{ route('admin.health-checks') }}" wire:navigate class="ml-1 text-blue-600 hover:text-blue-700 font-semibold">
+                    Kelola Pemeriksaan →
+                </a>
+            </div>
+        </div>
+    @endif
+
     <!-- Main Section: Grid 2 Columns (Left: SOS Table, Right: Urgent Needs & Map Preview) -->
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
 
