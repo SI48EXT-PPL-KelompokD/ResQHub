@@ -49,7 +49,7 @@ class AuthAndDashboardTest extends TestCase
 
         $response = $this->actingAs($relawan)->get('/admin/dashboard');
         $response->assertStatus(200);
-        $response->assertSee('Tugas Saya');
+        $response->assertSee('Tugas Relawan');
         $response->assertSee('SOS Masuk');
         $response->assertDontSee('Manajemen Pengguna');
     }

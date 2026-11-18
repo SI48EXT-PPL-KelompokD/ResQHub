@@ -19,6 +19,7 @@ use App\Livewire\Report\ShowReport;
 use App\Http\Controllers\Donor\GoodsDonationController;
 use App\Livewire\Admin\DonationAccountManagement;
 use App\Http\Controllers\Admin\ItemController;
+use App\Livewire\Volunteer\TaskManager;
 
 // Rute Publik (Warga & Pengunjung) - PBI-04 Pencarian Posko Terdekat (Haversine)
 Route::get('/posko', ShelterSearch::class)->name('public.shelters');
@@ -92,6 +93,9 @@ Route::middleware(['auth'])->prefix('admin')->name('admin.')->group(function () 
             ->except(['show'])
             ->parameters(['needs' => 'aid_need']);
     });
+
+    // Modul G: Tugas relawan (PBI-20)
+    Route::get('/tasks', TaskManager::class)->name('tasks');
 });
 
 // Donatur: janji donasi barang (PBI-13)
