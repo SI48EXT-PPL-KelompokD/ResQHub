@@ -2,6 +2,7 @@
 
 namespace App\Livewire\Report;
 
+use App\Livewire\Report\Concerns\PresentsReportHistory;
 use App\Models\DisasterReport;
 use App\Services\DisasterReportService;
 use Livewire\Attributes\Layout;
@@ -13,12 +14,7 @@ use Livewire\Component;
 #[Title('Detail Laporan Kejadian - ResQHub')]
 class ShowReport extends Component
 {
-    private const HISTORY_LABELS = [
-        'laporan_dibuat' => 'Laporan dikirim',
-        'laporan_diubah' => 'Laporan diubah',
-        'laporan_diterima' => 'Laporan diterima',
-        'laporan_ditolak' => 'Laporan ditolak',
-    ];
+    use PresentsReportHistory;
 
     #[Locked]
     public int $reportId;
@@ -54,27 +50,8 @@ class ShowReport extends Component
 
         return view('livewire.report.show-report', [
             'report' => $report,
-            'history' => $service->history($report)->map(fn ($log) => [
-                'label' => self::HISTORY_LABELS[$log->action] ?? ucfirst(str_replace('_', ' ', $log->action)),
-                'action' => $log->action,
-                'actor' => $log->user?->name ?? 'Sistem',
-                'at' => $log->created_at,
-                'note' => $this->historyNote($log->action, $log->changes ?? []),
-            ]),
+            'history' => $this->presentHistory($service, $report),
             'statusMessage' => session('status'),
         ]);
-    }
-
-    /**
-     * @param  array<string, mixed>  $changes
-     */
-    private function historyNote(string $action, array $changes): ?string
-    {
-        return match ($action) {
-            'laporan_dibuat' => 'Status: Menunggu Verifikasi',
-            'laporan_diterima' => 'Status: Diterima dan dikaitkan ke kejadian bencana.',
-            'laporan_ditolak' => 'Status: Ditolak. Alasan: '.($changes['reject_reason'] ?? '-'),
-            default => null,
-        };
     }
 }

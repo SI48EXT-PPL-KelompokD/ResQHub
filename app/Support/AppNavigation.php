@@ -2,6 +2,7 @@
 
 namespace App\Support;
 
+use App\Models\DisasterReport;
 use App\Models\User;
 
 /**
@@ -32,10 +33,11 @@ class AppNavigation
     private static function admin(): array
     {
         $pendingUsers = User::query()->whereIn('role', ['koordinator', 'nakes'])->where('is_active', false)->count();
+        $pendingReports = DisasterReport::query()->pending()->count();
 
         return [
             self::section('Tanggap Darurat', [
-                self::soon('Verifikasi Laporan', 'check'),
+                self::link('Verifikasi Laporan', 'admin.reports.verification', 'check', ['admin.reports.verification', 'admin.reports.verify'], $pendingReports),
                 self::soon('SOS Masuk', 'alert'),
                 self::soon('Peringatan Dini', 'bell'),
             ]),
