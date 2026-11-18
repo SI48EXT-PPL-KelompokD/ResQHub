@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Livewire\Volunteer\TaskManager;
+use App\Models\TaskAssignment;
 use App\Models\User;
 use App\Models\VolunteerProfile;
 use App\Models\VolunteerTask;
@@ -313,6 +314,45 @@ class VolunteerTaskTest extends TestCase
             ->assertStatus(200)
             ->assertSee('Buat tugas')
             ->assertSee('Evakuasi', false);
+    }
+
+    public function test_koordinator_dapat_menawar_ulang_relawan_yang_ditolak(): void
+    {
+        $relawan = $this->relawan();
+        $task = $this->tugasBaru(['quota' => 2, 'title' => 'Tugas Tawar Ulang']);
+        $assignment = $task->assignments()->create([
+            'volunteer_profile_id' => $relawan->volunteerProfile->id,
+            'status' => 'ditolak',
+            'reject_reason' => 'Ditolak oleh relawan.',
+        ]);
+
+        $before = $relawan->notifications()->count();
+
+        $this->actingAs($this->koordinator());
+
+        Livewire::test(TaskManager::class)
+            ->call('reoffer', $assignment->id)
+            ->assertSet('notificationType', 'success');
+
+        $this->assertDatabaseHas('task_assignments', [
+            'id' => $assignment->id,
+            'status' => 'ditawarkan',
+            'reject_reason' => null,
+        ]);
+        $this->assertSame($before + 1, $relawan->notifications()->count());
+    }
+
+    public function test_relawan_tidak_dapat_menawar_ulang_penugasan(): void
+    {
+        $relawan = $this->relawan();
+        $assignment = TaskAssignment::where('volunteer_profile_id', $relawan->volunteerProfile->id)->firstOrFail();
+        $assignment->update(['status' => 'ditolak']);
+
+        $this->actingAs($relawan);
+
+        Livewire::test(TaskManager::class)->call('reoffer', $assignment->id);
+
+        $this->assertDatabaseHas('task_assignments', ['id' => $assignment->id, 'status' => 'ditolak']);
     }
 
     public function test_relawan_menerima_penawaran_dan_tugas_menjadi_berjalan(): void

@@ -119,12 +119,10 @@
                                                 </button>
                                             @endif
 
-                                            @if (in_array($task->status, ['selesai', 'dibatalkan'], true))
-                                                <button type="button" wire:click="openDetail({{ $task->id }})"
-                                                        class="rounded-[4px] border border-slate-300 bg-white px-2.5 py-1 text-[10px] font-medium text-slate-700 transition hover:bg-slate-50">
-                                                    Detail
-                                                </button>
-                                            @endif
+                                            <button type="button" wire:click="openDetail({{ $task->id }})"
+                                                    class="rounded-[4px] border border-slate-300 bg-white px-2.5 py-1 text-[10px] font-medium text-slate-700 transition hover:bg-slate-50">
+                                                Detail
+                                            </button>
                                         @else
                                             @if ($mine && $mine->status === 'ditawarkan')
                                                 <button type="button" wire:click="acceptOffer({{ $mine->id }})"
@@ -407,7 +405,15 @@
                                                 @endphp
                                                 <div class="flex items-center justify-between gap-2 px-3 py-2">
                                                     <p class="truncate text-[11px] text-slate-700">{{ $offer->name }}</p>
-                                                    <span class="shrink-0 rounded-[3px] px-1.5 py-0.5 text-[10px] font-medium {{ $offerClass }}">{{ $offerLabel }}</span>
+                                                    <div class="flex shrink-0 items-center gap-1.5">
+                                                        <span class="rounded-[3px] px-1.5 py-0.5 text-[10px] font-medium {{ $offerClass }}">{{ $offerLabel }}</span>
+                                                        @if ($this->isCoordinator() && $offer->status === 'ditolak' && in_array($detailTask->status, ['terbuka', 'berjalan'], true))
+                                                            <button type="button" wire:click="reoffer({{ $offer->id }})"
+                                                                    class="rounded-[3px] border border-slate-300 bg-white px-1.5 py-0.5 text-[10px] font-medium text-slate-600 transition hover:bg-slate-50">
+                                                                Tawar Ulang
+                                                            </button>
+                                                        @endif
+                                                    </div>
                                                 </div>
                                             @endforeach
                                         </div>

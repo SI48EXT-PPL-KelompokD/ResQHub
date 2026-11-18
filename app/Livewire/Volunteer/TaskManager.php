@@ -421,6 +421,50 @@ class TaskManager extends Component
         return $profiles->count();
     }
 
+    public function reoffer(int $assignmentId): void
+    {
+        if (! $this->isCoordinator()) {
+            return;
+        }
+
+        $assignment = TaskAssignment::with('volunteerTask', 'volunteerProfile.user')->find($assignmentId);
+
+        if (! $assignment) {
+            return;
+        }
+
+        $task = $assignment->volunteerTask;
+
+        if (! $task || ! in_array($task->status, ['terbuka', 'berjalan'], true)) {
+            $this->notify('Penawaran hanya bisa dikirim ulang untuk tugas yang belum selesai.', 'error');
+
+            return;
+        }
+
+        if ($assignment->status !== 'ditolak') {
+            $this->notify('Penawaran ini sudah aktif atau sudah selesai.', 'error');
+
+            return;
+        }
+
+        $taken = $task->assignments()
+            ->whereIn('status', ['ditawarkan', 'diterima', 'selesai'])
+            ->count();
+
+        if ($taken >= $task->quota) {
+            $this->notify('Kuota tugas sudah penuh. Tambah kuota dulu sebelum menawar ulang.', 'error');
+
+            return;
+        }
+
+        $assignment->update(['status' => 'ditawarkan', 'reject_reason' => null]);
+
+        $volunteer = $assignment->volunteerProfile?->user;
+        $volunteer?->notify(new TaskOfferReceived($task));
+
+        $this->notify('Penawaran dikirim ulang ke '.($volunteer?->name ?? 'relawan').'.');
+    }
+
     public function cancelTask(int $taskId): void
     {
         if (! $this->isCoordinator()) {
