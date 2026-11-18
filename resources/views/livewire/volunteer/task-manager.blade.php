@@ -420,6 +420,14 @@
                                     @endif
                                 </div>
 
+                                @if ($this->isCoordinator() && in_array($detailTask->status, ['terbuka', 'berjalan'], true))
+                                    <button type="button" wire:click="completeTask({{ $detailTask->id }})"
+                                            wire:confirm="Tandai tugas ini selesai? Relawan yang ditugaskan akan menerima notifikasi."
+                                            class="w-full rounded-[4px] bg-emerald-600 py-2 text-[11px] font-medium text-white transition hover:bg-emerald-700">
+                                        Selesaikan Tugas
+                                    </button>
+                                @endif
+
                                 <button type="button" wire:click="closePanel"
                                         class="w-full rounded-[4px] border border-slate-300 bg-white py-2 text-[11px] font-medium text-slate-700 transition hover:bg-slate-50">
                                     Tutup

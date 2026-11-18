@@ -355,6 +355,57 @@ class VolunteerTaskTest extends TestCase
         $this->assertDatabaseHas('task_assignments', ['id' => $assignment->id, 'status' => 'ditolak']);
     }
 
+    public function test_koordinator_dapat_menyelesaikan_tugas_berjalan(): void
+    {
+        $relawan = $this->relawan();
+        $task = $this->tugasBaru(['quota' => 1, 'status' => 'berjalan', 'title' => 'Tugas Berjalan']);
+        $assignment = $task->assignments()->create([
+            'volunteer_profile_id' => $relawan->volunteerProfile->id,
+            'status' => 'diterima',
+        ]);
+
+        $before = $relawan->notifications()->count();
+
+        $this->actingAs($this->koordinator());
+
+        Livewire::test(TaskManager::class)
+            ->call('completeTask', $task->id)
+            ->assertSet('notificationType', 'success');
+
+        $this->assertDatabaseHas('volunteer_tasks', ['id' => $task->id, 'status' => 'selesai']);
+        $this->assertDatabaseHas('task_assignments', ['id' => $assignment->id, 'status' => 'selesai']);
+        $this->assertSame($before + 1, $relawan->notifications()->count());
+    }
+
+    public function test_tugas_tanpa_relawan_diterima_tidak_dapat_diselesaikan(): void
+    {
+        $task = $this->tugasBaru(['status' => 'berjalan', 'title' => 'Tugas Tanpa Relawan']);
+
+        $this->actingAs($this->koordinator());
+
+        Livewire::test(TaskManager::class)
+            ->call('completeTask', $task->id)
+            ->assertSet('notificationType', 'error');
+
+        $this->assertDatabaseHas('volunteer_tasks', ['id' => $task->id, 'status' => 'berjalan']);
+    }
+
+    public function test_relawan_tidak_dapat_menyelesaikan_tugas(): void
+    {
+        $relawan = $this->relawan();
+        $task = $this->tugasBaru(['quota' => 1, 'status' => 'berjalan']);
+        $task->assignments()->create([
+            'volunteer_profile_id' => $relawan->volunteerProfile->id,
+            'status' => 'diterima',
+        ]);
+
+        $this->actingAs($relawan);
+
+        Livewire::test(TaskManager::class)->call('completeTask', $task->id);
+
+        $this->assertDatabaseHas('volunteer_tasks', ['id' => $task->id, 'status' => 'berjalan']);
+    }
+
     public function test_relawan_menerima_penawaran_dan_tugas_menjadi_berjalan(): void
     {
         $relawan = $this->relawan();

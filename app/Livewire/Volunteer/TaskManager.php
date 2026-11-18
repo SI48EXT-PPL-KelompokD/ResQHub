@@ -465,6 +465,60 @@ class TaskManager extends Component
         $this->notify('Penawaran dikirim ulang ke '.($volunteer?->name ?? 'relawan').'.');
     }
 
+    public function completeTask(int $taskId): void
+    {
+        if (! $this->isCoordinator()) {
+            return;
+        }
+
+        $task = VolunteerTask::findOrFail($taskId);
+
+        if ($task->status === 'selesai') {
+            $this->notify('Tugas ini sudah selesai.', 'error');
+
+            return;
+        }
+
+        if (! in_array($task->status, ['terbuka', 'berjalan'], true)) {
+            $this->notify('Tugas yang dibatalkan tidak dapat diselesaikan.', 'error');
+
+            return;
+        }
+
+        $accepted = $task->assignments()->where('status', 'diterima')->count();
+
+        if ($accepted === 0) {
+            $this->notify('Belum ada relawan yang menerima tugas ini. Kirim penawaran dulu.', 'error');
+
+            return;
+        }
+
+        DB::transaction(function () use ($task) {
+            $task->assignments()
+                ->where('status', 'diterima')
+                ->update(['status' => 'selesai', 'updated_at' => now()]);
+
+            $task->assignments()
+                ->where('status', 'ditawarkan')
+                ->update([
+                    'status' => 'ditolak',
+                    'reject_reason' => 'Tugas sudah diselesaikan.',
+                    'updated_at' => now(),
+                ]);
+
+            $task->update(['status' => 'selesai']);
+
+            $task->assignments()
+                ->where('status', 'selesai')
+                ->with('volunteerProfile.user')
+                ->get()
+                ->each(fn (TaskAssignment $assignment) => $assignment->volunteerProfile?->user?->notify(new TaskUpdated($task)));
+        });
+
+        $this->notify("Tugas \"{$task->title}\" ditandai selesai dan {$accepted} relawan menerima notifikasi.");
+        $this->detailId = $task->id;
+    }
+
     public function cancelTask(int $taskId): void
     {
         if (! $this->isCoordinator()) {
