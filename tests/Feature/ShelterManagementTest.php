@@ -29,7 +29,7 @@ class ShelterManagementTest extends TestCase
 
         $response->assertStatus(200);
         $response->assertSee('Posko Evakuasi');
-        $response->assertSee('PBI-04');
+
     }
 
     public function test_admin_can_access_shelter_management_page(): void
@@ -718,7 +718,7 @@ class ShelterManagementTest extends TestCase
         $this->actingAs($warga)->get('/admin/dashboard')
             ->assertOk()
             ->assertDontSee('href="' . route('admin.shelters') . '"', false)
-            ->assertSee('Peta Publik');
+            ->assertSee('Peta Posko');
 
         $koordinator = User::where('role', 'koordinator')->first();
         $this->actingAs($koordinator)->get('/admin/dashboard')
@@ -773,7 +773,7 @@ class ShelterManagementTest extends TestCase
 
         $this->actingAs($donatur)->get('/admin/dashboard')
             ->assertOk()
-            ->assertSee('Peta Publik')
+            ->assertSee('Peta Posko')
             ->assertDontSee('href="' . route('admin.shelters') . '"', false);
     }
 

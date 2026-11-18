@@ -2,7 +2,7 @@
         <div class="mx-auto max-w-7xl space-y-6">
         @if (session('success'))<div class="rounded-xl bg-emerald-50 p-4 text-sm text-emerald-700">{{ session('success') }}</div>@endif
         <div class="flex flex-wrap items-end justify-between gap-4">
-            <div><p class="text-sm font-medium text-blue-600">Modul D · Kebutuhan</p><h1 class="text-2xl font-bold text-slate-900">Katalog Barang Bantuan</h1></div>
+            <div><h1 class="text-2xl font-bold text-slate-900">Katalog Barang Bantuan</h1></div>
             <a href="{{ route('admin.items.create') }}" class="rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-blue-700">+ Tambah barang</a>
         </div>
         <form method="GET" class="grid gap-3 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm md:grid-cols-[1fr_220px_auto]">

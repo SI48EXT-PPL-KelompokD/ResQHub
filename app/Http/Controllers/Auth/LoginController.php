@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
+use App\Support\IntendedRedirect;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Validation\ValidationException;
@@ -65,6 +66,8 @@ class LoginController extends Controller
 
         $request->session()->regenerate();
 
+        IntendedRedirect::forgetIfNotAllowed($user);
+
         return redirect()->intended(route('admin.dashboard'));
     }
 
@@ -78,6 +81,6 @@ class LoginController extends Controller
         $request->session()->invalidate();
         $request->session()->regenerateToken();
 
-        return redirect()->route('login');
+        return redirect()->route('home');
     }
 }

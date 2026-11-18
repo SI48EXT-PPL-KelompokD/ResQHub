@@ -1,560 +1,282 @@
-<div class="space-y-6">
+@php
+    $user = Auth::user();
+    $firstName = \Illuminate\Support\Str::of($user->name)->replaceMatches('/^(dr|drg|ns|bd)\.?\s+/i', '')->before(' ');
+    $heading = match ($user->role) {
+        'admin' => 'Ringkasan Pusdalops',
+        'koordinator' => 'Ringkasan posko Anda',
+        default => "Halo, {$firstName}",
+    };
+    $panel = 'border border-slate-200 bg-white';
+    $panelHead = 'flex items-baseline justify-between gap-4 border-b border-slate-200 px-5 py-3.5';
+    $panelTitle = 'text-base font-bold text-ink';
+    $priorityTone = ['mendesak' => 'text-red-800', 'tinggi' => 'text-amber-800', 'normal' => 'text-slate-600'];
+@endphp
 
-    <!-- Dashboard Header -->
-    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+<div class="mx-auto max-w-7xl space-y-6">
+    <header class="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <div>
-            <h1 class="text-2xl font-bold tracking-tight text-slate-900">
-                Dashboard Pusdalops & Posko
-            </h1>
-            <p class="text-sm text-slate-500 mt-0.5">
-                {{ $activeEvent->name ?? 'Posko Bencana Tanggap Darurat' }} • 
-                <span class="inline-flex items-center text-emerald-700 font-medium">
-                    <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 mr-1.5"></span>
-                    Status: {{ ucfirst($activeEvent->status ?? 'Aktif') }} ({{ $activeEvent->regency ?? 'Kab. Bandung' }})
-                </span>
-            </p>
-        </div>
-
-        <div class="flex items-center space-x-3">
-            @if (Auth::user()->isAdmin())
-                <a 
-                    href="{{ route('admin.users') }}" 
-                    wire:navigate
-                    class="inline-flex items-center space-x-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white text-xs sm:text-sm font-semibold rounded-xl shadow-xs transition duration-150"
-                >
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
-                    </svg>
-                    <span>Kelola Pengguna</span>
-                </a>
-            @elseif (Auth::user()->isWarga())
-                <button class="inline-flex items-center space-x-2 px-4 py-2 bg-rose-600 hover:bg-rose-700 active:bg-rose-800 text-white text-xs sm:text-sm font-semibold rounded-xl shadow-xs transition duration-150">
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-                    </svg>
-                    <span>Kirim SOS Darurat</span>
-                </button>
-            @elseif (Auth::user()->isRelawan())
-                <span class="inline-flex items-center space-x-1.5 px-3 py-1.5 bg-emerald-50 text-emerald-700 border border-emerald-200 rounded-xl text-xs font-semibold">
-                    <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-                    <span>Status: Siap Ditugaskan</span>
-                </span>
-            @elseif (Auth::user()->isDonatur())
-                <a href="{{ route('donor.goods-donations.index') }}"
-                   class="inline-flex items-center space-x-2 px-4 py-2 bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 text-xs sm:text-sm font-semibold rounded-xl shadow-xs transition duration-150">
-                    <span>Donasi Barang Saya</span>
-                </a>
-                <a href="#kebutuhan-mendesak"
-                   class="inline-flex items-center space-x-2 px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white text-xs sm:text-sm font-semibold rounded-xl shadow-xs transition duration-150">
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-                    </svg>
-                    <span>Salurkan Donasi</span>
-                </a>
-            @elseif (Auth::user()->isNakes())
-                <span class="inline-flex items-center space-x-1.5 px-3 py-1.5 bg-teal-50 text-teal-700 border border-teal-200 rounded-xl text-xs font-semibold">
-                    <span>Tim Medis Siaga Posko</span>
-                </span>
+            <h1 class="text-2xl font-extrabold tracking-tight text-ink">{{ $heading }}</h1>
+            @if ($activeEvent)
+                <p class="mt-1 text-[15px] text-slate-700">Kejadian aktif: {{ $activeEvent->name }}</p>
             @endif
         </div>
-    </div>
 
-    <!-- 4 Key Summary Metric Cards (Sesuai Mockup Figma) -->
-    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        
-        <!-- Card 1: Okupansi Posko -->
-        <div class="bg-white rounded-2xl p-5 border border-slate-200/80 shadow-2xs hover:border-slate-300 transition">
-            <div class="flex items-center justify-between text-slate-500 mb-2">
-                <span class="text-xs font-semibold text-slate-500 uppercase tracking-wider">Okupansi Posko</span>
-                <span class="p-1.5 rounded-lg bg-blue-50 text-blue-600">
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
-                    </svg>
-                </span>
-            </div>
-            <div class="flex items-baseline space-x-2">
-                <span class="text-3xl font-extrabold text-slate-900 tracking-tight">{{ $totalOccupancy }}</span>
-                <span class="text-sm font-medium text-slate-400">/ {{ $totalCapacity }} jiwa</span>
-            </div>
-            <div class="mt-3 flex items-center justify-between text-xs text-slate-500">
-                <span>{{ $occupancyPercent }}% terisi</span>
-                <span class="px-2 py-0.5 rounded-full font-semibold {{ $occupancyPercent >= 90 ? 'bg-red-50 text-red-700' : ($occupancyPercent >= 75 ? 'bg-amber-50 text-amber-700' : 'bg-emerald-50 text-emerald-700') }}">
-                    {{ $occupancyPercent >= 90 ? 'Penuh' : ($occupancyPercent >= 75 ? 'Hampir Penuh' : 'Tersedia') }}
-                </span>
-            </div>
-            <div class="w-full bg-slate-100 rounded-full h-1.5 mt-2 overflow-hidden">
-                <div class="h-1.5 rounded-full {{ $occupancyPercent >= 90 ? 'bg-red-500' : ($occupancyPercent >= 75 ? 'bg-amber-500' : 'bg-blue-600') }}" style="width: {{ min(100, $occupancyPercent) }}%"></div>
-            </div>
+        <div class="flex flex-wrap gap-2">
+            @if ($user->isWarga())
+                <span aria-disabled="true" title="Fitur ini sedang disiapkan" class="inline-flex h-11 cursor-not-allowed items-center rounded-md border border-slate-200 bg-slate-100 px-5 text-[15px] font-semibold text-slate-400">Kirim SOS (segera)</span>
+                <a href="{{ route('admin.reports.create') }}" wire:navigate class="rq-btn">Buat Laporan</a>
+            @elseif ($user->isDonatur())
+                <a href="{{ route('donor.goods-donations.create') }}" class="rq-btn">Janjikan Donasi</a>
+            @elseif ($user->isRelawan())
+                <a href="{{ route('admin.tasks') }}" wire:navigate class="rq-btn">Lihat Tugas Saya</a>
+            @endif
         </div>
+    </header>
 
-        <!-- Card 2: Kelompok Rentan -->
-        <div class="bg-white rounded-2xl p-5 border border-slate-200/80 shadow-2xs hover:border-slate-300 transition">
-            <div class="flex items-center justify-between text-slate-500 mb-2">
-                <span class="text-xs font-semibold text-slate-500 uppercase tracking-wider">Kelompok Rentan</span>
-                <span class="p-1.5 rounded-lg bg-purple-50 text-purple-600">
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
-                    </svg>
-                </span>
+    {{-- Angka utama --}}
+    <dl class="grid grid-cols-2 border border-slate-200 bg-white lg:grid-cols-4">
+        @foreach ($metrics as $metric)
+            <div class="relative border-slate-200 p-5 {{ $loop->odd ? '' : 'border-l' }} {{ $loop->iteration > 2 ? 'border-t lg:border-t-0' : '' }} {{ $loop->iteration === 3 ? 'lg:border-l' : '' }} {{ $metric['href'] ? 'hover:bg-slate-50' : '' }}">
+                <dt class="text-sm font-semibold text-slate-700">
+                    @if ($metric['href'])
+                        <a href="{{ $metric['href'] }}" class="after:absolute after:inset-0">{{ $metric['label'] }}</a>
+                    @else
+                        {{ $metric['label'] }}
+                    @endif
+                </dt>
+                <dd class="mt-1 text-3xl font-extrabold tracking-tight text-ink tabular-nums">{{ $metric['value'] }}</dd>
+                <dd class="mt-0.5 text-[13px] text-slate-600">{{ $metric['hint'] }}</dd>
             </div>
-            <div class="flex items-baseline space-x-2">
-                <span class="text-3xl font-extrabold text-slate-900 tracking-tight">{{ $vulnerableCount }}</span>
-                <span class="text-sm font-medium text-slate-400">jiwa prioritas</span>
-            </div>
-            <p class="mt-3 text-xs text-slate-500">
-                Balita, lansia, ibu hamil, disabilitas
-            </p>
-            <div class="w-full bg-slate-100 rounded-full h-1.5 mt-2">
-                <div class="bg-purple-600 h-1.5 rounded-full" style="width: 65%"></div>
-            </div>
-        </div>
+        @endforeach
+    </dl>
 
-        <!-- Card 3: SOS Baru -->
-        <div class="bg-white rounded-2xl p-5 border border-slate-200/80 shadow-2xs hover:border-slate-300 transition">
-            <div class="flex items-center justify-between text-slate-500 mb-2">
-                <span class="text-xs font-semibold text-slate-500 uppercase tracking-wider">SOS Baru</span>
-                <span class="p-1.5 rounded-lg bg-rose-50 text-rose-600">
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-                    </svg>
-                </span>
-            </div>
-            <div class="flex items-baseline space-x-2">
-                <span class="text-3xl font-extrabold text-rose-600 tracking-tight">{{ $newSosCount }}</span>
-                <span class="text-sm font-medium text-slate-400">permintaan aktif</span>
-            </div>
-            <p class="mt-3 text-xs text-slate-500">
-                Menunggu evakuasi & pertolongan
-            </p>
-            <div class="w-full bg-slate-100 rounded-full h-1.5 mt-2">
-                <div class="bg-rose-500 h-1.5 rounded-full animate-pulse" style="width: 80%"></div>
-            </div>
-        </div>
-
-        <!-- Card 4: Stok Menipis -->
-        <a href="{{ route('admin.stocks.index') }}" wire:navigate class="bg-white rounded-2xl p-5 border border-slate-200/80 shadow-2xs hover:border-amber-300 hover:bg-amber-50/10 transition block group cursor-pointer">
-            <div class="flex items-center justify-between text-slate-500 mb-2">
-                <span class="text-xs font-semibold text-slate-500 group-hover:text-amber-700 uppercase tracking-wider">Stok Menipis</span>
-                <span class="p-1.5 rounded-lg bg-amber-50 text-amber-600">
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
-                    </svg>
-                </span>
-            </div>
-            <div class="flex items-baseline space-x-2">
-                <span class="text-3xl font-extrabold text-amber-600 tracking-tight">{{ $lowStockCount }}</span>
-                <span class="text-sm font-medium text-slate-400">item darurat</span>
-            </div>
-            <p class="mt-3 text-xs text-slate-500 group-hover:text-amber-700">
-                Estimasi habis dalam 2 hari ke depan &rarr;
-            </p>
-            <div class="w-full bg-slate-100 rounded-full h-1.5 mt-2">
-                <div class="bg-amber-500 h-1.5 rounded-full" style="width: 45%"></div>
-            </div>
-        </a>
-
-    </div>
-
-    <!-- Widget Ringkasan Triase Kesehatan Harian (Modul C · PBI-08) -->
-    @if (!empty($triageSummary))
-        <div class="bg-white rounded-2xl p-5 border border-slate-200/80 shadow-2xs flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+    @if (! empty($triageSummary) && ($user->isAdmin() || $user->isKoordinator() || $user->isNakes()))
+        <section class="{{ $panel }} flex flex-col gap-3 px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
             <div>
-                <h2 class="text-sm font-bold text-slate-900">Triase Kesehatan Hari Ini</h2>
-                <p class="text-xs text-slate-500 mt-0.5">
-                    {{ $triageSummary['totals']['total'] }} pemeriksaan tercatat · {{ $triageSummary['unreferred_merah'] ?? 0 }} triase merah belum dirujuk
-                </p>
+                <h2 class="{{ $panelTitle }}">Triase hari ini</h2>
+                <p class="mt-0.5 text-sm text-slate-700">{{ $triageSummary['totals']['total'] }} pemeriksaan, {{ $triageSummary['unreferred_merah'] ?? 0 }} triase merah belum dirujuk.</p>
             </div>
-            <div class="flex items-center flex-wrap gap-2 text-xs font-semibold">
-                <span class="px-2.5 py-1 rounded-full bg-emerald-100 text-emerald-800">Hijau: {{ $triageSummary['totals']['hijau'] }}</span>
-                <span class="px-2.5 py-1 rounded-full bg-amber-100 text-amber-800">Kuning: {{ $triageSummary['totals']['kuning'] }}</span>
-                <span class="px-2.5 py-1 rounded-full bg-red-100 text-red-700">Merah: {{ $triageSummary['totals']['merah'] }}</span>
-                <a href="{{ route('admin.health-checks') }}" wire:navigate class="ml-1 text-blue-600 hover:text-blue-700 font-semibold">
-                    Kelola Pemeriksaan →
-                </a>
+            <div class="flex flex-wrap items-center gap-x-5 gap-y-1 text-sm font-semibold">
+                <span class="text-green-800">Hijau {{ $triageSummary['totals']['hijau'] }}</span>
+                <span class="text-amber-800">Kuning {{ $triageSummary['totals']['kuning'] }}</span>
+                <span class="text-red-800">Merah {{ $triageSummary['totals']['merah'] }}</span>
+                <a href="{{ route('admin.health-checks') }}" wire:navigate class="rq-link">Kelola pemeriksaan</a>
             </div>
-        </div>
+        </section>
     @endif
 
-    <!-- Main Section: Grid 2 Columns (Left: SOS Table, Right: Urgent Needs & Map Preview) -->
-    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-
-        <!-- Left 2 Cols: SOS Masuk (Non-Donatur) / Stok Menipis (Donatur) -->
-        @if (Auth::user()->isDonatur())
-            <div class="lg:col-span-2 bg-white rounded-2xl border border-slate-200/80 shadow-2xs overflow-hidden flex flex-col self-start">
-                <div class="p-5 border-b border-slate-100 flex items-center justify-between">
-                    <div>
-                        <h2 class="text-base font-bold text-slate-900 tracking-tight">Stok Menipis</h2>
-                        <p class="text-xs text-slate-500">Barang logistik yang berada di bawah ambang batas minimum</p>
+    <div class="grid gap-6 lg:grid-cols-[minmax(0,3fr)_minmax(0,2fr)]">
+        <div class="min-w-0 space-y-6">
+            {{-- Antrean verifikasi: admin --}}
+            @isset($pendingReports)
+                <section class="{{ $panel }}">
+                    <div class="{{ $panelHead }}">
+                        <h2 class="{{ $panelTitle }}">Laporan menunggu verifikasi</h2>
                     </div>
-                    <a href="#kebutuhan-mendesak" class="text-xs font-semibold text-blue-600 hover:text-blue-700 hover:underline">
-                        Kebutuhan mendesak
-                    </a>
-                </div>
+                    <ul class="divide-y divide-slate-200">
+                        @forelse ($pendingReports as $report)
+                            <li wire:key="pending-{{ $report->id }}" class="px-5 py-3">
+                                <p class="font-semibold text-ink">{{ $report->title }}</p>
+                                <p class="mt-0.5 truncate text-[13px] text-slate-600">{{ $report->disaster_type_label }} · {{ $report->address }} · {{ $report->created_at?->locale('id')->diffForHumans() }}</p>
+                            </li>
+                        @empty
+                            <li class="px-5 py-8 text-center text-sm text-slate-600">Semua laporan sudah diverifikasi.</li>
+                        @endforelse
+                    </ul>
+                </section>
+            @endisset
 
-                <div class="overflow-x-auto flex-1">
-                    <table class="w-full text-left text-xs sm:text-sm">
-                        <thead class="bg-slate-50/80 text-slate-500 text-[11px] font-semibold uppercase tracking-wider border-b border-slate-100">
-                            <tr>
-                                <th class="py-3 px-4">Nama Barang</th>
-                                <th class="py-3 px-4">Posko</th>
-                                <th class="py-3 px-4 text-center">Sisa Stok</th>
-                                <th class="py-3 px-4 text-center">Ambang Batas</th>
-                                <th class="py-3 px-4">Estimasi Habis</th>
-                            </tr>
-                        </thead>
-                        <tbody class="divide-y divide-slate-100">
-                            @forelse ($lowStocks as $stock)
-                                <tr class="hover:bg-slate-50/60 transition">
-                                    <td class="py-3 px-4 font-semibold text-slate-800">
-                                        {{ $stock->item_name }}
-                                        <span class="block text-[11px] text-slate-400 capitalize">{{ $stock->category }}</span>
-                                    </td>
-                                    <td class="py-3 px-4 text-slate-600">
-                                        {{ $stock->shelter_name }}
-                                    </td>
-                                    <td class="py-3 px-4 text-center font-bold text-rose-600">
-                                        {{ $stock->quantity }} {{ $stock->unit }}
-                                    </td>
-                                    <td class="py-3 px-4 text-center text-slate-500">
-                                        {{ $stock->min_threshold }} {{ $stock->unit }}
-                                    </td>
-                                    <td class="py-3 px-4">
-                                        <span class="px-2 py-0.5 rounded text-xs font-medium bg-amber-50 text-amber-700">
-                                            ~1,5 s.d. 2 hari
-                                        </span>
-                                    </td>
-                                </tr>
-                            @empty
+            {{-- SOS: hanya admin dan koordinator --}}
+            @isset($recentSos)
+                <section class="{{ $panel }}">
+                    <div class="{{ $panelHead }}">
+                        <h2 class="{{ $panelTitle }}">Permintaan SOS terbaru</h2>
+                    </div>
+                    <div class="overflow-x-auto">
+                        <table class="w-full min-w-[520px] text-left text-sm">
+                            <thead class="border-b border-slate-200 text-[13px] text-slate-600">
                                 <tr>
-                                    <td colspan="5" class="py-8 text-center text-slate-400 text-xs">
-                                        Seluruh stok logistik masih berada di atas batas aman.
-                                    </td>
+                                    <th scope="col" class="px-5 py-2.5 font-semibold">Pemohon</th>
+                                    <th scope="col" class="px-3 py-2.5 font-semibold">Jenis</th>
+                                    <th scope="col" class="px-3 py-2.5 text-right font-semibold">Orang</th>
+                                    <th scope="col" class="px-3 py-2.5 font-semibold">Status</th>
+                                    <th scope="col" class="px-5 py-2.5"><span class="sr-only">Aksi</span></th>
                                 </tr>
-                            @endforelse
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-        @else
-            <div class="lg:col-span-2 bg-white rounded-2xl border border-slate-200/80 shadow-2xs overflow-hidden flex flex-col">
-                <div class="p-5 border-b border-slate-100 flex items-center justify-between">
-                    <div>
-                        <h2 class="text-base font-bold text-slate-900 tracking-tight">SOS Masuk</h2>
-                        <p class="text-xs text-slate-500">Daftar permintaan darurat dari warga terdampak</p>
+                            </thead>
+                            <tbody class="divide-y divide-slate-200">
+                                @forelse ($recentSos as $sos)
+                                    <tr wire:key="sos-{{ $sos->id }}">
+                                        <td class="px-5 py-3">
+                                            <span class="block font-semibold text-ink">{{ $sos->requester_name }}</span>
+                                            <span class="block max-w-[220px] truncate text-[13px] text-slate-600">{{ $sos->note }}</span>
+                                        </td>
+                                        <td class="px-3 py-3 capitalize">{{ $sos->help_type }}</td>
+                                        <td class="px-3 py-3 text-right tabular-nums">{{ $sos->people_count }}</td>
+                                        <td class="px-3 py-3 font-semibold capitalize {{ $sos->status === 'baru' ? 'text-red-800' : ($sos->status === 'ditangani' ? 'text-brand-700' : 'text-green-800') }}">{{ $sos->status }}</td>
+                                        <td class="px-5 py-3 text-right">
+                                            @if ($sos->status === 'baru')
+                                                <a href="{{ route('admin.tasks', ['sos' => $sos->id]) }}" wire:navigate class="rq-link text-[13px] whitespace-nowrap">Buat tugas</a>
+                                            @endif
+                                        </td>
+                                    </tr>
+                                @empty
+                                    <tr><td colspan="5" class="px-5 py-8 text-center text-slate-600">Belum ada permintaan SOS.</td></tr>
+                                @endforelse
+                            </tbody>
+                        </table>
                     </div>
-                    <a href="#" class="text-xs font-semibold text-blue-600 hover:text-blue-700 hover:underline">
-                        Lihat semua
-                    </a>
-                </div>
+                </section>
+            @endisset
 
-                <div class="overflow-x-auto flex-1">
-                    <table class="w-full text-left text-xs sm:text-sm">
-                        <thead class="bg-slate-50/80 text-slate-500 text-[11px] font-semibold uppercase tracking-wider border-b border-slate-100">
-                            <tr>
-                                <th class="py-3 px-4">Waktu</th>
-                                <th class="py-3 px-4">Pemohon</th>
-                                <th class="py-3 px-4">Jenis</th>
-                                <th class="py-3 px-4 text-center">Orang</th>
-                                <th class="py-3 px-4">Status</th>
-                                <th class="py-3 px-4 text-right">Aksi</th>
-                            </tr>
-                        </thead>
-                        <tbody class="divide-y divide-slate-100">
-                            @forelse ($recentSos as $sos)
-                                <tr class="hover:bg-slate-50/60 transition">
-                                    <td class="py-3 px-4 font-mono text-xs font-semibold text-slate-700">
-                                        {{ \Carbon\Carbon::parse($sos->created_at)->format('H.i') }}
-                                    </td>
-                                    <td class="py-3 px-4">
-                                        <span class="font-semibold text-slate-800 block">{{ $sos->requester_name }}</span>
-                                        <span class="text-[11px] text-slate-400 block truncate max-w-[180px]">{{ $sos->note }}</span>
-                                    </td>
-                                    <td class="py-3 px-4">
-                                        <span class="capitalize px-2 py-0.5 rounded-md font-medium text-xs bg-slate-100 text-slate-700">
-                                            {{ $sos->help_type }}
-                                        </span>
-                                    </td>
-                                    <td class="py-3 px-4 text-center font-semibold text-slate-700">
-                                        {{ $sos->people_count }}
-                                        @if ($sos->has_vulnerable)
-                                            <span class="block text-[10px] text-purple-600 font-medium">rentan</span>
-                                        @endif
-                                    </td>
-                                    <td class="py-3 px-4">
-                                        @if ($sos->status === 'baru')
-                                            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-rose-50 text-rose-700 border border-rose-200/80">
-                                                <span class="w-1.5 h-1.5 rounded-full bg-rose-500 mr-1.5"></span>
-                                                Baru
-                                            </span>
-                                        @elseif ($sos->status === 'ditangani')
-                                            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-blue-50 text-blue-700 border border-blue-200/80">
-                                                <span class="w-1.5 h-1.5 rounded-full bg-blue-500 mr-1.5"></span>
-                                                Ditangani
-                                            </span>
-                                        @else
-                                            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200/80">
-                                                <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 mr-1.5"></span>
-                                                Selesai
-                                            </span>
-                                        @endif
-                                    </td>
-                                    <td class="py-3 px-4 text-right">
-                                        @if ($sos->status === 'baru' && (Auth::user()->isKoordinator() || Auth::user()->isAdmin()))
-                                            <a href="{{ route('admin.tasks', ['sos' => $sos->id]) }}"
-                                               wire:navigate
-                                               class="inline-block px-2.5 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-medium rounded-lg shadow-2xs transition">
-                                                Buat Tugas
-                                            </a>
-                                        @else
-                                            <button class="px-2.5 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-medium rounded-lg transition">
-                                                Detail
-                                            </button>
-                                        @endif
-                                    </td>
-                                </tr>
-                            @empty
-                                <tr>
-                                    <td colspan="6" class="py-8 text-center text-slate-400 text-sm">
-                                        Belum ada permintaan darurat SOS saat ini.
-                                    </td>
-                                </tr>
-                            @endforelse
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-        @endif
-
-        <!-- Right 1 Col: Kebutuhan Mendesak & Peta Posko -->
-        <div class="space-y-6">
-
-            <!-- Kebutuhan Mendesak Card -->
-            <div id="kebutuhan-mendesak" class="bg-white rounded-2xl border border-slate-200/80 shadow-2xs p-5">
-                <div class="flex items-center justify-between mb-4">
-                    <div>
-                        <h2 class="text-base font-bold text-slate-900 tracking-tight">Kebutuhan Mendesak</h2>
-                        <p class="text-xs text-slate-500">Bantuan prioritas posko evakuasi</p>
+            {{-- Tugas: relawan dan nakes --}}
+            @isset($myTasks)
+                <section class="{{ $panel }}">
+                    <div class="{{ $panelHead }}">
+                        <h2 class="{{ $panelTitle }}">Tugas saya</h2>
+                        @if ($user->canAccessModule('modul_g'))
+                            <a href="{{ route('admin.tasks') }}" wire:navigate class="rq-link text-sm">Semua tugas</a>
+                        @endif
                     </div>
-                    <a href="#" class="text-xs font-semibold text-blue-600 hover:text-blue-700 hover:underline">
-                        Semua
-                    </a>
-                </div>
-
-                <div class="space-y-4">
-                    @forelse ($urgentNeeds as $need)
-                        @php
-                            $fulfilledPct = $need->qty_needed > 0 ? min(100, round(($need->qty_fulfilled / $need->qty_needed) * 100)) : 0;
-                            $pledgedPct = $need->qty_needed > 0 ? min(100, round((($need->qty_fulfilled + $need->qty_pledged) / $need->qty_needed) * 100)) : 0;
-                            $remaining = max(0, $need->qty_needed - $need->qty_pledged);
-                        @endphp
-                        <div class="p-3.5 rounded-xl bg-slate-50/70 border border-slate-100 hover:bg-slate-50 transition">
-                            <div class="flex items-start justify-between">
-                                <div>
-                                    <h3 class="text-xs sm:text-sm font-semibold text-slate-900">
-                                        {{ $need->item_name }} • {{ $need->qty_needed }} {{ $need->unit }}
-                                    </h3>
-                                    <p class="text-[11px] text-slate-500 mt-0.5">
-                                        {{ $need->shelter_name }}
-                                    </p>
+                    <ul class="divide-y divide-slate-200">
+                        @forelse ($myTasks as $task)
+                            <li class="flex items-start justify-between gap-4 px-5 py-3">
+                                <div class="min-w-0">
+                                    <p class="font-semibold text-ink">{{ $task->title }}</p>
+                                    <p class="mt-0.5 text-[13px] text-slate-600">Mulai {{ \Carbon\Carbon::parse($task->start_at)->locale('id')->translatedFormat('d M Y, H.i') }}</p>
                                 </div>
-                                <span class="px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wide {{ $need->priority === 'mendesak' ? 'bg-red-50 text-red-700' : 'bg-amber-50 text-amber-700' }}">
-                                    {{ $need->priority }}
-                                </span>
-                            </div>
+                                <span class="shrink-0 text-[13px] font-semibold {{ $task->assignment_status === 'ditawarkan' ? 'text-amber-800' : 'text-brand-700' }}">{{ $task->assignment_status === 'ditawarkan' ? 'Perlu dijawab' : 'Diterima' }}</span>
+                            </li>
+                        @empty
+                            <li class="px-5 py-8 text-center text-sm text-slate-600">Belum ada tugas aktif.</li>
+                        @endforelse
+                    </ul>
+                </section>
+            @endisset
 
-                            <!-- Progress Bar -->
-                            <div class="mt-3">
-                                <div class="flex justify-between text-[11px] text-slate-500 mb-1">
-                                    <span>Terpenuhi {{ $fulfilledPct }}%</span>
-                                    <span>Dijanjikan {{ $pledgedPct }}%</span>
-                                </div>
-                                <div class="w-full bg-slate-200 rounded-full h-2 relative overflow-hidden">
-                                    <div class="bg-amber-400 h-2 rounded-full absolute left-0" style="width: {{ $pledgedPct }}%"></div>
-                                    <div class="bg-blue-600 h-2 rounded-full absolute left-0" style="width: {{ $fulfilledPct }}%"></div>
-                                </div>
-                            </div>
+            {{-- Laporan milik warga --}}
+            @isset($myReports)
+                <section class="{{ $panel }}">
+                    <div class="{{ $panelHead }}">
+                        <h2 class="{{ $panelTitle }}">Laporan saya</h2>
+                        <a href="{{ route('admin.reports.index') }}" wire:navigate class="rq-link text-sm">Semua laporan</a>
+                    </div>
+                    <ul class="divide-y divide-slate-200">
+                        @forelse ($myReports as $report)
+                            <li wire:key="mine-{{ $report->id }}">
+                                <a href="{{ route('admin.reports.show', $report) }}" wire:navigate class="flex items-start justify-between gap-4 px-5 py-3 hover:bg-slate-50">
+                                    <span class="min-w-0">
+                                        <span class="block font-semibold text-ink">{{ $report->title }}</span>
+                                        <span class="mt-0.5 block truncate text-[13px] text-slate-600">{{ $report->disaster_type_label }} · {{ $report->address }}</span>
+                                    </span>
+                                    <span class="shrink-0 text-[13px] font-semibold {{ $report->status === 'diterima' ? 'text-green-800' : ($report->status === 'ditolak' ? 'text-red-800' : 'text-amber-800') }}">{{ $report->status_label }}</span>
+                                </a>
+                            </li>
+                        @empty
+                            <li class="px-5 py-8 text-center text-sm text-slate-600">Anda belum pernah mengirim laporan.</li>
+                        @endforelse
+                    </ul>
+                </section>
+            @endisset
 
-                            @if (Auth::user()->isDonatur())
-                                <div class="mt-3">
-                                    @if ($remaining > 0)
-                                        <a href="{{ route('donor.goods-donations.create', ['aid_need' => $need->id]) }}"
-                                           class="inline-flex items-center px-3 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold transition">
-                                            Donasikan
-                                        </a>
-                                    @else
-                                        <span class="text-[11px] font-medium text-slate-400">Kuota dijanjikan penuh</span>
+            {{-- Riwayat donasi --}}
+            @isset($myGoodsDonations)
+                <section class="{{ $panel }}">
+                    <div class="{{ $panelHead }}">
+                        <h2 class="{{ $panelTitle }}">Riwayat donasi</h2>
+                        <a href="{{ route('donor.goods-donations.index') }}" class="rq-link text-sm">Semua donasi</a>
+                    </div>
+                    <ul class="divide-y divide-slate-200">
+                        @forelse ($myGoodsDonations as $donation)
+                            <li wire:key="donation-{{ $donation->id }}">
+                                <a href="{{ route('donor.goods-donations.show', $donation) }}" class="flex items-start justify-between gap-4 px-5 py-3 hover:bg-slate-50">
+                                    <span class="min-w-0">
+                                        <span class="block font-semibold text-ink">{{ $donation->item_name }}, {{ $donation->quantity }} {{ $donation->item_unit }}</span>
+                                        <span class="mt-0.5 block truncate text-[13px] text-slate-600">{{ $donation->code }} · {{ $donation->shelter_name }}</span>
+                                    </span>
+                                    <span class="shrink-0 text-[13px] font-semibold text-slate-700">{{ $donation->status->label() }}</span>
+                                </a>
+                            </li>
+                        @empty
+                            <li class="px-5 py-8 text-center text-sm text-slate-600">Anda belum memiliki janji donasi.</li>
+                        @endforelse
+                    </ul>
+                </section>
+            @endisset
+
+            {{-- Stok menipis: admin dan koordinator --}}
+            @isset($lowStocks)
+                <section class="{{ $panel }}">
+                    <div class="{{ $panelHead }}">
+                        <h2 class="{{ $panelTitle }}">Stok menipis</h2>
+                        <a href="{{ route('admin.stocks.index') }}" wire:navigate class="rq-link text-sm">Kelola stok</a>
+                    </div>
+                    <ul class="divide-y divide-slate-200">
+                        @forelse ($lowStocks as $stock)
+                            <li wire:key="stock-{{ $stock->id }}" class="flex items-center justify-between gap-4 px-5 py-3">
+                                <div class="min-w-0">
+                                    <p class="font-semibold text-ink">{{ $stock->item_name }}</p>
+                                    <p class="mt-0.5 truncate text-[13px] text-slate-600">{{ $stock->shelter_name }} · sisa {{ $stock->quantity }} dari ambang {{ $stock->min_threshold }} {{ $stock->unit }}</p>
+                                </div>
+                                @if ($user->isKoordinator())
+                                    <a href="{{ route('admin.aid-needs.create', ['item_id' => $stock->item_id, 'shelter_id' => $stock->shelter_id]) }}" wire:navigate class="rq-link shrink-0 text-[13px]">Ajukan kebutuhan</a>
+                                @endif
+                            </li>
+                        @empty
+                            <li class="px-5 py-8 text-center text-sm text-slate-600">Semua stok masih di atas ambang batas.</li>
+                        @endforelse
+                    </ul>
+                </section>
+            @endisset
+        </div>
+
+        <div class="min-w-0 space-y-6">
+            {{-- Kebutuhan mendesak --}}
+            @isset($urgentNeeds)
+                <section id="kebutuhan-mendesak" class="{{ $panel }}">
+                    <div class="{{ $panelHead }}">
+                        <h2 class="{{ $panelTitle }}">Kebutuhan mendesak</h2>
+                        <a href="{{ $user->isKoordinator() ? route('admin.needs.index') : route('needs.public') }}" class="rq-link text-sm">Semua</a>
+                    </div>
+                    <ul class="divide-y divide-slate-200">
+                        @forelse ($urgentNeeds as $need)
+                            @php
+                                $pledged = min($need->qty_needed, $need->qty_fulfilled + $need->qty_pledged);
+                                $percent = $need->qty_needed > 0 ? min(100, (int) round(($pledged / $need->qty_needed) * 100)) : 0;
+                                $remaining = max(0, $need->qty_needed - $pledged);
+                            @endphp
+                            <li wire:key="need-{{ $need->id }}" class="px-5 py-3.5">
+                                <div class="flex items-start justify-between gap-3">
+                                    <div class="min-w-0">
+                                        <p class="font-semibold text-ink">{{ $need->item_name }}</p>
+                                        <p class="mt-0.5 truncate text-[13px] text-slate-600">{{ $need->shelter_name }}</p>
+                                    </div>
+                                    <span class="shrink-0 text-[13px] font-bold capitalize {{ $priorityTone[$need->priority] ?? 'text-slate-600' }}">{{ $need->priority }}</span>
+                                </div>
+                                <div class="mt-2 h-1.5 bg-slate-200" role="presentation"><div class="h-1.5 bg-brand-600" style="width: {{ $percent }}%"></div></div>
+                                <div class="mt-1.5 flex items-center justify-between gap-3 text-[13px] text-slate-700">
+                                    <span class="tabular-nums">{{ number_format($pledged, 0, ',', '.') }} dari {{ number_format($need->qty_needed, 0, ',', '.') }} {{ $need->unit }}</span>
+                                    @if ($user->isDonatur() && $remaining > 0)
+                                        <a href="{{ route('donor.goods-donations.create', ['aid_need' => $need->id]) }}" class="rq-link">Donasikan</a>
                                     @endif
                                 </div>
-                            @endif
-                        </div>
-                    @empty
-                        <p class="text-center py-4 text-xs text-slate-400">Tidak ada kebutuhan mendesak saat ini.</p>
-                    @endforelse
-                </div>
-            </div>
-
-            @if (Auth::user()->isDonatur())
-                <!-- Riwayat Donasi Barang Saya Card -->
-                <div class="bg-white rounded-2xl border border-slate-200/80 shadow-2xs p-5">
-                    <div class="flex items-center justify-between mb-4">
-                        <div>
-                            <h2 class="text-base font-bold text-slate-900 tracking-tight">Riwayat Donasi</h2>
-                            <p class="text-xs text-slate-500">Janji donasi barang terbaru Anda</p>
-                        </div>
-                        <a href="{{ route('donor.goods-donations.index') }}" class="text-xs font-semibold text-blue-600 hover:text-blue-700 hover:underline">
-                            Semua
-                        </a>
-                    </div>
-
-                    @php
-                        $donationBadges = [
-                            'dijanjikan' => 'bg-blue-100 text-blue-800',
-                            'diterima' => 'bg-green-100 text-green-800',
-                            'disalurkan' => 'bg-green-100 text-green-800',
-                            'dibatalkan' => 'bg-gray-100 text-gray-700',
-                        ];
-                    @endphp
-
-                    <div class="space-y-3">
-                        @forelse ($myGoodsDonations as $donation)
-                            <a href="{{ route('donor.goods-donations.show', $donation) }}"
-                               class="block p-3.5 rounded-xl bg-slate-50/70 border border-slate-100 hover:bg-slate-50 transition">
-                                <div class="flex items-start justify-between gap-2">
-                                    <p class="text-xs sm:text-sm font-semibold text-slate-900">
-                                        {{ $donation->code }} · {{ $donation->item_name }} {{ $donation->quantity }} {{ $donation->item_unit }}
-                                    </p>
-                                    <span class="shrink-0 rounded-md px-2 py-0.5 text-[11px] font-medium {{ $donationBadges[$donation->status->value] }}">
-                                        {{ $donation->status->label() }}
-                                    </span>
-                                </div>
-                                <p class="text-[11px] text-slate-500 mt-1">
-                                    @switch($donation->status->value)
-                                        @case('dijanjikan')
-                                            {{ $donation->shelter_name }} · perkiraan tiba {{ $donation->est_arrival->locale('id')->translatedFormat('j M') }}
-                                            @break
-                                        @case('diterima')
-                                            Diterima di {{ $donation->shelter_name }}
-                                            @break
-                                        @case('disalurkan')
-                                            Disalurkan dari {{ $donation->shelter_name }}
-                                            @break
-                                        @default
-                                            {{ Str::startsWith($donation->cancel_reason, 'Dibatalkan otomatis') ? $donation->cancel_reason : 'Dibatalkan: '.$donation->cancel_reason }}
-                                    @endswitch
-                                </p>
-                            </a>
+                            </li>
                         @empty
-                            <p class="text-center py-4 text-xs text-slate-400">Belum ada janji donasi.</p>
+                            <li class="px-5 py-8 text-center text-sm text-slate-600">Tidak ada kebutuhan terbuka.</li>
                         @endforelse
+                    </ul>
+                </section>
+            @endisset
+
+            {{-- Peta posko dari data asli --}}
+            @isset($mapPoints)
+                <section class="{{ $panel }}">
+                    <div class="{{ $panelHead }}">
+                        <h2 class="{{ $panelTitle }}">Peta posko</h2>
+                        <a href="{{ route('public.shelters') }}" class="rq-link text-sm">Perbesar</a>
                     </div>
-                </div>
-            @endif
-
-            <!-- Peta Posko & SOS Quick Preview -->
-            <div class="bg-white rounded-2xl border border-slate-200/80 shadow-2xs p-5">
-                <div class="flex items-center justify-between mb-3">
-                    <h2 class="text-base font-bold text-slate-900 tracking-tight">Peta Posko & SOS</h2>
-                    <span class="text-xs text-blue-600 font-semibold cursor-pointer hover:underline">Perbesar Peta</span>
-                </div>
-                
-                <div class="h-36 rounded-xl bg-slate-100 border border-slate-200 flex items-center justify-center relative overflow-hidden group">
-                    <!-- Stylized SVG Map preview -->
-                    <div class="absolute inset-0 bg-blue-50/50 flex items-center justify-center">
-                        <svg class="w-full h-full text-blue-200/60" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 200 100">
-                            <path d="M0 40 Q50 30 100 45 T200 40" stroke="currentColor" stroke-width="8" fill="none" />
-                            <path d="M40 0 L40 100 M140 0 L140 100 M0 70 L200 70" stroke="#e2e8f0" stroke-width="2" />
-                        </svg>
-                    </div>
-
-                    <!-- Geolocation Pin Indicators -->
-                    <div class="relative z-10 flex items-center space-x-6">
-                        <div class="flex flex-col items-center">
-                            <span class="w-3.5 h-3.5 rounded-full bg-blue-600 border-2 border-white shadow-sm ring-4 ring-blue-500/20"></span>
-                            <span class="text-[10px] font-bold text-slate-700 bg-white/90 px-1.5 py-0.5 rounded shadow-xs mt-1">Posko GOR</span>
-                        </div>
-                        <div class="flex flex-col items-center">
-                            <span class="w-3.5 h-3.5 rounded-full bg-rose-600 border-2 border-white shadow-sm ring-4 ring-rose-500/20 animate-bounce"></span>
-                            <span class="text-[10px] font-bold text-rose-700 bg-white/90 px-1.5 py-0.5 rounded shadow-xs mt-1">SOS RW 07</span>
-                        </div>
-                        <div class="flex flex-col items-center">
-                            <span class="w-3.5 h-3.5 rounded-full bg-emerald-600 border-2 border-white shadow-sm ring-4 ring-emerald-500/20"></span>
-                            <span class="text-[10px] font-bold text-slate-700 bg-white/90 px-1.5 py-0.5 rounded shadow-xs mt-1">Posko Dayeuhkolot</span>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-        </div>
-
-    </div>
-
-    @if (! Auth::user()->isDonatur())
-    <!-- Bottom Section: Stok Menipis Table -->
-    <div class="bg-white rounded-2xl border border-slate-200/80 shadow-2xs overflow-hidden">
-        <div class="p-5 border-b border-slate-100 flex items-center justify-between">
-            <div>
-                <h2 class="text-base font-bold text-slate-900 tracking-tight">Stok Menipis</h2>
-                <p class="text-xs text-slate-500">Barang logistik yang berada di bawah ambang batas minimum</p>
-            </div>
-            <a href="{{ route('admin.stocks.index') }}" wire:navigate class="text-xs font-semibold text-blue-600 hover:text-blue-700 hover:underline">
-                Buka Kelola Stok &rarr;
-            </a>
-        </div>
-
-        <div class="overflow-x-auto">
-            <table class="w-full text-left text-xs sm:text-sm">
-                <thead class="bg-slate-50/80 text-slate-500 text-[11px] font-semibold uppercase tracking-wider border-b border-slate-100">
-                    <tr>
-                        <th class="py-3 px-4">Nama Barang</th>
-                        <th class="py-3 px-4">Posko</th>
-                        <th class="py-3 px-4 text-center">Sisa Stok</th>
-                        <th class="py-3 px-4 text-center">Ambang Batas</th>
-                        <th class="py-3 px-4">Estimasi Habis</th>
-                        <th class="py-3 px-4 text-right">Aksi</th>
-                    </tr>
-                </thead>
-                <tbody class="divide-y divide-slate-100">
-                    @forelse ($lowStocks as $stock)
-                        <tr class="hover:bg-slate-50/60 transition">
-                            <td class="py-3 px-4 font-semibold text-slate-800">
-                                {{ $stock->item_name }}
-                                <span class="block text-[11px] text-slate-400 capitalize">{{ $stock->category }}</span>
-                            </td>
-                            <td class="py-3 px-4 text-slate-600">
-                                {{ $stock->shelter_name }}
-                            </td>
-                            <td class="py-3 px-4 text-center font-bold text-rose-600">
-                                {{ $stock->quantity }} {{ $stock->unit }}
-                            </td>
-                            <td class="py-3 px-4 text-center text-slate-500">
-                                {{ $stock->min_threshold }} {{ $stock->unit }}
-                            </td>
-                            <td class="py-3 px-4">
-                                <span class="px-2 py-0.5 rounded text-xs font-medium bg-amber-50 text-amber-700">
-                                    Menipis (&lt; ambang)
-                                </span>
-                            </td>
-                            <td class="py-3 px-4 text-right">
-                                <a 
-                                    href="{{ route('admin.aid-needs.create', ['item_id' => $stock->item_id, 'shelter_id' => $stock->shelter_id]) }}" 
-                                    wire:navigate
-                                    class="inline-block px-2.5 py-1.5 bg-white hover:bg-blue-50 text-blue-700 border border-blue-200 text-xs font-medium rounded-lg shadow-2xs transition"
-                                >
-                                    Ajukan Kebutuhan
-                                </a>
-                            </td>
-                        </tr>
-                    @empty
-                        <tr>
-                            <td colspan="6" class="py-6 text-center text-slate-400 text-xs">
-                                Seluruh stok logistik masih berada di atas batas aman.
-                            </td>
-                        </tr>
-                    @endforelse
-                </tbody>
-            </table>
+                    <x-shelter-map :points="$mapPoints" class="h-64" />
+                </section>
+            @endisset
         </div>
     </div>
-    @endif
-
 </div>

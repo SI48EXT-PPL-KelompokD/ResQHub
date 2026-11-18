@@ -1,7 +1,6 @@
 @component('layouts.admin')
     <div class="mx-auto max-w-3xl space-y-6">
         <div class="space-y-1">
-            <p class="text-sm font-medium text-blue-600">Modul D · Kebutuhan</p>
             <h1 class="text-2xl font-bold text-slate-900">Edit Kebutuhan Bantuan</h1>
             <p class="text-sm text-slate-600">Jumlah tidak boleh lebih kecil dari komitmen yang sudah dijanjikan atau terpenuhi.</p>
         </div>

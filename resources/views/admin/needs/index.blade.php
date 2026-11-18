@@ -6,7 +6,6 @@
 
         <div class="flex flex-wrap items-end justify-between gap-4">
             <div class="space-y-1">
-                <p class="text-sm font-medium text-blue-600">Modul D · Kebutuhan</p>
                 <h1 class="text-2xl font-bold text-slate-900">Kebutuhan Bantuan Posko</h1>
                 <p class="max-w-2xl text-sm text-slate-600">Catat kebutuhan nyata posko agar donatur dapat membantu berdasarkan prioritas dan progres pemenuhan.</p>
             </div>
