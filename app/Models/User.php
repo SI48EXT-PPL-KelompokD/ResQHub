@@ -101,6 +101,11 @@ class User extends Authenticatable
         return $this->hasOne(VolunteerProfile::class);
     }
 
+    public function managedShelters(): HasMany
+    {
+        return $this->hasMany(Shelter::class, 'coordinator_id');
+    }
+
     public function canAccessModule(string $module): bool
     {
         if ($this->isAdmin()) {
