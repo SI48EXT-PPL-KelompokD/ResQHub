@@ -3,6 +3,7 @@
 namespace App\Support;
 
 use App\Models\DisasterReport;
+use App\Models\EarlyWarning;
 use App\Models\User;
 
 /**
@@ -34,12 +35,13 @@ class AppNavigation
     {
         $pendingUsers = User::query()->whereIn('role', ['koordinator', 'nakes'])->where('is_active', false)->count();
         $pendingReports = DisasterReport::query()->pending()->count();
+        $activeWarnings = EarlyWarning::query()->where('status', EarlyWarning::STATUS_ACTIVE)->count();
 
         return [
             self::section('Tanggap Darurat', [
                 self::link('Verifikasi Laporan', 'admin.reports.verification', 'check', ['admin.reports.verification', 'admin.reports.verify'], $pendingReports),
                 self::soon('SOS Masuk', 'alert'),
-                self::soon('Peringatan Dini', 'bell'),
+                self::link('Peringatan Dini', 'admin.warnings.index', 'bell', ['admin.warnings.*'], $activeWarnings),
             ]),
             self::section('Posko dan Pengungsi', [
                 self::link('Posko', 'admin.shelters', 'building', ['admin.shelters*']),

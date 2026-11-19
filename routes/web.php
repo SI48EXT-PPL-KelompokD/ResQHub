@@ -20,6 +20,9 @@ use App\Livewire\Report\MyReports;
 use App\Livewire\Report\ShowReport;
 use App\Livewire\Report\VerificationQueue;
 use App\Livewire\Report\VerifyReport;
+use App\Livewire\Warning\ShowWarning;
+use App\Livewire\Warning\WarningForm;
+use App\Livewire\Warning\WarningList;
 use App\Http\Controllers\Donor\GoodsDonationController;
 use App\Livewire\Admin\DonationAccountManagement;
 use App\Http\Controllers\Admin\ItemController;
@@ -86,6 +89,14 @@ Route::middleware(['auth'])->prefix('admin')->name('admin.')->group(function () 
     Route::middleware('role:admin')->group(function () {
         Route::get('/verifikasi-laporan', VerificationQueue::class)->name('reports.verification');
         Route::get('/verifikasi-laporan/{report}', VerifyReport::class)->name('reports.verify');
+    });
+
+    // Modul A - Peringatan Dini dan Instruksi Evakuasi (PBI-02) untuk Admin Pusdalops
+    Route::middleware('role:admin')->group(function () {
+        Route::get('/peringatan-dini', WarningList::class)->name('warnings.index');
+        Route::get('/peringatan-dini/buat', WarningForm::class)->name('warnings.create');
+        Route::get('/peringatan-dini/{warning}', ShowWarning::class)->name('warnings.show');
+        Route::get('/peringatan-dini/{warning}/ubah', WarningForm::class)->name('warnings.edit');
     });
 
     //Donation Accounts

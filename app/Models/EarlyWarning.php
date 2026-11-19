@@ -78,6 +78,41 @@ class EarlyWarning extends Model
         return $this->status === self::STATUS_ACTIVE;
     }
 
+    /**
+     * Label status untuk tampilan admin.
+     *
+     * @return array<string, string>
+     */
+    public static function statusLabels(): array
+    {
+        return [
+            self::STATUS_DRAFT => 'Draf',
+            self::STATUS_ACTIVE => 'Aktif',
+            self::STATUS_EXPIRED => 'Kedaluwarsa',
+            self::STATUS_REVOKED => 'Dicabut',
+        ];
+    }
+
+    public static function levelLabel(?string $level): string
+    {
+        return ucfirst((string) $level);
+    }
+
+    public function getStatusLabelAttribute(): string
+    {
+        return self::statusLabels()[$this->status] ?? ucfirst((string) $this->status);
+    }
+
+    public function getLevelLabelAttribute(): string
+    {
+        return self::levelLabel($this->level);
+    }
+
+    public function getHazardTypeLabelAttribute(): string
+    {
+        return DisasterReport::disasterTypeLabel($this->hazard_type);
+    }
+
     public static function levelRank(string $level): int
     {
         return (int) array_search($level, self::LEVELS, true);
