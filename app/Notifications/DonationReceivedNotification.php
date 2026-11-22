@@ -45,3 +45,4 @@ class DonationReceivedNotification extends Notification
         ];
     }
 }
+

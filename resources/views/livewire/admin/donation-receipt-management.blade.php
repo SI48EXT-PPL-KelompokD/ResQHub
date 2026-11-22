@@ -387,189 +387,186 @@
 
     <!-- MODAL 1: Catat Penerimaan Donasi (Tambah) -->
     @if ($showCreateModal)
-        <div class="fixed inset-0 z-50 overflow-y-auto" aria-labelledby="modal-title" role="dialog" aria-modal="true">
-            <div class="flex items-center justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
-                <div class="fixed inset-0 bg-slate-900/40 backdrop-blur-xs transition-opacity" wire:click="closeCreateModal"></div>
-                <span class="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
+        <div class="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 overflow-y-auto">
+            <div class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs transition-opacity" wire:click="closeCreateModal"></div>
 
-                <div class="inline-block align-bottom bg-white rounded-2xl text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-xl sm:w-full border border-slate-200">
-                    <form wire:submit.prevent="saveReceipt">
-                        <div class="bg-white px-6 pt-6 pb-4">
-                            <div class="flex items-center justify-between pb-3 border-b border-slate-100">
-                                <div class="flex items-center space-x-3">
-                                    <div class="w-10 h-10 bg-blue-50 text-blue-600 rounded-xl flex items-center justify-center shrink-0">
-                                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
-                                        </svg>
-                                    </div>
-                                    <div>
-                                        <h3 class="text-base font-bold text-slate-900">Catat Penerimaan Donasi Barang</h3>
-                                        <p class="text-xs text-slate-500">Pilih donasi masuk yang telah tiba secara fisik di posko.</p>
-                                    </div>
-                                </div>
-                                <button type="button" wire:click="closeCreateModal" class="text-slate-400 hover:text-slate-600">
-                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-                                    </svg>
-                                </button>
+            <div class="relative bg-white rounded-3xl max-w-xl w-full p-6 sm:p-8 shadow-2xl border border-slate-100 z-10 my-8">
+                <form wire:submit.prevent="saveReceipt">
+                    <div class="flex items-center justify-between pb-4 border-b border-slate-100">
+                        <div class="flex items-center space-x-3">
+                            <div class="w-10 h-10 bg-blue-50 text-blue-600 rounded-xl flex items-center justify-center shrink-0">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+                                </svg>
+                            </div>
+                            <div>
+                                <h3 class="text-base font-bold text-slate-900">Catat Penerimaan Donasi Barang</h3>
+                                <p class="text-xs text-slate-500">Pilih donasi masuk yang telah tiba secara fisik di posko.</p>
+                            </div>
+                        </div>
+                        <button type="button" wire:click="closeCreateModal" class="text-slate-400 hover:text-slate-600 p-1">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                            </svg>
+                        </button>
+                    </div>
+
+                    <div class="mt-4 space-y-4">
+                        <!-- Pilih Donasi Masuk (Cari / Dropdown) -->
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1">
+                                Pilih Donasi Barang Masuk <span class="text-rose-500">*</span>
+                            </label>
+                            <div class="mb-2">
+                                <input 
+                                    type="text" 
+                                    wire:model.live.debounce.300ms="donationSearch"
+                                    placeholder="Ketik kode (misal GDN-...) atau nama donatur..."
+                                    class="w-full px-3 py-1.5 border border-slate-300 rounded-xl text-xs focus:ring-1 focus:ring-blue-500 focus:border-blue-500 text-slate-800 placeholder-slate-400"
+                                />
                             </div>
 
-                            <div class="mt-4 space-y-4">
-                                <!-- Pilih Donasi Masuk (Cari / Dropdown) -->
-                                <div>
-                                    <label class="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1">
-                                        Pilih Donasi Barang Masuk <span class="text-rose-500">*</span>
-                                    </label>
-                                    <div class="mb-2">
-                                        <input 
-                                            type="text" 
-                                            wire:model.live.debounce.300ms="donationSearch"
-                                            placeholder="Ketik kode (misal GDN-...) atau nama donatur..."
-                                            class="w-full px-3 py-1.5 border border-slate-300 rounded-lg text-xs focus:ring-1 focus:ring-blue-500 focus:border-blue-500 text-slate-800 placeholder-slate-400"
-                                        />
-                                    </div>
-
-                                    <div class="max-h-40 overflow-y-auto border border-slate-200 rounded-xl divide-y divide-slate-100">
-                                        @forelse ($availableDonations as $d)
-                                            <div 
-                                                wire:click="selectDonation({{ $d->id }})" 
-                                                class="p-2.5 hover:bg-blue-50/60 cursor-pointer transition flex items-center justify-between {{ $selectedDonationId === $d->id ? 'bg-blue-50 border-l-4 border-blue-600' : '' }}"
-                                            >
-                                                <div>
-                                                    <div class="flex items-center space-x-2">
-                                                        <span class="font-mono text-xs font-bold text-slate-900">{{ $d->code }}</span>
-                                                        <span class="text-[10px] bg-slate-100 text-slate-600 px-1.5 py-0.5 rounded">
-                                                            {{ $d->delivery_method === 'antar' ? 'Diantar' : 'Dijemput' }}
-                                                        </span>
-                                                    </div>
-                                                    <div class="text-xs text-slate-600 mt-0.5">
-                                                        <span class="font-medium text-slate-800">{{ $d->donor?->name ?? 'Donatur' }}</span>
-                                                        <span class="text-slate-400">•</span>
-                                                        <span>{{ $d->aidNeed?->item?->name ?? 'Barang' }} ({{ $d->quantity }} {{ $d->aidNeed?->item?->unit ?? 'unit' }})</span>
-                                                    </div>
-                                                    <div class="text-[11px] text-slate-400">
-                                                        Tujuan: {{ $d->aidNeed?->shelter?->name ?? '-' }}
-                                                    </div>
-                                                </div>
-                                                <div class="text-right">
-                                                    @if ($selectedDonationId === $d->id)
-                                                        <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-blue-600 text-white">
-                                                            Terpilih
-                                                        </span>
-                                                    @else
-                                                        <span class="text-xs font-medium text-blue-600">Pilih</span>
-                                                    @endif
-                                                </div>
-                                            </div>
-                                        @empty
-                                            <div class="p-3 text-center text-xs text-slate-400">
-                                                Tidak ada donasi dengan status 'Dijanjikan' yang sesuai.
-                                            </div>
-                                        @endforelse
-                                    </div>
-                                    @error('selectedDonationId') <p class="text-xs text-rose-500 mt-1">{{ $message }}</p> @enderror
-                                </div>
-
-                                <!-- Box Ringkasan Donasi Terpilih -->
-                                @if ($selectedDonation)
-                                    <div class="p-3 bg-blue-50/60 border border-blue-200/80 rounded-xl space-y-1 text-xs">
-                                        <div class="flex justify-between">
-                                            <span class="text-slate-500">Kode & Donatur:</span>
-                                            <span class="font-semibold text-slate-800">{{ $selectedDonation->code }} — {{ $selectedDonation->donor?->name }}</span>
-                                        </div>
-                                        <div class="flex justify-between">
-                                            <span class="text-slate-500">Kebutuhan Item:</span>
-                                            <span class="font-semibold text-slate-800">{{ $selectedDonation->aidNeed?->item?->name }} (Janji: {{ $selectedDonation->quantity }} {{ $selectedDonation->aidNeed?->item?->unit }})</span>
-                                        </div>
-                                        <div class="flex justify-between">
-                                            <span class="text-slate-500">Estimasi Tiba:</span>
-                                            <span class="font-medium text-slate-700">{{ $selectedDonation->est_arrival ? $selectedDonation->est_arrival->format('d M Y') : '-' }}</span>
-                                        </div>
-                                    </div>
-                                @endif
-
-                                <!-- Posko Penerima -->
-                                <div>
-                                    <label class="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1">
-                                        Posko Penerima <span class="text-rose-500">*</span>
-                                    </label>
-                                    <select 
-                                        wire:model="receiptShelterId"
-                                        class="w-full py-2 px-3 border border-slate-300 rounded-xl text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-slate-800"
+                            <div class="max-h-48 overflow-y-auto border border-slate-200 rounded-2xl divide-y divide-slate-100">
+                                @forelse ($availableDonations as $d)
+                                    <div 
+                                        wire:click="selectDonation({{ $d->id }})" 
+                                        class="p-3 hover:bg-blue-50/60 cursor-pointer transition flex items-center justify-between {{ $selectedDonationId === $d->id ? 'bg-blue-50/90 border-l-4 border-blue-600' : '' }}"
                                     >
-                                        <option value="">Pilih Posko</option>
-                                        @foreach ($userShelters as $shelter)
-                                            <option value="{{ $shelter->id }}">{{ $shelter->name }}</option>
-                                        @endforeach
-                                    </select>
-                                    @error('receiptShelterId') <p class="text-xs text-rose-500 mt-1">{{ $message }}</p> @enderror
-                                </div>
-
-                                <!-- Kuantitas Baik & Rusak -->
-                                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                                    <div>
-                                        <label class="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1">
-                                            Jumlah Kondisi Baik <span class="text-rose-500">*</span>
-                                        </label>
-                                        <input 
-                                            type="number" 
-                                            min="0"
-                                            wire:model="qtyGood"
-                                            class="w-full py-2 px-3 border border-slate-300 rounded-xl text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-slate-800"
-                                            placeholder="Contoh: 40"
-                                        />
-                                        <p class="text-[11px] text-emerald-600 mt-0.5">Jumlah ini yang masuk ke stok gudang.</p>
-                                        @error('qtyGood') <p class="text-xs text-rose-500 mt-1">{{ $message }}</p> @enderror
+                                        <div>
+                                            <div class="flex items-center space-x-2">
+                                                <span class="font-mono text-xs font-bold text-slate-900">{{ $d->code }}</span>
+                                                <span class="text-[10px] bg-slate-100 text-slate-600 px-1.5 py-0.5 rounded font-medium">
+                                                    {{ $d->delivery_method === 'antar' ? 'Diantar Donatur' : 'Dijemput Relawan' }}
+                                                </span>
+                                            </div>
+                                            <div class="text-xs text-slate-600 mt-0.5">
+                                                <span class="font-medium text-slate-800">{{ $d->donor?->name ?? 'Donatur' }}</span>
+                                                <span class="text-slate-400">•</span>
+                                                <span>{{ $d->aidNeed?->item?->name ?? 'Barang' }} (<strong>{{ $d->quantity }} {{ $d->aidNeed?->item?->unit ?? 'unit' }}</strong>)</span>
+                                            </div>
+                                            <div class="text-[11px] text-slate-400">
+                                                Tujuan: {{ $d->aidNeed?->shelter?->name ?? '-' }}
+                                            </div>
+                                        </div>
+                                        <div class="text-right shrink-0 ml-2">
+                                            @if ($selectedDonationId === $d->id)
+                                                <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold bg-blue-600 text-white shadow-xs">
+                                                    ✓ Terpilih
+                                                </span>
+                                            @else
+                                                <span class="px-2.5 py-1 text-xs font-semibold text-blue-600 bg-blue-50 hover:bg-blue-100 rounded-lg inline-block">
+                                                    Pilih
+                                                </span>
+                                            @endif
+                                        </div>
                                     </div>
-
-                                    <div>
-                                        <label class="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1">
-                                            Jumlah Rusak / Cacat <span class="text-rose-500">*</span>
-                                        </label>
-                                        <input 
-                                            type="number" 
-                                            min="0"
-                                            wire:model="qtyDamaged"
-                                            class="w-full py-2 px-3 border border-slate-300 rounded-xl text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-slate-800"
-                                            placeholder="0 jika tidak ada"
-                                        />
-                                        <p class="text-[11px] text-rose-500 mt-0.5">Dicatat sebagai afkir (tidak masuk stok).</p>
-                                        @error('qtyDamaged') <p class="text-xs text-rose-500 mt-1">{{ $message }}</p> @enderror
+                                @empty
+                                    <div class="p-4 text-center text-xs text-slate-400">
+                                        Tidak ada donasi dengan status 'Dijanjikan' yang sesuai.
                                     </div>
-                                </div>
+                                @endforelse
+                            </div>
+                            @error('selectedDonationId') <p class="text-xs text-rose-500 mt-1">{{ $message }}</p> @enderror
+                        </div>
 
-                                <!-- Waktu Penerimaan -->
-                                <div>
-                                    <label class="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1">
-                                        Waktu Penerimaan Fisik <span class="text-rose-500">*</span>
-                                    </label>
-                                    <input 
-                                        type="datetime-local" 
-                                        wire:model="receivedAt"
-                                        class="w-full py-2 px-3 border border-slate-300 rounded-xl text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-slate-800"
-                                    />
-                                    @error('receivedAt') <p class="text-xs text-rose-500 mt-1">{{ $message }}</p> @enderror
+                        <!-- Box Ringkasan Donasi Terpilih -->
+                        @if ($selectedDonation)
+                            <div class="p-3.5 bg-blue-50/70 border border-blue-200/80 rounded-2xl space-y-1 text-xs">
+                                <div class="flex justify-between">
+                                    <span class="text-slate-500">Kode & Donatur:</span>
+                                    <span class="font-semibold text-slate-800">{{ $selectedDonation->code }} — {{ $selectedDonation->donor?->name }}</span>
                                 </div>
+                                <div class="flex justify-between">
+                                    <span class="text-slate-500">Kebutuhan Item:</span>
+                                    <span class="font-semibold text-slate-800">{{ $selectedDonation->aidNeed?->item?->name }} (Janji: {{ $selectedDonation->quantity }} {{ $selectedDonation->aidNeed?->item?->unit }})</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span class="text-slate-500">Estimasi Tiba:</span>
+                                    <span class="font-medium text-slate-700">{{ $selectedDonation->est_arrival ? $selectedDonation->est_arrival->format('d M Y') : '-' }}</span>
+                                </div>
+                            </div>
+                        @endif
+
+                        <!-- Posko Penerima -->
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1">
+                                Posko Penerima <span class="text-rose-500">*</span>
+                            </label>
+                            <select 
+                                wire:model="receiptShelterId"
+                                class="w-full py-2 px-3 border border-slate-300 rounded-xl text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-slate-800"
+                            >
+                                <option value="">Pilih Posko</option>
+                                @foreach ($userShelters as $shelter)
+                                    <option value="{{ $shelter->id }}">{{ $shelter->name }}</option>
+                                @endforeach
+                            </select>
+                            @error('receiptShelterId') <p class="text-xs text-rose-500 mt-1">{{ $message }}</p> @enderror
+                        </div>
+
+                        <!-- Kuantitas Baik & Rusak -->
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                            <div>
+                                <label class="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1">
+                                    Jumlah Kondisi Baik <span class="text-rose-500">*</span>
+                                </label>
+                                <input 
+                                    type="number" 
+                                    min="0"
+                                    wire:model="qtyGood"
+                                    class="w-full py-2 px-3 border border-slate-300 rounded-xl text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-slate-800"
+                                    placeholder="Contoh: 40"
+                                />
+                                <p class="text-[11px] text-emerald-600 mt-0.5">Jumlah ini yang masuk ke stok gudang.</p>
+                                @error('qtyGood') <p class="text-xs text-rose-500 mt-1">{{ $message }}</p> @enderror
+                            </div>
+
+                            <div>
+                                <label class="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1">
+                                    Jumlah Rusak / Cacat <span class="text-rose-500">*</span>
+                                </label>
+                                <input 
+                                    type="number" 
+                                    min="0"
+                                    wire:model="qtyDamaged"
+                                    class="w-full py-2 px-3 border border-slate-300 rounded-xl text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-slate-800"
+                                    placeholder="0 jika tidak ada"
+                                />
+                                <p class="text-[11px] text-rose-500 mt-0.5">Dicatat sebagai afkir (tidak masuk stok).</p>
+                                @error('qtyDamaged') <p class="text-xs text-rose-500 mt-1">{{ $message }}</p> @enderror
                             </div>
                         </div>
 
-                        <div class="bg-slate-50 px-6 py-3.5 flex items-center justify-end space-x-3 border-t border-slate-100">
-                            <button 
-                                type="button" 
-                                wire:click="closeCreateModal"
-                                class="px-4 py-2 bg-white border border-slate-300 hover:bg-slate-100 text-slate-700 text-xs font-semibold rounded-xl transition"
-                            >
-                                Batal
-                            </button>
-                            <button 
-                                type="submit" 
-                                class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold rounded-xl shadow-xs transition"
-                            >
-                                Simpan Penerimaan
-                            </button>
+                        <!-- Waktu Penerimaan -->
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1">
+                                Waktu Penerimaan Fisik <span class="text-rose-500">*</span>
+                            </label>
+                            <input 
+                                type="datetime-local" 
+                                wire:model="receivedAt"
+                                class="w-full py-2 px-3 border border-slate-300 rounded-xl text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-slate-800"
+                            />
+                            @error('receivedAt') <p class="text-xs text-rose-500 mt-1">{{ $message }}</p> @enderror
                         </div>
-                    </form>
-                </div>
+                    </div>
+
+                    <div class="mt-6 pt-4 flex items-center justify-end space-x-3 border-t border-slate-100">
+                        <button 
+                            type="button" 
+                            wire:click="closeCreateModal"
+                            class="px-4 py-2 bg-white border border-slate-300 hover:bg-slate-100 text-slate-700 text-xs font-semibold rounded-xl transition"
+                        >
+                            Batal
+                        </button>
+                        <button 
+                            type="submit" 
+                            class="px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold rounded-xl shadow-xs transition"
+                        >
+                            Simpan Penerimaan
+                        </button>
+                    </div>
+                </form>
             </div>
         </div>
     @endif
@@ -581,32 +578,29 @@
             $dItem = $dDonation?->aidNeed?->item;
             $dAidNeed = $dDonation?->aidNeed;
         @endphp
-        <div class="fixed inset-0 z-50 overflow-y-auto" aria-labelledby="modal-title" role="dialog" aria-modal="true">
-            <div class="flex items-center justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
-                <div class="fixed inset-0 bg-slate-900/40 backdrop-blur-xs transition-opacity" wire:click="closeDetailModal"></div>
-                <span class="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
+        <div class="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 overflow-y-auto">
+            <div class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs transition-opacity" wire:click="closeDetailModal"></div>
 
-                <div class="inline-block align-bottom bg-white rounded-2xl text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-2xl sm:w-full border border-slate-200">
-                    <div class="bg-white px-6 pt-6 pb-4">
-                        <div class="flex items-center justify-between pb-3 border-b border-slate-100">
-                            <div class="flex items-center space-x-3">
-                                <div class="w-10 h-10 bg-blue-50 text-blue-600 rounded-xl flex items-center justify-center shrink-0">
-                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                                    </svg>
-                                </div>
-                                <div>
-                                    <h3 class="text-base font-bold text-slate-900">Rincian Penerimaan Donasi</h3>
-                                    <p class="text-xs text-slate-500 font-mono">{{ $dDonation?->code }}</p>
-                                </div>
-                            </div>
-                            <button type="button" wire:click="closeDetailModal" class="text-slate-400 hover:text-slate-600">
-                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-                                </svg>
-                            </button>
+            <div class="relative bg-white rounded-3xl max-w-2xl w-full p-6 sm:p-8 shadow-2xl border border-slate-100 z-10 my-8">
+                <div class="flex items-center justify-between pb-4 border-b border-slate-100">
+                    <div class="flex items-center space-x-3">
+                        <div class="w-10 h-10 bg-blue-50 text-blue-600 rounded-xl flex items-center justify-center shrink-0">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                            </svg>
                         </div>
+                        <div>
+                            <h3 class="text-base font-bold text-slate-900">Rincian Penerimaan Donasi</h3>
+                            <p class="text-xs text-slate-500 font-mono">{{ $dDonation?->code }}</p>
+                        </div>
+                    </div>
+                    <button type="button" wire:click="closeDetailModal" class="text-slate-400 hover:text-slate-600 p-1">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                    </button>
+                </div>
 
                         <div class="mt-4 space-y-4 text-xs">
                             <!-- Info Donatur & Posko -->
@@ -761,32 +755,29 @@
         @php
             $eItem = $editReceipt->goodsDonation?->aidNeed?->item;
         @endphp
-        <div class="fixed inset-0 z-50 overflow-y-auto" aria-labelledby="modal-title" role="dialog" aria-modal="true">
-            <div class="flex items-center justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
-                <div class="fixed inset-0 bg-slate-900/40 backdrop-blur-xs transition-opacity" wire:click="closeEditModal"></div>
-                <span class="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
+        <div class="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 overflow-y-auto">
+            <div class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs transition-opacity" wire:click="closeEditModal"></div>
 
-                <div class="inline-block align-bottom bg-white rounded-2xl text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-md sm:w-full border border-slate-200">
-                    <form wire:submit.prevent="updateReceipt">
-                        <div class="bg-white px-6 pt-6 pb-4">
-                            <div class="flex items-center justify-between pb-3 border-b border-slate-100">
-                                <div class="flex items-center space-x-3">
-                                    <div class="w-10 h-10 bg-amber-50 text-amber-600 rounded-xl flex items-center justify-center shrink-0">
-                                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                                        </svg>
-                                    </div>
-                                    <div>
-                                        <h3 class="text-base font-bold text-slate-900">Koreksi Penerimaan Donasi</h3>
-                                        <p class="text-xs text-slate-500 font-mono">{{ $editReceipt->goodsDonation?->code }}</p>
-                                    </div>
-                                </div>
-                                <button type="button" wire:click="closeEditModal" class="text-slate-400 hover:text-slate-600">
-                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-                                    </svg>
-                                </button>
+            <div class="relative bg-white rounded-3xl max-w-md w-full p-6 sm:p-8 shadow-2xl border border-slate-100 z-10 my-8">
+                <form wire:submit.prevent="updateReceipt">
+                    <div class="flex items-center justify-between pb-4 border-b border-slate-100">
+                        <div class="flex items-center space-x-3">
+                            <div class="w-10 h-10 bg-amber-50 text-amber-600 rounded-xl flex items-center justify-center shrink-0">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                                </svg>
                             </div>
+                            <div>
+                                <h3 class="text-base font-bold text-slate-900">Koreksi Penerimaan Donasi</h3>
+                                <p class="text-xs text-slate-500 font-mono">{{ $editReceipt->goodsDonation?->code }}</p>
+                            </div>
+                        </div>
+                        <button type="button" wire:click="closeEditModal" class="text-slate-400 hover:text-slate-600 p-1">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                            </svg>
+                        </button>
+                    </div>
 
                             <div class="mt-4 space-y-3.5">
                                 <div class="p-3 bg-amber-50/60 border border-amber-200/80 rounded-xl text-xs text-amber-800">
@@ -865,25 +856,22 @@
 
     <!-- MODAL 4: Pembatalan Penerimaan (Hapus) -->
     @if ($showCancelModal && $cancelReceipt)
-        <div class="fixed inset-0 z-50 overflow-y-auto" aria-labelledby="modal-title" role="dialog" aria-modal="true">
-            <div class="flex items-center justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
-                <div class="fixed inset-0 bg-slate-900/40 backdrop-blur-xs transition-opacity" wire:click="closeCancelModal"></div>
-                <span class="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
+        <div class="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 overflow-y-auto">
+            <div class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs transition-opacity" wire:click="closeCancelModal"></div>
 
-                <div class="inline-block align-bottom bg-white rounded-2xl text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-md sm:w-full border border-slate-200">
-                    <form wire:submit.prevent="confirmCancel">
-                        <div class="bg-white px-6 pt-6 pb-4">
-                            <div class="flex items-center space-x-3 pb-3 border-b border-slate-100">
-                                <div class="w-10 h-10 bg-rose-50 text-rose-600 rounded-xl flex items-center justify-center shrink-0">
-                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                    </svg>
-                                </div>
-                                <div>
-                                    <h3 class="text-base font-bold text-slate-900">Batalkan Penerimaan Donasi</h3>
-                                    <p class="text-xs text-slate-500 font-mono">{{ $cancelReceipt->goodsDonation?->code }}</p>
-                                </div>
-                            </div>
+            <div class="relative bg-white rounded-3xl max-w-md w-full p-6 sm:p-8 shadow-2xl border border-slate-100 z-10 my-8">
+                <form wire:submit.prevent="confirmCancel">
+                    <div class="flex items-center space-x-3 pb-4 border-b border-slate-100">
+                        <div class="w-10 h-10 bg-rose-50 text-rose-600 rounded-xl flex items-center justify-center shrink-0">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
+                        </div>
+                        <div>
+                            <h3 class="text-base font-bold text-slate-900">Batalkan Penerimaan Donasi</h3>
+                            <p class="text-xs text-slate-500 font-mono">{{ $cancelReceipt->goodsDonation?->code }}</p>
+                        </div>
+                    </div>
 
                             <div class="mt-4 space-y-3">
                                 <div class="p-3 bg-rose-50 border border-rose-200 rounded-xl text-xs text-rose-800 space-y-1">
@@ -928,3 +916,4 @@
         </div>
     @endif
 </div>
+

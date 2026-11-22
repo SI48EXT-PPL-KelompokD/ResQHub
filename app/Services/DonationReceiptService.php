@@ -262,3 +262,4 @@ class DonationReceiptService
         return Shelter::where('coordinator_id', $user->id)->orderBy('name')->get();
     }
 }
+

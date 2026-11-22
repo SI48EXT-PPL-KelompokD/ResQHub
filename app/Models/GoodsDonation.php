@@ -62,3 +62,4 @@ class GoodsDonation extends Model
         return $this->status === 'dibatalkan';
     }
 }
+

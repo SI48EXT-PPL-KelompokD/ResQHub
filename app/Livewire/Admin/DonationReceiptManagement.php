@@ -111,6 +111,18 @@ class DonationReceiptManagement extends Component
 
         if ($donationId) {
             $this->selectDonation($donationId);
+        } else {
+            // Auto-select donasi pertama yang tersedia agar form langsung terisi otomatis
+            $user = Auth::user();
+            $query = GoodsDonation::where('status', 'dijanjikan');
+            if ($user && !$user->isAdmin()) {
+                $shelterIds = $user->coordinatedShelters()->pluck('id')->toArray();
+                $query->whereHas('aidNeed', fn ($q) => $q->whereIn('shelter_id', $shelterIds));
+            }
+            $first = $query->first();
+            if ($first) {
+                $this->selectDonation($first->id);
+            }
         }
 
         $this->showCreateModal = true;
@@ -480,3 +492,4 @@ class DonationReceiptManagement extends Component
         ]);
     }
 }
+
