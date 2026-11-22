@@ -17,6 +17,7 @@ return new class extends Migration
             $table->foreignId('received_by')->constrained('users')->cascadeOnDelete();
             $table->dateTime('received_at');
             $table->string('cancel_reason', 255)->nullable();
+            $table->softDeletes();
             $table->timestamps();
         });
     }

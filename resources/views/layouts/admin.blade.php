@@ -123,18 +123,19 @@
                         </a>
                     @endif
 
-                    <!-- Modul E & F: Penerimaan Donasi (Ariq & Arifin) -->
-                    @if (Auth::user()->canAccessModule('modul_e'))
+                    <!-- Modul F: Penerimaan Donasi Barang (Arifin - PBI-17) -->
+                    @if (Auth::user()->canAccessModule('modul_f') || Auth::user()->canAccessModule('modul_e'))
                         <a 
-                            href="#" 
-                            class="flex items-center space-x-3 px-3 py-2.5 rounded-xl text-sm font-medium text-slate-600 hover:bg-slate-50 hover:text-slate-900 transition duration-150 group"
-                            title="Modul E & F - Penerimaan Donasi"
+                            href="{{ route('admin.donation-receipts.index') }}" 
+                            wire:navigate
+                            class="flex items-center space-x-3 px-3 py-2.5 rounded-xl text-sm font-medium transition duration-150 {{ request()->routeIs('admin.donation-receipts.*') ? 'bg-blue-50 text-blue-700 font-semibold shadow-xs' : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900' }} group"
+                            title="Modul F - Penerimaan Donasi Barang (PBI-17)"
                         >
-                            <svg class="w-5 h-5 text-slate-400 group-hover:text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <svg class="w-5 h-5 {{ request()->routeIs('admin.donation-receipts.*') ? 'text-blue-600' : 'text-slate-400 group-hover:text-slate-600' }}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
                             </svg>
                             <span class="flex-1">Penerimaan Donasi</span>
-                            <span class="text-[10px] bg-slate-100 text-slate-500 px-1.5 py-0.5 rounded font-mono">Modul E/F</span>
+                            <span class="text-[10px] bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded font-mono">Modul F</span>
                         </a>
                     @endif
 

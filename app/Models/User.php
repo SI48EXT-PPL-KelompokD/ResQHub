@@ -106,6 +106,16 @@ class User extends Authenticatable
         return $this->hasMany(Shelter::class, 'coordinator_id');
     }
 
+    public function goodsDonations(): \Illuminate\Database\Eloquent\Relations\HasMany
+    {
+        return $this->hasMany(GoodsDonation::class, 'donor_id');
+    }
+
+    public function donationReceipts(): \Illuminate\Database\Eloquent\Relations\HasMany
+    {
+        return $this->hasMany(DonationReceipt::class, 'received_by');
+    }
+
     public function canAccessModule(string $module): bool
     {
         if ($this->isAdmin()) {

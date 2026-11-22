@@ -22,5 +22,10 @@ class AidNeed extends Model
     {
         return $this->belongsTo(Item::class);
     }
+
+    public function goodsDonations(): \Illuminate\Database\Eloquent\Relations\HasMany
+    {
+        return $this->hasMany(GoodsDonation::class);
+    }
 }
 

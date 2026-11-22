@@ -49,6 +49,16 @@
         </div>
 
         <div class="flex items-center space-x-3 shrink-0">
+            <a 
+                href="{{ route('admin.donation-receipts.index') }}"
+                wire:navigate
+                class="inline-flex items-center space-x-2 px-3.5 py-2.5 bg-white border border-slate-300 hover:bg-slate-50 text-slate-700 rounded-xl text-xs sm:text-sm font-semibold transition duration-150"
+            >
+                <svg class="w-4 h-4 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+                </svg>
+                <span>Penerimaan Donasi</span>
+            </a>
             <button 
                 wire:click="openIncomingModal"
                 class="inline-flex items-center space-x-2 px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs sm:text-sm font-semibold shadow-xs shadow-blue-500/20 transition duration-150 active:scale-95 cursor-pointer"

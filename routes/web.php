@@ -7,6 +7,7 @@ use App\Livewire\Admin\Dashboard;
 use App\Livewire\Admin\UserManagement;
 use App\Livewire\Admin\StockManagement;
 use App\Livewire\Admin\AidNeedForm;
+use App\Livewire\Admin\DonationReceiptManagement;
 
 // Root redirect
 Route::get('/', function () {
@@ -29,9 +30,10 @@ Route::middleware(['auth'])->prefix('admin')->name('admin.')->group(function () 
     Route::get('/dashboard', Dashboard::class)->name('dashboard');
     Route::get('/users', UserManagement::class)->middleware('role:admin')->name('users');
 
-    // Modul F: Stok Logistik Posko (PBI-16)
+    // Modul F: Stok Logistik Posko (PBI-16) & Penerimaan Donasi Barang (PBI-17)
     Route::middleware(['role:admin,koordinator'])->group(function () {
         Route::get('/stocks', StockManagement::class)->name('stocks.index');
         Route::get('/aid-needs/create', AidNeedForm::class)->name('aid-needs.create');
+        Route::get('/donation-receipts', DonationReceiptManagement::class)->name('donation-receipts.index');
     });
 });
