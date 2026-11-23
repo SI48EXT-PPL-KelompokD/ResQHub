@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Livewire\Volunteer\ProfileManager;
 use App\Models\User;
 use App\Models\VolunteerProfile;
+use App\Models\VolunteerTask;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Livewire\Livewire;
 use Tests\TestCase;
@@ -182,7 +183,7 @@ class VolunteerProfileTest extends TestCase
             ->assertHasErrors(['str_number' => 'required']);
     }
 
-    public function test_profil_dengan_tugas_berjalan_tetap_dapat_dihapus(): void
+    public function test_profil_dengan_tugas_berjalan_tidak_dapat_dihapus(): void
     {
         $relawan = $this->relawanAktif();
         $this->actingAs($relawan);
@@ -192,31 +193,60 @@ class VolunteerProfileTest extends TestCase
         Livewire::test(ProfileManager::class)
             ->call('openProfile')
             ->call('requestDelete')
-            ->assertSet('showDeleteModal', true)
-            ->call('deleteProfile')
             ->assertSet('showDeleteModal', false)
-            ->assertSee('Profil relawan berhasil dihapus.');
+            ->assertSet('notificationType', 'error')
+            ->assertSee('tidak dapat dihapus selama masih ada tugas berjalan')
+            ->call('deleteProfile')
+            ->assertSet('showDeleteModal', false);
 
-        $this->assertSoftDeleted('volunteer_profiles', ['id' => $profileId]);
-
+        $this->assertNotNull($relawan->fresh()->volunteerProfile);
+        $this->assertDatabaseHas('volunteer_profiles', ['id' => $profileId, 'deleted_at' => null]);
         $this->assertDatabaseHas('task_assignments', [
             'volunteer_task_id' => 1,
             'volunteer_profile_id' => $profileId,
-            'status' => 'ditolak',
+            'status' => 'diterima',
         ]);
     }
 
-    public function test_tugas_yang_kehilangan_relawan_kembali_terbuka(): void
+    public function test_riwayat_tugas_selesai_tetap_tersimpan_setelah_profil_dihapus(): void
     {
-        $relawan = $this->relawanAktif();
+        $relawan = $this->relawanTanpaTugasAktif();
+        $profileId = $relawan->volunteerProfile->id;
+
+        $task = VolunteerTask::create([
+            'disaster_event_id' => 1,
+            'skill_id' => 7,
+            'title' => 'Distribusi Logistik Selesai',
+            'description' => 'Tugas yang sudah selesai.',
+            'lat' => -6.9961,
+            'lng' => 107.6238,
+            'quota' => 1,
+            'start_at' => now()->subDays(3),
+            'end_at' => now()->subDays(3)->addHours(3),
+            'status' => 'selesai',
+            'created_by' => User::where('role', 'koordinator')->value('id'),
+        ]);
+
+        $assignment = $task->assignments()->create([
+            'volunteer_profile_id' => $profileId,
+            'status' => 'selesai',
+        ]);
+
         $this->actingAs($relawan);
 
         Livewire::test(ProfileManager::class)
             ->call('openProfile')
+            ->assertSee('Distribusi Logistik Selesai')
             ->call('requestDelete')
-            ->call('deleteProfile');
+            ->call('deleteProfile')
+            ->assertSee('Riwayat tugas yang sudah selesai tetap tersimpan.');
 
-        $this->assertDatabaseHas('volunteer_tasks', ['id' => 1, 'status' => 'terbuka']);
+        $this->assertSoftDeleted('volunteer_profiles', ['id' => $profileId]);
+        $this->assertDatabaseHas('task_assignments', [
+            'id' => $assignment->id,
+            'volunteer_profile_id' => $profileId,
+            'status' => 'selesai',
+        ]);
     }
 
     public function test_profil_tanpa_tugas_berjalan_dapat_dihapus_soft_delete(): void

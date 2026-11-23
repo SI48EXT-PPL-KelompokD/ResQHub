@@ -180,7 +180,7 @@
                 <div class="border-t border-slate-200 px-4 py-3.5">
                     @if ($mode === 'view')
                         @php
-                            $canDelete = $profile !== null;
+                            $canDelete = $profile !== null && ! $hasActiveTask;
                         @endphp
                         <div class="grid grid-cols-2 gap-2.5">
                             <button type="button" wire:click="edit"
@@ -195,7 +195,7 @@
                         </div>
                         <p class="mt-2.5 text-center text-[10px] text-slate-400">
                             @if ($activeTaskCount > 0)
-                                {{ $activeTaskCount }} penugasan aktif akan dibatalkan saat profil dihapus.
+                                Selesaikan {{ $activeTaskCount }} penugasan aktif sebelum menghapus profil.
                             @else
                                 Riwayat tugas yang sudah selesai tetap tersimpan.
                             @endif
@@ -219,8 +219,7 @@
             <div class="relative w-full max-w-sm rounded-[4px] bg-white p-4 shadow-lg">
                 <h3 class="text-sm font-semibold text-slate-900">Hapus profil relawan?</h3>
                 <p class="mt-2 text-[11px] leading-relaxed text-slate-400">
-                    Anda tidak akan muncul lagi di rekomendasi tugas. Penugasan yang masih aktif otomatis dibatalkan.
-                    Riwayat tugas yang sudah selesai tetap tersimpan.
+                    Anda tidak akan muncul lagi di rekomendasi tugas. Riwayat tugas yang sudah selesai tetap tersimpan.
                 </p>
                 <div class="mt-4 flex justify-end gap-2">
                     <button type="button" wire:click="cancelDelete"

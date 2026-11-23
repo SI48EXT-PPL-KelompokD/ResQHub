@@ -3,7 +3,6 @@
 namespace App\Livewire\Volunteer;
 
 use App\Models\Skill;
-use App\Models\TaskAssignment;
 use App\Models\VolunteerProfile;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
@@ -219,6 +218,13 @@ class ProfileManager extends Component
             return;
         }
 
+        if ($this->hasActiveTask()) {
+            $this->showDeleteModal = false;
+            $this->notify('Profil tidak dapat dihapus selama masih ada tugas berjalan. Selesaikan tugas tersebut terlebih dahulu.', 'error');
+
+            return;
+        }
+
         $this->showDeleteModal = true;
     }
 
@@ -238,47 +244,19 @@ class ProfileManager extends Component
             return;
         }
 
-        $this->cancelActiveAssignments($profile);
+        if ($this->hasActiveTask()) {
+            $this->showDeleteModal = false;
+            $this->notify('Profil tidak dapat dihapus selama masih ada tugas berjalan. Selesaikan tugas tersebut terlebih dahulu.', 'error');
+
+            return;
+        }
 
         $profile->delete();
 
         $this->showDeleteModal = false;
         $this->mode = 'view';
         $this->fillFromProfile();
-        $this->notify('Profil relawan berhasil dihapus. Riwayat tugas tetap tersimpan.');
-    }
-
-    /**
-     * Batalkan penugasan aktif sebelum profil dihapus agar data tidak menggantung.
-     * Tugas yang kehilangan relawan otomatis kembali berstatus terbuka.
-     */
-    private function cancelActiveAssignments(VolunteerProfile $profile): void
-    {
-        $assignments = TaskAssignment::where('volunteer_profile_id', $profile->id)
-            ->whereIn('status', ['ditawarkan', 'diterima'])
-            ->with('volunteerTask')
-            ->get();
-
-        foreach ($assignments as $assignment) {
-            $assignment->update([
-                'status' => 'ditolak',
-                'reject_reason' => 'Profil relawan dihapus.',
-            ]);
-
-            $task = $assignment->volunteerTask;
-
-            if (! $task || $task->status !== 'berjalan') {
-                continue;
-            }
-
-            $accepted = $task->assignments()
-                ->whereIn('status', ['diterima', 'selesai'])
-                ->count();
-
-            if ($accepted < $task->quota) {
-                $task->update(['status' => 'terbuka']);
-            }
-        }
+        $this->notify('Profil relawan berhasil dihapus. Riwayat tugas yang sudah selesai tetap tersimpan.');
     }
 
     public function hasActiveTask(): bool
