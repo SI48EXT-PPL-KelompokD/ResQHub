@@ -113,7 +113,7 @@
                                             @endif
 
                                             @if ($task->status === 'terbuka')
-                                                <button type="button" wire:click="cancelTask({{ $task->id }})"
+                                                <button type="button" wire:click="requestCancel({{ $task->id }})"
                                                         class="rounded-[4px] bg-rose-600 px-2.5 py-1 text-[10px] font-medium text-white transition hover:bg-rose-700">
                                                     Batalkan
                                                 </button>
@@ -452,6 +452,53 @@
             </div>
         </div>
     </div>
+
+    {{-- Modal pembatalan tugas --}}
+    @if ($showCancelModal)
+        <div class="fixed inset-0 z-[70] flex items-center justify-center p-4" role="dialog" aria-modal="true">
+            <div class="absolute inset-0 bg-slate-900/50" wire:click="dismissCancelModal"></div>
+            <div class="relative w-full max-w-md rounded-[6px] bg-white p-5 shadow-lg">
+                <h3 class="text-sm font-semibold text-slate-900">Batalkan tugas "{{ $cancelTaskTitle }}"?</h3>
+                <p class="mt-2 text-[11px] leading-relaxed text-slate-500">
+                    Tugas yang belum berjalan dapat dibatalkan. Seluruh penawaran ikut dibatalkan dan relawan menerima notifikasi.
+                </p>
+
+                <div class="mt-4">
+                    <label class="mb-1 block text-[11px] font-semibold text-slate-700">Alasan (wajib)</label>
+                    <select wire:model.live="cancelReason"
+                            class="w-full rounded-[4px] border border-slate-300 bg-white px-2.5 py-2 text-[11px] text-slate-800 focus:border-blue-500 focus:outline-none">
+                        <option value="">Pilih alasan pembatalan</option>
+                        @foreach (\App\Livewire\Volunteer\TaskManager::CANCEL_REASONS as $reasonOption)
+                            <option value="{{ $reasonOption }}">{{ $reasonOption }}</option>
+                        @endforeach
+                        <option value="lainnya">Lainnya</option>
+                    </select>
+                    @error('cancelReason')<p class="mt-1 text-xs text-rose-500">{{ $message }}</p>@enderror
+                </div>
+
+                @if ($cancelReason === 'lainnya')
+                    <div class="mt-3">
+                        <label class="mb-1 block text-[11px] font-semibold text-slate-700">Alasan lainnya</label>
+                        <textarea wire:model="cancelReasonOther" rows="3" maxlength="200"
+                                  placeholder="Tulis alasan pembatalan"
+                                  class="w-full rounded-[4px] border border-slate-300 px-2.5 py-1.5 text-[11px] text-slate-800 focus:border-blue-500 focus:outline-none"></textarea>
+                        @error('cancelReasonOther')<p class="mt-1 text-xs text-rose-500">{{ $message }}</p>@enderror
+                    </div>
+                @endif
+
+                <div class="mt-5 flex justify-end gap-2">
+                    <button type="button" wire:click="dismissCancelModal"
+                            class="rounded-[4px] border border-slate-300 bg-white px-3.5 py-1.5 text-[11px] font-medium text-slate-700 transition hover:bg-slate-50">
+                        Kembali
+                    </button>
+                    <button type="button" wire:click="cancelTask({{ $cancelTaskId }})" wire:loading.attr="disabled" wire:target="cancelTask"
+                            class="rounded-[4px] bg-rose-600 px-3.5 py-1.5 text-[11px] font-medium text-white transition hover:bg-rose-700 disabled:opacity-60">
+                        Batalkan Tugas
+                    </button>
+                </div>
+            </div>
+        </div>
+    @endif
 
     {{-- Notifikasi --}}
     @if ($notification)

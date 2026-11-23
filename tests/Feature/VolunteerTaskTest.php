@@ -406,6 +406,117 @@ class VolunteerTaskTest extends TestCase
         $this->assertDatabaseHas('volunteer_tasks', ['id' => $task->id, 'status' => 'berjalan']);
     }
 
+    public function test_koordinator_membatalkan_tugas_dengan_alasan(): void
+    {
+        $relawan = $this->relawan();
+        $task = $this->tugasBaru(['title' => 'Evakuasi Lansia RW 07']);
+
+        $ditawarkan = $task->assignments()->create([
+            'volunteer_profile_id' => $relawan->volunteerProfile->id,
+            'status' => 'ditawarkan',
+        ]);
+        $diterima = $task->assignments()->create([
+            'volunteer_profile_id' => $this->relawan('relawan.agus@resqhub.id')->volunteerProfile->id,
+            'status' => 'diterima',
+        ]);
+
+        $before = $relawan->notifications()->count();
+
+        $this->actingAs($this->koordinator());
+
+        Livewire::test(TaskManager::class)
+            ->call('requestCancel', $task->id)
+            ->assertSet('showCancelModal', true)
+            ->assertSee('Evakuasi Lansia RW 07')
+            ->set('cancelReason', 'Warga sudah dievakuasi tim SAR')
+            ->call('cancelTask', $task->id)
+            ->assertHasNoErrors()
+            ->assertSet('showCancelModal', false);
+
+        $this->assertDatabaseHas('volunteer_tasks', [
+            'id' => $task->id,
+            'status' => 'dibatalkan',
+            'cancel_reason' => 'Warga sudah dievakuasi tim SAR',
+        ]);
+        $this->assertDatabaseHas('task_assignments', ['id' => $ditawarkan->id, 'status' => 'ditolak']);
+        $this->assertDatabaseHas('task_assignments', ['id' => $diterima->id, 'status' => 'ditolak']);
+        $this->assertSame($before + 1, $relawan->notifications()->count());
+
+        $notification = $relawan->notifications()->latest('id')->first();
+        $this->assertSame('task_cancelled', $notification->data['type']);
+        $this->assertSame('Warga sudah dievakuasi tim SAR', $notification->data['reason']);
+        $this->assertStringContainsString('Warga sudah dievakuasi tim SAR', $notification->data['message']);
+    }
+
+    public function test_alasan_pembatalan_wajib_dipilih(): void
+    {
+        $task = $this->tugasBaru(['title' => 'Tugas Tanpa Alasan']);
+
+        $this->actingAs($this->koordinator());
+
+        Livewire::test(TaskManager::class)
+            ->call('requestCancel', $task->id)
+            ->set('cancelReason', '')
+            ->call('cancelTask', $task->id)
+            ->assertHasErrors(['cancelReason' => 'required']);
+
+        $this->assertDatabaseHas('volunteer_tasks', ['id' => $task->id, 'status' => 'terbuka']);
+    }
+
+    public function test_alasan_lainnya_mewajibkan_teks_tambahan(): void
+    {
+        $task = $this->tugasBaru(['title' => 'Tugas Alasan Lainnya']);
+
+        $this->actingAs($this->koordinator());
+
+        Livewire::test(TaskManager::class)
+            ->call('requestCancel', $task->id)
+            ->set('cancelReason', 'lainnya')
+            ->set('cancelReasonOther', '')
+            ->call('cancelTask', $task->id)
+            ->assertHasErrors(['cancelReasonOther']);
+
+        Livewire::test(TaskManager::class)
+            ->call('requestCancel', $task->id)
+            ->set('cancelReason', 'lainnya')
+            ->set('cancelReasonOther', 'Posko dialihkan ke lokasi lain')
+            ->call('cancelTask', $task->id)
+            ->assertHasNoErrors();
+
+        $this->assertDatabaseHas('volunteer_tasks', [
+            'id' => $task->id,
+            'status' => 'dibatalkan',
+            'cancel_reason' => 'Posko dialihkan ke lokasi lain',
+        ]);
+    }
+
+    public function test_tugas_berjalan_tidak_dapat_dibatalkan(): void
+    {
+        $task = $this->tugasBaru(['status' => 'berjalan', 'title' => 'Tugas Berjalan']);
+
+        $this->actingAs($this->koordinator());
+
+        Livewire::test(TaskManager::class)
+            ->call('requestCancel', $task->id)
+            ->assertSet('showCancelModal', false)
+            ->assertSet('notificationType', 'error');
+
+        $this->assertDatabaseHas('volunteer_tasks', ['id' => $task->id, 'status' => 'berjalan']);
+    }
+
+    public function test_relawan_tidak_dapat_membatalkan_tugas(): void
+    {
+        $task = $this->tugasBaru(['title' => 'Tugas Relawan Batal']);
+
+        $this->actingAs($this->relawan());
+
+        Livewire::test(TaskManager::class)
+            ->call('requestCancel', $task->id)
+            ->assertSet('showCancelModal', false);
+
+        $this->assertDatabaseHas('volunteer_tasks', ['id' => $task->id, 'status' => 'terbuka']);
+    }
+
     public function test_relawan_menerima_penawaran_dan_tugas_menjadi_berjalan(): void
     {
         $relawan = $this->relawan();
