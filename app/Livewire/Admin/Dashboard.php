@@ -5,6 +5,7 @@ namespace App\Livewire\Admin;
 use App\Models\DisasterReport;
 use App\Models\GoodsDonation;
 use App\Models\Shelter;
+use App\Models\ShelterFacility;
 use App\Models\User;
 use App\Services\HealthCheckService;
 use Illuminate\Support\Collection;
@@ -79,9 +80,26 @@ class Dashboard extends Component
             'recentSos' => $this->recentSos(),
             'urgentNeeds' => $this->urgentNeeds($shelterIds),
             'lowStocks' => $this->lowStocks($shelterIds),
+            'brokenFacilities' => $this->brokenFacilities($shelterIds),
             'triageSummary' => app(HealthCheckService::class)->getDailyTriageSummary($user),
             'mapPoints' => $this->mapPoints($shelterIds),
         ];
+    }
+
+    /**
+     * Fasilitas berkondisi "Tidak Berfungsi" pada posko kelolaan koordinator (PBI-05).
+     *
+     * @param  list<int>  $shelterIds
+     */
+    private function brokenFacilities(array $shelterIds): Collection
+    {
+        return ShelterFacility::query()
+            ->with('shelter:id,name')
+            ->broken()
+            ->whereIn('shelter_id', $shelterIds)
+            ->latest('updated_at')
+            ->limit(5)
+            ->get();
     }
 
     private function medicView(User $user): array

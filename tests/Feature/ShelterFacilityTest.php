@@ -3,7 +3,9 @@
 namespace Tests\Feature;
 
 use App\Livewire\Admin\ShelterManagement;
+use App\Livewire\Admin\Dashboard;
 use App\Livewire\Public\ShelterSearch;
+use App\Models\ActivityLog;
 use App\Models\DisasterEvent;
 use App\Models\Shelter;
 use App\Models\ShelterFacility;
@@ -421,5 +423,168 @@ class ShelterFacilityTest extends TestCase
             ->set('facility_condition', 'baik')
             ->call('saveFacility')
             ->assertStatus(404);
+    }
+
+    private function coordinatorWithShelter(): array
+    {
+        $coordinator = User::factory()->create(['role' => 'koordinator']);
+        $shelter = Shelter::factory()->create([
+            'coordinator_id' => $coordinator->id,
+            'disaster_event_id' => DisasterEvent::first()->id,
+        ]);
+
+        return [$coordinator, $shelter];
+    }
+
+    public function test_factories_create_valid_shelter_and_facility(): void
+    {
+        $facility = ShelterFacility::factory()->broken()->create();
+
+        $this->assertSame('tidak_berfungsi', $facility->condition);
+        $this->assertInstanceOf(Shelter::class, $facility->shelter);
+        $this->assertSame('ditutup', Shelter::factory()->closed()->make()->status);
+    }
+
+    public function test_coordinator_can_delete_facility_after_confirmation(): void
+    {
+        [$coordinator, $shelter] = $this->coordinatorWithShelter();
+        $facility = ShelterFacility::factory()->create(['shelter_id' => $shelter->id, 'type' => 'mck']);
+
+        Livewire::actingAs($coordinator)
+            ->test(ShelterManagement::class)
+            ->call('openDetailModal', $shelter->id, 'facilities')
+            ->call('confirmDeleteFacility', $facility->id)
+            ->assertSet('deletingFacilityId', $facility->id)
+            ->call('destroyFacility')
+            ->assertSet('deletingFacilityId', null);
+
+        $this->assertDatabaseMissing('shelter_facilities', ['id' => $facility->id]);
+    }
+
+    public function test_cancelling_the_confirmation_keeps_the_facility(): void
+    {
+        [$coordinator, $shelter] = $this->coordinatorWithShelter();
+        $facility = ShelterFacility::factory()->create(['shelter_id' => $shelter->id]);
+
+        Livewire::actingAs($coordinator)
+            ->test(ShelterManagement::class)
+            ->call('openDetailModal', $shelter->id, 'facilities')
+            ->call('confirmDeleteFacility', $facility->id)
+            ->call('cancelDeleteFacility')
+            ->assertSet('deletingFacilityId', null);
+
+        $this->assertDatabaseHas('shelter_facilities', ['id' => $facility->id]);
+    }
+
+    public function test_deleting_a_facility_is_recorded_in_activity_log_and_removes_photo(): void
+    {
+        Storage::fake('public');
+        [$coordinator, $shelter] = $this->coordinatorWithShelter();
+        $path = UploadedFile::fake()->image('bukti.jpg')->store('facilities', 'public');
+        $facility = ShelterFacility::factory()->create([
+            'shelter_id' => $shelter->id,
+            'type' => 'listrik',
+            'photo_path' => $path,
+        ]);
+
+        Livewire::actingAs($coordinator)
+            ->test(ShelterManagement::class)
+            ->call('openDetailModal', $shelter->id, 'facilities')
+            ->call('confirmDeleteFacility', $facility->id)
+            ->call('destroyFacility');
+
+        Storage::disk('public')->assertMissing($path);
+        $this->assertDatabaseHas('activity_logs', [
+            'user_id' => $coordinator->id,
+            'subject_type' => $facility->getMorphClass(),
+            'subject_id' => $facility->id,
+            'action' => 'fasilitas_dihapus',
+        ]);
+    }
+
+    public function test_coordinator_cannot_delete_facility_of_another_shelter(): void
+    {
+        [$coordinator, $shelter] = $this->coordinatorWithShelter();
+        $foreign = ShelterFacility::factory()->create();
+
+        Livewire::actingAs($coordinator)
+            ->test(ShelterManagement::class)
+            ->call('openDetailModal', $shelter->id, 'facilities')
+            ->call('confirmDeleteFacility', $foreign->id)
+            ->assertStatus(404);
+
+        $this->assertDatabaseHas('shelter_facilities', ['id' => $foreign->id]);
+    }
+
+    public function test_coordinator_cannot_delete_facility_through_tampered_shelter_state(): void
+    {
+        [$coordinator] = $this->coordinatorWithShelter();
+        $foreign = ShelterFacility::factory()->create();
+
+        Livewire::actingAs($coordinator)
+            ->test(ShelterManagement::class)
+            ->set('detailShelterId', $foreign->shelter_id)
+            ->set('deletingFacilityId', $foreign->id)
+            ->call('destroyFacility')
+            ->assertStatus(404);
+
+        $this->assertDatabaseHas('shelter_facilities', ['id' => $foreign->id]);
+    }
+
+    public function test_adding_and_updating_a_facility_are_recorded_in_activity_log(): void
+    {
+        [$coordinator, $shelter] = $this->coordinatorWithShelter();
+
+        $component = Livewire::actingAs($coordinator)
+            ->test(ShelterManagement::class)
+            ->call('openDetailModal', $shelter->id, 'facilities')
+            ->call('openFacilityCreateForm')
+            ->set('facility_type', 'air_bersih')
+            ->set('facility_units', 2)
+            ->set('facility_capacity', 500)
+            ->set('facility_condition', 'baik')
+            ->call('saveFacility')
+            ->assertHasNoErrors();
+
+        $facility = ShelterFacility::where('shelter_id', $shelter->id)->where('type', 'air_bersih')->firstOrFail();
+        $this->assertDatabaseHas('activity_logs', [
+            'subject_id' => $facility->id,
+            'action' => 'fasilitas_ditambahkan',
+            'user_id' => $coordinator->id,
+        ]);
+
+        $component
+            ->call('openFacilityEditForm', $facility->id)
+            ->set('facility_condition', 'tidak_berfungsi')
+            ->call('saveFacility')
+            ->assertHasNoErrors();
+
+        $log = ActivityLog::where('subject_id', $facility->id)->where('action', 'fasilitas_diubah')->firstOrFail();
+        $this->assertSame('baik', $log->changes['fields']['condition']['dari']);
+        $this->assertSame('tidak_berfungsi', $log->changes['fields']['condition']['menjadi']);
+    }
+
+    public function test_coordinator_dashboard_warns_about_broken_facilities_in_own_shelter_only(): void
+    {
+        [$coordinator, $shelter] = $this->coordinatorWithShelter();
+        ShelterFacility::factory()->broken()->create(['shelter_id' => $shelter->id, 'type' => 'mck']);
+        ShelterFacility::factory()->broken()->create(['type' => 'dapur_umum']);
+        ShelterFacility::factory()->create(['shelter_id' => $shelter->id, 'type' => 'listrik']);
+
+        Livewire::actingAs($coordinator)
+            ->test(Dashboard::class)
+            ->assertSee('Peringatan fasilitas posko')
+            ->assertSee('MCK / Sanitasi')
+            ->assertDontSee('Dapur Umum');
+    }
+
+    public function test_coordinator_dashboard_hides_warning_when_no_facility_is_broken(): void
+    {
+        [$coordinator, $shelter] = $this->coordinatorWithShelter();
+        ShelterFacility::factory()->create(['shelter_id' => $shelter->id, 'condition' => 'rusak_ringan']);
+
+        Livewire::actingAs($coordinator)
+            ->test(Dashboard::class)
+            ->assertDontSee('Peringatan fasilitas posko');
     }
 }

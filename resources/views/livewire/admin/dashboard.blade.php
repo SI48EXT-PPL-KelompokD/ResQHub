@@ -203,6 +203,29 @@
                 </section>
             @endisset
 
+            {{-- Peringatan fasilitas tidak berfungsi: koordinator (PBI-05) --}}
+            @isset($brokenFacilities)
+                @if ($brokenFacilities->isNotEmpty())
+                    <section class="{{ $panel }} border-red-300" role="alert">
+                        <div class="{{ $panelHead }}">
+                            <h2 class="{{ $panelTitle }}">Peringatan fasilitas posko</h2>
+                            <a href="{{ route('admin.shelters') }}" wire:navigate class="rq-link text-sm">Kelola fasilitas</a>
+                        </div>
+                        <ul class="divide-y divide-slate-200">
+                            @foreach ($brokenFacilities as $facility)
+                                <li wire:key="broken-facility-{{ $facility->id }}" class="flex items-center justify-between gap-4 px-5 py-3">
+                                    <div class="min-w-0">
+                                        <p class="font-semibold text-ink">{{ $facility->type_label }}</p>
+                                        <p class="mt-0.5 truncate text-[13px] text-slate-600">{{ $facility->shelter->name }}{{ $facility->note ? ' · '.$facility->note : '' }}</p>
+                                    </div>
+                                    <span class="shrink-0 rounded-full border border-red-200 bg-red-50 px-2 py-0.5 text-[12px] font-semibold text-red-700">Tidak berfungsi</span>
+                                </li>
+                            @endforeach
+                        </ul>
+                    </section>
+                @endif
+            @endisset
+
             {{-- Stok menipis: admin dan koordinator --}}
             @isset($lowStocks)
                 <section class="{{ $panel }}">

@@ -2,6 +2,7 @@
 
 namespace App\Livewire\Admin;
 
+use App\Models\ActivityLog;
 use App\Models\DisasterEvent;
 use App\Models\Shelter;
 use App\Models\ShelterFacility;
@@ -68,6 +69,10 @@ class ShelterManagement extends Component
     public $facility_photo = null;
     public ?string $existing_facility_photo_path = null;
     public bool $remove_existing_facility_photo = false;
+
+    // Dialog konfirmasi hapus fasilitas (PBI-05 / SCRUM-25)
+    public ?int $deletingFacilityId = null;
+    public string $deletingFacilityLabel = '';
 
     // Modal state (Update Okupansi Pengungsi)
     public bool $showOccupancyModal = false;
@@ -626,6 +631,8 @@ class ShelterManagement extends Component
      */
     protected function resetFacilityForm(): void
     {
+        $this->deletingFacilityId = null;
+        $this->deletingFacilityLabel = '';
         $this->facilityFormMode = '';
         $this->editingFacilityId = null;
         $this->facility_type = '';
@@ -775,7 +782,7 @@ class ShelterManagement extends Component
                 $photoPath = null;
             }
 
-            $facility->update([
+            $facility->fill([
                 'type'       => $this->facility_type,
                 'units'      => (int) $this->facility_units,
                 'capacity'   => (int) $this->facility_capacity,
@@ -783,6 +790,21 @@ class ShelterManagement extends Component
                 'note'       => trim($this->facility_note) !== '' ? trim($this->facility_note) : null,
                 'photo_path' => $photoPath,
             ]);
+
+            // Simpan perubahan nilai sebelum disimpan agar riwayat mencatat nilai lama dan baru
+            $changes = [];
+            foreach ($facility->getDirty() as $field => $newValue) {
+                $changes[$field] = ['dari' => $facility->getOriginal($field), 'menjadi' => $newValue];
+            }
+            $facility->save();
+
+            if (! empty($changes)) {
+                ActivityLog::record(auth()->id(), $facility, 'fasilitas_diubah', [
+                    'shelter_id' => $shelter->id,
+                    'type'       => $facility->type,
+                    'fields'     => $changes,
+                ]);
+            }
 
             // Foto lama baru dihapus setelah data baru berhasil tersimpan
             if ($oldPhotoPath && $oldPhotoPath !== $photoPath) {
@@ -808,6 +830,14 @@ class ShelterManagement extends Component
                 'photo_path' => $photoPath,
             ]);
 
+            ActivityLog::record(auth()->id(), $facility, 'fasilitas_ditambahkan', [
+                'shelter_id' => $shelter->id,
+                'type'       => $facility->type,
+                'units'      => $facility->units,
+                'capacity'   => $facility->capacity,
+                'condition'  => $facility->condition,
+            ]);
+
             $actionMessage = "Fasilitas '{$facility->type_label}' berhasil ditambahkan ke posko '{$shelter->name}'.";
         }
 
@@ -815,6 +845,61 @@ class ShelterManagement extends Component
         $this->notification = [
             'type'    => $facility->condition === 'tidak_berfungsi' ? 'warning' : 'success',
             'message' => $actionMessage,
+        ];
+    }
+
+    /**
+     * Buka dialog konfirmasi hapus fasilitas posko (PBI-05 / SCRUM-25).
+     */
+    public function confirmDeleteFacility(int $facilityId): void
+    {
+        $shelter = $this->findAuthorizedShelter((int) $this->detailShelterId);
+        $facility = ShelterFacility::where('shelter_id', $shelter->id)->findOrFail($facilityId);
+
+        $this->resetFacilityForm();
+        $this->deletingFacilityId = $facility->id;
+        $this->deletingFacilityLabel = $facility->type_label;
+    }
+
+    /**
+     * Batalkan penghapusan fasilitas.
+     */
+    public function cancelDeleteFacility(): void
+    {
+        $this->deletingFacilityId = null;
+        $this->deletingFacilityLabel = '';
+    }
+
+    /**
+     * Hapus fasilitas yang tidak lagi tersedia. Riwayat tetap tercatat pada log aktivitas.
+     */
+    public function destroyFacility(): void
+    {
+        $shelter = $this->findAuthorizedShelter((int) $this->detailShelterId);
+        $facility = ShelterFacility::where('shelter_id', $shelter->id)->findOrFail($this->deletingFacilityId);
+
+        $label = $facility->type_label;
+        $photoPath = $facility->photo_path;
+
+        // Log dicatat sebelum data dihapus, dengan salinan nilai terakhir fasilitas
+        ActivityLog::record(auth()->id(), $facility, 'fasilitas_dihapus', [
+            'shelter_id' => $shelter->id,
+            'type'       => $facility->type,
+            'units'      => $facility->units,
+            'capacity'   => $facility->capacity,
+            'condition'  => $facility->condition,
+        ]);
+
+        $facility->delete();
+
+        if ($photoPath) {
+            Storage::disk('public')->delete($photoPath);
+        }
+
+        $this->cancelDeleteFacility();
+        $this->notification = [
+            'type'    => 'success',
+            'message' => "Fasilitas '{$label}' berhasil dihapus dari posko '{$shelter->name}'.",
         ];
     }
 

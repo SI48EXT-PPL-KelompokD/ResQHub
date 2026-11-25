@@ -1360,6 +1360,19 @@
                                 $canAddMore = $totalFac < count(\App\Models\ShelterFacility::TYPES);
                             @endphp
 
+                            @if($deletingFacilityId)
+                                <div class="fixed inset-0 z-[70] flex items-center justify-center p-4 bg-slate-900/50" role="dialog" aria-modal="true" aria-labelledby="delete-facility-title">
+                                    <div class="w-full max-w-sm bg-white rounded-2xl shadow-xl border border-slate-200 p-5 space-y-3">
+                                        <h4 id="delete-facility-title" class="text-sm font-bold text-slate-900">Hapus fasilitas {{ $deletingFacilityLabel }}?</h4>
+                                        <p class="text-xs text-slate-600">Fasilitas ini akan dihapus dari posko. Riwayat penghapusan tetap tercatat pada log aktivitas.</p>
+                                        <div class="flex items-center justify-end gap-2 pt-1">
+                                            <button type="button" wire:click="cancelDeleteFacility" class="px-3 py-1.5 text-xs font-semibold text-slate-700 bg-white hover:bg-slate-50 border border-slate-200 rounded-lg cursor-pointer">Batal</button>
+                                            <button type="button" wire:click="destroyFacility" class="px-3 py-1.5 text-xs font-semibold text-white bg-red-600 hover:bg-red-700 rounded-lg cursor-pointer">Ya, Hapus</button>
+                                        </div>
+                                    </div>
+                                </div>
+                            @endif
+
                             @if($facilityFormMode !== '')
                                 <!-- Form Tambah / Ubah Kondisi & Foto Fasilitas Posko (Selasa 17 Nov & Rabu 18 Nov - SCRUM-25) -->
                                 <form wire:submit.prevent="saveFacility" class="bg-white rounded-2xl border border-slate-200 shadow-xs p-4 sm:p-5 space-y-3">
@@ -1649,7 +1662,17 @@
                                                     </div>
                                                 @endif
 
-                                                <div class="pt-1 border-t border-slate-100 flex items-center justify-end">
+                                                <div class="pt-1 border-t border-slate-100 flex items-center justify-end gap-2">
+                                                    <button
+                                                        type="button"
+                                                        wire:click="confirmDeleteFacility({{ $facility->id }})"
+                                                        class="inline-flex items-center space-x-1 px-2.5 py-1 text-[11px] font-semibold text-red-700 bg-red-50 hover:bg-red-100 border border-red-200/80 rounded-lg transition cursor-pointer"
+                                                    >
+                                                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                                        </svg>
+                                                        <span>Hapus</span>
+                                                    </button>
                                                     <button
                                                         type="button"
                                                         wire:click="openFacilityEditForm({{ $facility->id }})"
