@@ -2,8 +2,8 @@
 
 namespace Tests\Feature;
 
-use App\Livewire\Admin\ShelterManagement;
 use App\Livewire\Admin\Dashboard;
+use App\Livewire\Admin\ShelterManagement;
 use App\Livewire\Public\ShelterSearch;
 use App\Models\ActivityLog;
 use App\Models\DisasterEvent;
@@ -45,33 +45,33 @@ class ShelterFacilityTest extends TestCase
 
         $shelter = Shelter::create([
             'disaster_event_id' => $event->id,
-            'coordinator_id'    => $koordinator->id,
-            'name'              => 'Posko Uji Fasilitas',
-            'address'           => 'Jl. Uji Fasilitas No. 1',
-            'lat'               => -6.990,
-            'lng'               => 107.620,
-            'capacity'          => 100,
-            'occupancy'         => 10,
-            'contact'           => '08123456',
-            'status'            => 'aktif',
+            'coordinator_id' => $koordinator->id,
+            'name' => 'Posko Uji Fasilitas',
+            'address' => 'Jl. Uji Fasilitas No. 1',
+            'lat' => -6.990,
+            'lng' => 107.620,
+            'capacity' => 100,
+            'occupancy' => 10,
+            'contact' => '08123456',
+            'status' => 'aktif',
         ]);
 
         $facGood = ShelterFacility::create([
             'shelter_id' => $shelter->id,
-            'type'       => 'mck',
-            'units'      => 4,
-            'capacity'   => 80,
-            'condition'  => 'baik',
-            'note'       => 'Bersih dan lancar',
+            'type' => 'mck',
+            'units' => 4,
+            'capacity' => 80,
+            'condition' => 'baik',
+            'note' => 'Bersih dan lancar',
         ]);
 
         $facBroken = ShelterFacility::create([
             'shelter_id' => $shelter->id,
-            'type'       => 'listrik',
-            'units'      => 1,
-            'capacity'   => 100,
-            'condition'  => 'tidak_berfungsi',
-            'note'       => 'Genset rusak total',
+            'type' => 'listrik',
+            'units' => 1,
+            'capacity' => 100,
+            'condition' => 'tidak_berfungsi',
+            'note' => 'Genset rusak total',
         ]);
 
         $this->assertEquals('MCK / Sanitasi', $facGood->type_label);
@@ -135,7 +135,7 @@ class ShelterFacilityTest extends TestCase
         // Pastikan 'laktasi' belum ada pada posko Siti
         $this->assertDatabaseMissing('shelter_facilities', [
             'shelter_id' => $shelter->id,
-            'type'       => 'laktasi',
+            'type' => 'laktasi',
         ]);
 
         Livewire::actingAs($siti)
@@ -154,11 +154,11 @@ class ShelterFacilityTest extends TestCase
 
         $this->assertDatabaseHas('shelter_facilities', [
             'shelter_id' => $shelter->id,
-            'type'       => 'laktasi',
-            'units'      => 2,
-            'capacity'   => 12,
-            'condition'  => 'baik',
-            'note'       => 'Ruang tertutup dengan tirai bersih',
+            'type' => 'laktasi',
+            'units' => 2,
+            'capacity' => 12,
+            'condition' => 'baik',
+            'note' => 'Ruang tertutup dengan tirai bersih',
         ]);
     }
 
@@ -192,15 +192,15 @@ class ShelterFacilityTest extends TestCase
 
         $newShelter = Shelter::create([
             'disaster_event_id' => $event->id,
-            'coordinator_id'    => $siti->id,
-            'name'              => 'Posko Cabang Dayeuhkolot',
-            'address'           => 'Jl. Cabang No. 9',
-            'lat'               => -6.985,
-            'lng'               => 107.621,
-            'capacity'          => 80,
-            'occupancy'         => 0,
-            'contact'           => '08199',
-            'status'            => 'aktif',
+            'coordinator_id' => $siti->id,
+            'name' => 'Posko Cabang Dayeuhkolot',
+            'address' => 'Jl. Cabang No. 9',
+            'lat' => -6.985,
+            'lng' => 107.621,
+            'capacity' => 80,
+            'occupancy' => 0,
+            'contact' => '08199',
+            'status' => 'aktif',
         ]);
 
         // Posko Siti pertama sudah punya 'mck', posko kedua boleh punya 'mck' juga
@@ -217,7 +217,7 @@ class ShelterFacilityTest extends TestCase
 
         $this->assertDatabaseHas('shelter_facilities', [
             'shelter_id' => $newShelter->id,
-            'type'       => 'mck',
+            'type' => 'mck',
         ]);
     }
 
@@ -378,23 +378,23 @@ class ShelterFacilityTest extends TestCase
         $siti = User::where('email', 'koordinator.siti@resqhub.id')->first();
         $shelter = Shelter::create([
             'disaster_event_id' => DisasterEvent::where('status', 'aktif')->first()->id,
-            'coordinator_id'    => $siti->id,
-            'name'              => 'Posko Salah Input',
-            'address'           => 'Jl. Salah Input',
-            'lat'               => -6.98,
-            'lng'               => 107.62,
-            'capacity'          => 50,
-            'occupancy'         => 0,
-            'contact'           => '08123456789',
-            'status'            => 'aktif',
+            'coordinator_id' => $siti->id,
+            'name' => 'Posko Salah Input',
+            'address' => 'Jl. Salah Input',
+            'lat' => -6.98,
+            'lng' => 107.62,
+            'capacity' => 50,
+            'occupancy' => 0,
+            'contact' => '08123456789',
+            'status' => 'aktif',
         ]);
         $path = UploadedFile::fake()->image('dapur.jpg')->store('facilities', 'public');
         ShelterFacility::create([
             'shelter_id' => $shelter->id,
-            'type'       => 'dapur_umum',
-            'units'      => 1,
-            'capacity'   => 10,
-            'condition'  => 'baik',
+            'type' => 'dapur_umum',
+            'units' => 1,
+            'capacity' => 10,
+            'condition' => 'baik',
             'photo_path' => $path,
         ]);
 
