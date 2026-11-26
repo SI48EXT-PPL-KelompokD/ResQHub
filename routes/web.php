@@ -5,8 +5,13 @@ use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Admin\AidNeedController;
 use App\Livewire\Auth\Register;
 use App\Livewire\Admin\Dashboard;
-use App\Livewire\Admin\UserManagement;
 use App\Http\Controllers\Admin\ItemController;
+use App\Livewire\Admin\ShelterManagement;
+use App\Livewire\Public\ShelterSearch;
+use App\Livewire\Admin\UserManagement;
+
+// Rute Publik (Warga & Pengunjung) - PBI-04 Pencarian Posko Terdekat (Haversine)
+Route::get('/posko', ShelterSearch::class)->name('public.shelters');
 
 // Root redirect
 Route::get('/', function () {
@@ -39,6 +44,7 @@ Route::middleware(['auth'])->prefix('admin')->name('admin.')->group(function () 
             ->except(['show'])
             ->parameters(['needs' => 'aid_need']);
     });
+    Route::get('/shelters', ShelterManagement::class)->middleware('role:admin,koordinator')->name('shelters');
 });
 
 Route::get('/needs', [AidNeedController::class, 'publicIndex'])->name('needs.public');

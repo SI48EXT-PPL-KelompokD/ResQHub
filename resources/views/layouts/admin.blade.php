@@ -12,9 +12,24 @@
 
     @vite(['resources/css/app.css', 'resources/js/app.js'])
     @livewireStyles
+
+    <!-- Leaflet.js CSS (OpenStreetMap) -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
+    @stack('styles')
+    
     <style>
         body { font-family: 'Inter', sans-serif; }
         [x-cloak] { display: none !important; }
+        /* Leaflet tile reset for Tailwind */
+        .leaflet-container img {
+            max-width: none !important;
+        }
+        .leaflet-pane {
+            z-index: 10 !important;
+        }
+        .leaflet-top, .leaflet-bottom {
+            z-index: 20 !important;
+        }
     </style>
 </head>
 <body class="h-full antialiased text-slate-800 bg-slate-50/60" x-data="{ sidebarOpen: false }">
@@ -81,15 +96,27 @@
                     <!-- Modul B: Data Posko (Maheswari) -->
                     @if (Auth::user()->canAccessModule('modul_b'))
                         <a 
-                            href="#" 
-                            class="flex items-center space-x-3 px-3 py-2.5 rounded-xl text-sm font-medium text-slate-600 hover:bg-slate-50 hover:text-slate-900 transition duration-150 group"
+                            href="{{ route('admin.shelters') }}" 
+                            wire:navigate
+                            class="flex items-center space-x-3 px-3 py-2.5 rounded-xl text-sm font-medium transition duration-150 group {{ request()->routeIs('admin.shelters*') ? 'bg-blue-50 text-blue-700 font-semibold shadow-xs' : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900' }}"
                             title="Modul B - Posko Evakuasi"
                         >
-                            <svg class="w-5 h-5 text-slate-400 group-hover:text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <svg class="w-5 h-5 {{ request()->routeIs('admin.shelters*') ? 'text-blue-600' : 'text-slate-400 group-hover:text-slate-600' }}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
                             </svg>
                             <span class="flex-1">Data Posko</span>
-                            <span class="text-[10px] bg-slate-100 text-slate-500 px-1.5 py-0.5 rounded font-mono">Modul B</span>
+                            <span class="text-[10px] {{ request()->routeIs('admin.shelters*') ? 'bg-blue-100 text-blue-700' : 'bg-slate-100 text-slate-500' }} px-1.5 py-0.5 rounded font-mono">Modul B</span>
+                        </a>
+                        <a 
+                            href="{{ route('public.shelters') }}" 
+                            target="_blank"
+                            class="flex items-center space-x-2.5 px-3 py-1.5 ml-3 rounded-lg text-xs font-medium text-slate-500 hover:text-blue-600 hover:bg-slate-50 transition"
+                            title="Buka Peta Pencarian Posko Publik"
+                        >
+                            <svg class="w-3.5 h-3.5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                            </svg>
+                            <span>Peta Publik (Haversine)</span>
                         </a>
                     @endif
 
@@ -299,6 +326,10 @@
 
     </div>
 
+    <!-- Leaflet.js (OpenStreetMap) -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+    
     @livewireScripts
+    @stack('scripts')
 </body>
 </html>
