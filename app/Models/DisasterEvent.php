@@ -47,4 +47,20 @@ class DisasterEvent extends Model
     {
         return $this->hasMany(Shelter::class);
     }
+
+    /**
+     * Relasi ke laporan kejadian warga yang ditautkan ke kejadian bencana ini.
+     */
+    public function reports(): HasMany
+    {
+        return $this->hasMany(DisasterReport::class);
+    }
+
+    /**
+     * Relasi ke peringatan dini yang terkait kejadian bencana ini.
+     */
+    public function earlyWarnings(): HasMany
+    {
+        return $this->hasMany(EarlyWarning::class);
+    }
 }

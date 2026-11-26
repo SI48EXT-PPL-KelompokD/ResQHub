@@ -35,25 +35,30 @@ class ShelterSearch extends Component
     {
         // Jika ada kejadian bencana aktif, defaultkan ke koordinat bencana aktif pertama
         $activeEvent = DisasterEvent::active()->first();
-        if ($activeEvent && $activeEvent->latitude && $activeEvent->longitude) {
-            $this->userLat = (float) $activeEvent->latitude;
-            $this->userLng = (float) $activeEvent->longitude;
+        if ($activeEvent && $activeEvent->lat !== null && $activeEvent->lng !== null) {
+            $this->userLat = (float) $activeEvent->lat;
+            $this->userLng = (float) $activeEvent->lng;
             $this->userLocationName = $activeEvent->name . ' (' . $activeEvent->regency . ')';
         }
     }
 
     public function setUserLocation(float $lat, float $lng, string $locationName = ''): void
     {
+        if (abs($lat) > 90 || abs($lng) > 180) {
+            return;
+        }
+
         $this->userLat = $lat;
         $this->userLng = $lng;
         $this->userLocationName = $locationName ?: sprintf('%.4f, %.4f', $lat, $lng);
         $this->isGpsActive = true;
 
-        $this->dispatch('user-location-updated', [
-            'lat'  => $this->userLat,
-            'lng'  => $this->userLng,
-            'name' => $this->userLocationName,
-        ]);
+        $this->dispatch(
+            'user-location-updated',
+            lat: $this->userLat,
+            lng: $this->userLng,
+            name: $this->userLocationName,
+        );
     }
 
     public function resetFilters(): void
@@ -72,12 +77,13 @@ class ShelterSearch extends Component
         if ($this->selectedShelterId) {
             $shelter = Shelter::find($this->selectedShelterId);
             if ($shelter) {
-                $this->dispatch('focus-shelter-marker', [
-                    'id'   => $shelter->id,
-                    'lat'  => (float) $shelter->lat,
-                    'lng'  => (float) $shelter->lng,
-                    'name' => $shelter->name,
-                ]);
+                $this->dispatch(
+                    'focus-shelter-marker',
+                    id: $shelter->id,
+                    lat: (float) $shelter->lat,
+                    lng: (float) $shelter->lng,
+                    name: $shelter->name,
+                );
             }
         }
     }
@@ -118,10 +124,11 @@ class ShelterSearch extends Component
         $radiusVal = ($this->radiusFilter !== '' && is_numeric($this->radiusFilter)) ? (float) $this->radiusFilter : null;
         $query->nearby($this->userLat, $this->userLng, $radiusVal);
 
+        // scopeNearby mengurutkan berdasarkan jarak, jadi urutan lain harus menggantikannya
         if ($this->sortBy === 'capacity') {
-            $query->orderByRaw('(capacity - occupancy) DESC');
+            $query->reorder()->orderByRaw('(capacity - occupancy) DESC')->orderBy('distance', 'asc');
         } elseif ($this->sortBy === 'name') {
-            $query->orderBy('name', 'ASC');
+            $query->reorder()->orderBy('name', 'asc');
         }
 
         $shelters = $query->get();
@@ -158,7 +165,10 @@ class ShelterSearch extends Component
                 'google_maps_url'    => $s->google_maps_url,
                 'event_name'         => $s->disasterEvent?->name ?? 'Kejadian Bencana',
             ];
-        });
+        })->values();
+
+        // Sinkronkan pin peta setiap kali hasil pencarian atau filter berubah
+        $this->dispatch('shelter-markers-updated', markers: $mapMarkers->all());
 
         $activeEvents = DisasterEvent::active()->orderBy('name')->get();
 

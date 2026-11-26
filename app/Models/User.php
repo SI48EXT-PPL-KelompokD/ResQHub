@@ -3,12 +3,35 @@
 namespace App\Models;
 
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
+use Carbon\Carbon;
 use Database\Factories\UserFactory;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 
+/**
+ * @property int $id
+ * @property string $name
+ * @property string $email
+ * @property string|null $phone
+ * @property string $password
+ * @property string $role
+ * @property string|null $regency
+ * @property bool $is_active
+ * @property Carbon|null $email_verified_at
+ * @property string|null $remember_token
+ * @property Carbon|null $created_at
+ * @property Carbon|null $updated_at
+ * @property-read string $role_label
+ * @property-read VolunteerProfile|null $volunteerProfile
+ * @property-read Collection<int, Shelter> $managedShelters
+ *
+ * @method static Builder|User query()
+ */
 class User extends Authenticatable
 {
     /** @use HasFactory<UserFactory> */
@@ -106,6 +129,28 @@ class User extends Authenticatable
         return $this->hasMany(Shelter::class, 'coordinator_id');
     }
 
+    public function canManageShelter(Shelter|int $shelter): bool
+    {
+        if ($this->isAdmin()) {
+            return true;
+        }
+
+        if (!$this->isKoordinator()) {
+            return false;
+        }
+
+        if ($shelter instanceof Shelter) {
+            return (int) $shelter->coordinator_id === (int) $this->id;
+        }
+
+        return $this->managedShelters()->where('id', $shelter)->exists();
+    }
+
+    public function canManageVolunteerProfile(): bool
+    {
+        return in_array($this->role, ['relawan', 'nakes', 'koordinator'], true);
+    }
+
     public function canAccessModule(string $module): bool
     {
         if ($this->isAdmin()) {
@@ -114,7 +159,7 @@ class User extends Authenticatable
 
         return match ($module) {
             'modul_a' => in_array($this->role, ['relawan', 'warga']),
-            'modul_b' => in_array($this->role, ['koordinator', 'nakes', 'relawan', 'warga']),
+            'modul_b' => in_array($this->role, ['koordinator', 'nakes', 'relawan', 'warga', 'donatur']),
             'modul_c' => in_array($this->role, ['koordinator', 'nakes']),
             'modul_d' => in_array($this->role, ['koordinator', 'nakes', 'donatur']),
             'modul_e' => in_array($this->role, ['donatur']),

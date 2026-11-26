@@ -51,7 +51,7 @@ class RefugeeSeeder extends Seeder
             ],
             [
                 'id' => 3,
-                'shelter_id' => 2, // Balai Desa Dayeuhkolot
+                'shelter_id' => 1, // Pindah dari Balai Desa Dayeuhkolot (2) ke Posko Utama GOR Baleendah (1)
                 'head_name' => 'Ujang Suherman',
                 'nik' => '3204121010880005',
                 'members' => 3,

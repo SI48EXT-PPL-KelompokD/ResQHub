@@ -45,4 +45,22 @@ class Item extends Model
     {
         return $query->where('is_active', true);
     }
+
+    public function distributions(): HasMany
+    {
+        return $this->hasMany(Distribution::class);
+    }
+
+    public function getCategoryLabelAttribute(): string
+    {
+        return match ($this->category) {
+            'pangan' => 'Pangan',
+            'sandang' => 'Sandang',
+            'kebersihan' => 'Kebersihan',
+            'obat_obatan' => 'Obat-obatan',
+            'perlengkapan_bayi' => 'Perlengkapan Bayi',
+            'peralatan' => 'Peralatan',
+            default => ucfirst(str_replace('_', ' ', $this->category ?? '')),
+        };
+    }
 }

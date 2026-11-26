@@ -2,9 +2,9 @@
 
 namespace Database\Seeders;
 
+use Carbon\Carbon;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
-use Carbon\Carbon;
 
 class VolunteerTaskSeeder extends Seeder
 {
@@ -70,12 +70,107 @@ class VolunteerTaskSeeder extends Seeder
                 'created_at' => $now->copy()->subHours(5),
                 'updated_at' => $now->copy()->subHours(4),
             ],
+            [
+                'id' => 4,
+                'disaster_event_id' => 1,
+                'shelter_id' => 1,
+                'sos_request_id' => null,
+                'skill_id' => 7, // Transportasi & Distribusi
+                'title' => 'Distribusi Logistik Posko Al-Ikhlas',
+                'description' => 'Pengantaran paket bantuan sembako dan selimut ke posko pengungsian Al-Ikhlas.',
+                'lat' => -6.9915000,
+                'lng' => 107.6300000,
+                'quota' => 2,
+                'start_at' => $now->copy()->subDays(2),
+                'end_at' => $now->copy()->subDays(2)->addHours(4),
+                'status' => 'selesai',
+                'cancel_reason' => null,
+                'created_by' => 2,
+                'created_at' => $now->copy()->subDays(3),
+                'updated_at' => $now->copy()->subDays(2)->addHours(4),
+            ],
+            [
+                'id' => 5,
+                'disaster_event_id' => 1,
+                'shelter_id' => 1,
+                'sos_request_id' => null,
+                'skill_id' => 2, // Dapur Umum
+                'title' => 'Dapur Umum GOR Baleendah',
+                'description' => 'Penyiapan dan pembagian makanan siap saji untuk pengungsi di posko GOR Baleendah.',
+                'lat' => -6.9935000,
+                'lng' => 107.6250000,
+                'quota' => 4,
+                'start_at' => $now->copy()->subHours(2),
+                'end_at' => $now->copy()->addHours(4),
+                'status' => 'berjalan',
+                'cancel_reason' => null,
+                'created_by' => 2,
+                'created_at' => $now->copy()->subHours(3),
+                'updated_at' => $now->copy()->subHours(2),
+            ],
+            [
+                'id' => 6,
+                'disaster_event_id' => 1,
+                'shelter_id' => 1,
+                'sos_request_id' => null,
+                'skill_id' => 3, // Logistik & Pergudangan
+                'title' => 'Pencatatan & Sortir Stok Gudang Posko Cipamokolan',
+                'description' => 'Verifikasi fisik stok sembako, pakaian layak pakai, dan obat-obatan yang masuk hari ini, lalu perbarui kartu stok gudang.',
+                'lat' => -6.9935000,
+                'lng' => 107.6250000,
+                'quota' => 3,
+                'start_at' => $now->copy()->addHours(2),
+                'end_at' => $now->copy()->addHours(6),
+                'status' => 'terbuka',
+                'cancel_reason' => null,
+                'created_by' => 2,
+                'created_at' => $now->copy()->subHour(),
+                'updated_at' => $now->copy()->subHour(),
+            ],
+            [
+                'id' => 7,
+                'disaster_event_id' => 1,
+                'shelter_id' => 1,
+                'sos_request_id' => null,
+                'skill_id' => 4, // Medis & P3K
+                'title' => 'Pemeriksaan Kesehatan Lanjutan Pengungsi Lansia',
+                'description' => 'Pemeriksaan tekanan darah, gula darah, dan pemberian obat rutin untuk pengungsi lansia di posko induk.',
+                'lat' => -6.9932000,
+                'lng' => 107.6251000,
+                'quota' => 2,
+                'start_at' => $now->copy()->addHours(4),
+                'end_at' => $now->copy()->addHours(8),
+                'status' => 'terbuka',
+                'cancel_reason' => null,
+                'created_by' => 2,
+                'created_at' => $now->copy()->subMinutes(45),
+                'updated_at' => $now->copy()->subMinutes(45),
+            ],
+            [
+                'id' => 8,
+                'disaster_event_id' => 1,
+                'shelter_id' => 1,
+                'sos_request_id' => null,
+                'skill_id' => 2, // Dapur Umum & Pangan
+                'title' => 'Dapur Umum Lapangan Cieunteung',
+                'description' => 'Penyiapan 500 porsi makanan siap saji untuk pengungsi di titik evakuasi Lapangan Cieunteung.',
+                'lat' => -6.9850000,
+                'lng' => 107.6180000,
+                'quota' => 4,
+                'start_at' => $now->copy()->addDay(),
+                'end_at' => $now->copy()->addDay()->addHours(5),
+                'status' => 'terbuka',
+                'cancel_reason' => null,
+                'created_by' => 2,
+                'created_at' => $now->copy()->subMinutes(30),
+                'updated_at' => $now->copy()->subMinutes(30),
+            ],
         ];
 
         DB::table('volunteer_tasks')->upsert($tasks, ['id'], [
             'disaster_event_id', 'shelter_id', 'sos_request_id', 'skill_id', 'title',
             'description', 'lat', 'lng', 'quota', 'start_at', 'end_at', 'status', 'cancel_reason',
-            'created_by', 'updated_at'
+            'created_by', 'updated_at',
         ]);
 
         $assignments = [
@@ -109,10 +204,67 @@ class VolunteerTaskSeeder extends Seeder
                 'created_at' => $now->copy()->subHours(4),
                 'updated_at' => $now->copy()->subHours(4)->addMinutes(10),
             ],
+            // Tugas 4 (Distribusi): Novendini Faradita (Volunteer Profile 5)
+            [
+                'id' => 4,
+                'volunteer_task_id' => 4,
+                'volunteer_profile_id' => 5,
+                'status' => 'selesai',
+                'reject_reason' => null,
+                'created_at' => $now->copy()->subDays(2),
+                'updated_at' => $now->copy()->subDays(2)->addHours(4),
+            ],
+            // Tugas 5 (Dapur Umum): Novendini Faradita (Volunteer Profile 5)
+            [
+                'id' => 5,
+                'volunteer_task_id' => 5,
+                'volunteer_profile_id' => 5,
+                'status' => 'diterima',
+                'reject_reason' => null,
+                'created_at' => $now->copy()->subHours(2),
+                'updated_at' => $now->copy()->subHours(2)->addMinutes(10),
+            ],
+            // Tugas 6 (Stok gudang, terbuka): Agus Kurniawan - penawaran menunggu konfirmasi
+            [
+                'id' => 6,
+                'volunteer_task_id' => 6,
+                'volunteer_profile_id' => 4,
+                'status' => 'ditawarkan',
+                'reject_reason' => null,
+                'created_at' => $now->copy()->subHour(),
+                'updated_at' => $now->copy()->subHour(),
+            ],
+            // Tugas 7 (Kesehatan lansia, terbuka): Novendini Faradita - penawaran menunggu konfirmasi
+            [
+                'id' => 7,
+                'volunteer_task_id' => 7,
+                'volunteer_profile_id' => 5,
+                'status' => 'ditawarkan',
+                'reject_reason' => null,
+                'created_at' => $now->copy()->subMinutes(40),
+                'updated_at' => $now->copy()->subMinutes(40),
+            ],
+            // Tugas 8 (Dapur umum, terbuka): Rian Hidayat - penawaran menunggu konfirmasi
+            [
+                'id' => 8,
+                'volunteer_task_id' => 8,
+                'volunteer_profile_id' => 3,
+                'status' => 'ditawarkan',
+                'reject_reason' => null,
+                'created_at' => $now->copy()->subMinutes(25),
+                'updated_at' => $now->copy()->subMinutes(25),
+            ],
         ];
 
+        // Penugasan demo untuk Novendini hanya berlaku bila profilnya ada (dibuat via aplikasi).
+        $profileIds = DB::table('volunteer_profiles')->pluck('id')->all();
+        $assignments = array_values(array_filter(
+            $assignments,
+            fn (array $assignment) => in_array($assignment['volunteer_profile_id'], $profileIds, true)
+        ));
+
         DB::table('task_assignments')->upsert($assignments, ['id'], [
-            'volunteer_task_id', 'volunteer_profile_id', 'status', 'reject_reason', 'updated_at'
+            'volunteer_task_id', 'volunteer_profile_id', 'status', 'reject_reason', 'updated_at',
         ]);
 
         $reports = [
@@ -158,7 +310,7 @@ class VolunteerTaskSeeder extends Seeder
         ];
 
         DB::table('task_reports')->upsert($reports, ['id'], [
-            'task_assignment_id', 'type', 'lat', 'lng', 'note', 'photo_path', 'confirmed_at', 'updated_at'
+            'task_assignment_id', 'type', 'lat', 'lng', 'note', 'photo_path', 'confirmed_at', 'updated_at',
         ]);
     }
 }

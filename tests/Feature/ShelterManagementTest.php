@@ -29,7 +29,7 @@ class ShelterManagementTest extends TestCase
 
         $response->assertStatus(200);
         $response->assertSee('Posko Evakuasi');
-        $response->assertSee('PBI-04');
+
     }
 
     public function test_admin_can_access_shelter_management_page(): void
@@ -565,5 +565,222 @@ class ShelterManagementTest extends TestCase
         $this->assertDatabaseHas('shelters', [
             'id' => $shelter->id,
         ]);
+    }
+
+    private function makeShelter(User $koordinator, array $attributes = []): Shelter
+    {
+        return Shelter::create(array_merge([
+            'disaster_event_id' => DisasterEvent::where('status', 'aktif')->first()->id,
+            'coordinator_id'    => $koordinator->id,
+            'name'              => 'Posko Regresi',
+            'address'           => 'Jl. Regresi No. 1',
+            'lat'               => -6.99,
+            'lng'               => 107.62,
+            'capacity'          => 100,
+            'occupancy'         => 10,
+            'contact'           => '08123456789',
+            'status'            => 'aktif',
+        ], $attributes));
+    }
+
+    public function test_occupancy_cannot_exceed_capacity_or_be_a_decimal(): void
+    {
+        $koordinator = User::where('role', 'koordinator')->first();
+        $shelter = $this->makeShelter($koordinator);
+
+        $component = Livewire::actingAs($koordinator)
+            ->test(ShelterManagement::class)
+            ->call('openOccupancyModal', $shelter->id)
+            ->set('newOccupancy', 101)
+            ->call('updateOccupancy')
+            ->assertHasErrors(['newOccupancy' => 'max']);
+
+        $component->set('newOccupancy', 10.5)
+            ->call('updateOccupancy')
+            ->assertHasErrors(['newOccupancy' => 'integer']);
+
+        $this->assertEquals(10, $shelter->fresh()->occupancy);
+    }
+
+    public function test_occupancy_cannot_be_updated_on_a_closed_shelter(): void
+    {
+        $koordinator = User::where('role', 'koordinator')->first();
+        $shelter = $this->makeShelter($koordinator, [
+            'occupancy'    => 0,
+            'status'       => 'ditutup',
+            'close_reason' => 'Operasional selesai.',
+        ]);
+
+        Livewire::actingAs($koordinator)
+            ->test(ShelterManagement::class)
+            ->call('openOccupancyModal', $shelter->id)
+            ->set('newOccupancy', 30)
+            ->call('updateOccupancy')
+            ->assertHasErrors(['newOccupancy']);
+
+        $this->assertEquals(0, $shelter->fresh()->occupancy);
+    }
+
+    public function test_capacity_status_is_not_changed_by_percentage_rounding(): void
+    {
+        $koordinator = User::where('role', 'koordinator')->first();
+
+        $almostFull = $this->makeShelter($koordinator, ['capacity' => 3000, 'occupancy' => 2999]);
+        $this->assertEquals('hampir_penuh', $almostFull->capacity_status);
+        $this->assertEquals(99.9, $almostFull->occupancy_percentage);
+        $this->assertTrue(Shelter::capacityStatus('hampir_penuh')->whereKey($almostFull->id)->exists());
+
+        $belowThreshold = $this->makeShelter($koordinator, ['capacity' => 3000, 'occupancy' => 2399]);
+        $this->assertEquals('tersedia', $belowThreshold->capacity_status);
+        $this->assertTrue(Shelter::capacityStatus('tersedia')->whereKey($belowThreshold->id)->exists());
+    }
+
+    public function test_capacity_summary_excludes_closed_shelters(): void
+    {
+        $koordinator = User::factory()->create(['role' => 'koordinator']);
+        $this->makeShelter($koordinator, ['capacity' => 100, 'occupancy' => 40]);
+        $this->makeShelter($koordinator, [
+            'capacity'     => 500,
+            'occupancy'    => 0,
+            'status'       => 'ditutup',
+            'close_reason' => 'Operasional selesai.',
+        ]);
+
+        $stats = Livewire::actingAs($koordinator)
+            ->test(ShelterManagement::class)
+            ->viewData('stats');
+
+        $this->assertEquals(2, $stats['total']);
+        $this->assertEquals(100, $stats['total_capacity']);
+        $this->assertEquals(60, $stats['total_remaining']);
+    }
+
+    public function test_shelter_on_a_non_active_event_can_still_be_edited(): void
+    {
+        $koordinator = User::where('role', 'koordinator')->first();
+        $finishedEvent = DisasterEvent::where('status', '!=', 'aktif')->first();
+        $shelter = $this->makeShelter($koordinator, ['disaster_event_id' => $finishedEvent->id]);
+
+        $component = Livewire::actingAs($koordinator)
+            ->test(ShelterManagement::class)
+            ->call('openEditModal', $shelter->id);
+
+        $this->assertTrue($component->viewData('editEvents')->contains('id', $finishedEvent->id));
+
+        $component->set('edit_capacity', 150)
+            ->call('update')
+            ->assertHasNoErrors();
+
+        $this->assertEquals(150, $shelter->fresh()->capacity);
+    }
+
+    public function test_full_shelter_opens_edit_form_as_operational_and_stays_full(): void
+    {
+        $koordinator = User::where('role', 'koordinator')->first();
+        $shelter = $this->makeShelter($koordinator, ['occupancy' => 100, 'status' => 'penuh']);
+
+        Livewire::actingAs($koordinator)
+            ->test(ShelterManagement::class)
+            ->call('openEditModal', $shelter->id)
+            ->assertSet('edit_status', 'aktif')
+            ->call('update')
+            ->assertHasNoErrors();
+
+        $this->assertEquals('penuh', $shelter->fresh()->status);
+    }
+
+    public function test_blocked_delete_can_switch_to_closing_the_shelter(): void
+    {
+        $koordinator = User::where('role', 'koordinator')->first();
+        $shelter = $this->makeShelter($koordinator, ['occupancy' => 0]);
+
+        Livewire::actingAs($koordinator)
+            ->test(ShelterManagement::class)
+            ->call('confirmDelete', $shelter->id)
+            ->call('closeShelterInstead')
+            ->assertSet('showDeleteModal', false)
+            ->assertSet('showEditModal', true)
+            ->assertSet('editingShelterId', $shelter->id)
+            ->assertSet('edit_status', 'ditutup');
+    }
+
+    public function test_managed_shelters_relation_returns_coordinator_shelters(): void
+    {
+        $koordinator = User::factory()->create(['role' => 'koordinator']);
+        $shelter = $this->makeShelter($koordinator);
+
+        $this->assertTrue($koordinator->managedShelters()->whereKey($shelter->id)->exists());
+    }
+
+    public function test_sidebar_only_offers_shelter_management_to_permitted_roles(): void
+    {
+        $warga = User::where('role', 'warga')->first();
+        $this->actingAs($warga)->get('/admin/dashboard')
+            ->assertOk()
+            ->assertDontSee('href="' . route('admin.shelters') . '"', false)
+            ->assertSee('Peta Posko');
+
+        $koordinator = User::where('role', 'koordinator')->first();
+        $this->actingAs($koordinator)->get('/admin/dashboard')
+            ->assertOk()
+            ->assertSee('href="' . route('admin.shelters') . '"', false);
+    }
+
+    public function test_closing_error_disappears_after_switching_back_to_active(): void
+    {
+        $koordinator = User::where('role', 'koordinator')->first();
+        $shelter = $this->makeShelter($koordinator, ['occupancy' => 40]);
+
+        Livewire::actingAs($koordinator)
+            ->test(ShelterManagement::class)
+            ->call('openEditModal', $shelter->id)
+            ->set('edit_status', 'ditutup')
+            ->set('edit_close_reason', 'Operasional selesai.')
+            ->call('update')
+            ->assertHasErrors(['edit_status'])
+            ->set('edit_status', 'aktif')
+            ->assertHasNoErrors(['edit_status']);
+    }
+
+    public function test_delete_block_reasons_read_as_proper_sentences(): void
+    {
+        $koordinator = User::where('role', 'koordinator')->first();
+        $shelter = $this->makeShelter($koordinator, ['occupancy' => 25]);
+
+        Livewire::actingAs($koordinator)
+            ->test(ShelterManagement::class)
+            ->call('confirmDelete', $shelter->id)
+            ->assertSee('Masih menampung 25 jiwa pengungsi aktif.')
+            ->assertDontSee('Telah masih menampung');
+    }
+
+    public function test_empty_table_message_distinguishes_filters_from_no_data(): void
+    {
+        $koordinator = User::factory()->create(['role' => 'koordinator']);
+
+        $component = Livewire::actingAs($koordinator)
+            ->test(ShelterManagement::class)
+            ->assertSee('Belum ada posko evakuasi');
+
+        $component->set('search', 'posko yang tidak ada')
+            ->assertSee('Tidak ada posko yang sesuai filter')
+            ->assertDontSee('Belum ada posko evakuasi');
+    }
+
+    public function test_donor_sidebar_links_to_the_public_shelter_map(): void
+    {
+        $donatur = User::where('role', 'donatur')->first();
+
+        $this->actingAs($donatur)->get('/admin/dashboard')
+            ->assertOk()
+            ->assertSee('Peta Posko')
+            ->assertDontSee('href="' . route('admin.shelters') . '"', false);
+    }
+
+    public function test_activity_log_seeder_keeps_every_row(): void
+    {
+        $this->assertDatabaseCount('activity_logs', 4);
+        $this->assertDatabaseHas('activity_logs', ['id' => 2, 'action' => 'escalated_warning_level']);
+        $this->assertDatabaseHas('activity_logs', ['id' => 4, 'action' => 'updated_facility_condition', 'user_id' => 3]);
     }
 }

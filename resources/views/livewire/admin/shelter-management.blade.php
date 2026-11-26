@@ -47,9 +47,6 @@
                 <h1 class="text-2xl font-bold tracking-tight text-slate-900">
                     Posko Evakuasi
                 </h1>
-                <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold bg-blue-100 text-blue-800 font-mono">
-                    PBI-04
-                </span>
             </div>
             <p class="text-sm text-slate-500 mt-0.5">
                 Kelola data posko bencana, kapasitas tampung, koordinat lokasi, dan kontak narahubung darurat.
@@ -374,18 +371,6 @@
                             <!-- Aksi -->
                             <td class="py-4 px-4 sm:px-6 text-right">
                                 <div class="inline-flex items-center space-x-1">
-                                    <!-- Tombol Update Okupansi Pengungsi -->
-                                    <button 
-                                        type="button"
-                                        wire:click="openOccupancyModal({{ $shelter->id }})"
-                                        class="p-1.5 text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 rounded-lg transition cursor-pointer"
-                                        title="Update Jumlah Pengungsi Aktif"
-                                    >
-                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
-                                        </svg>
-                                    </button>
-
                                     <!-- Tombol Ubah / Edit Posko (SCRUM-55, SCRUM-56) -->
                                     @if(auth()->user()->isAdmin() || $shelter->coordinator_id === auth()->id())
                                         <button 
@@ -435,8 +420,13 @@
                                 <svg class="w-10 h-10 mx-auto text-slate-300 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
                                 </svg>
-                                <p class="text-sm font-semibold text-slate-700">Belum ada posko evakuasi</p>
-                                <p class="text-xs text-slate-400 mt-1">Gunakan tombol "Tambah Posko" di atas untuk mendaftarkan posko baru.</p>
+                                @if (trim($search) !== '' || $statusFilter !== '' || $eventFilter !== '' || $capacityFilter !== '')
+                                    <p class="text-sm font-semibold text-slate-700">Tidak ada posko yang sesuai filter</p>
+                                    <p class="text-xs text-slate-400 mt-1">Ubah kata kunci atau filter untuk melihat posko lainnya.</p>
+                                @else
+                                    <p class="text-sm font-semibold text-slate-700">Belum ada posko evakuasi</p>
+                                    <p class="text-xs text-slate-400 mt-1">Gunakan tombol "Tambah Posko" di atas untuk mendaftarkan posko baru.</p>
+                                @endif
                             </td>
                         </tr>
                     @endforelse
@@ -456,7 +446,7 @@
         x-show="open"
         x-cloak
         x-effect="if (open) { setTimeout(() => window.dispatchEvent(new CustomEvent('render-shelter-map')), 250); }"
-        @keydown.escape.window="open = false; $wire.closeCreateModal()"
+        @keydown.escape.window="if (open) { open = false; $wire.closeCreateModal() }"
         class="fixed inset-0 z-50 overflow-y-auto"
         role="dialog" 
         aria-modal="true"
@@ -794,165 +784,13 @@
         </div>
     </div>
 
-    <!-- Modal Form Update Okupansi Pengungsi (SCRUM-56) -->
-    <div 
-        x-data="{ open: $wire.entangle('showOccupancyModal') }"
-        x-show="open"
-        x-cloak
-        @keydown.escape.window="open = false; $wire.closeOccupancyModal()"
-        class="fixed inset-0 z-50 overflow-y-auto"
-        role="dialog" 
-        aria-modal="true"
-        aria-labelledby="occupancy-modal-title"
-    >
-        <!-- Backdrop Blur -->
-        <div 
-            x-show="open"
-            x-transition:enter="transition ease-out duration-300"
-            x-transition:enter-start="opacity-0"
-            x-transition:enter-end="opacity-100"
-            x-transition:leave="transition ease-in duration-200"
-            x-transition:leave-start="opacity-100"
-            x-transition:leave-end="opacity-0"
-            class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm cursor-pointer" 
-            @click="open = false; $wire.closeOccupancyModal()"
-            aria-hidden="true"
-        ></div>
-
-        <!-- Centered Wrapper -->
-        <div class="min-h-full flex items-center justify-center p-4 sm:p-6 relative z-10">
-            <div 
-                x-show="open"
-                x-transition:enter="transition ease-out duration-300"
-                x-transition:enter-start="opacity-0 scale-95 translate-y-3"
-                x-transition:enter-end="opacity-100 scale-100 translate-y-0"
-                x-transition:leave="transition ease-in duration-200"
-                x-transition:leave-start="opacity-100 scale-100 translate-y-0"
-                x-transition:leave-end="opacity-0 scale-95 translate-y-3"
-                class="w-full max-w-lg bg-white rounded-2xl text-left shadow-2xl border border-slate-200 overflow-hidden my-6"
-            >
-                <form wire:submit.prevent="updateOccupancy">
-                    <div class="p-6">
-                        <!-- Header -->
-                        <div class="flex items-center justify-between pb-3 mb-4 border-b border-slate-100">
-                            <div>
-                                <h3 class="text-lg font-bold text-slate-900" id="occupancy-modal-title">
-                                    Update Okupansi Pengungsi
-                                </h3>
-                                <p class="text-xs text-slate-500 mt-0.5 truncate max-w-xs sm:max-w-md">
-                                    Posko: <strong class="text-slate-800">{{ $selectedShelterName }}</strong>
-                                </p>
-                            </div>
-                            <button 
-                                type="button" 
-                                @click="open = false; $wire.closeOccupancyModal()" 
-                                class="text-slate-400 hover:text-slate-600 p-1.5 rounded-lg hover:bg-slate-100 transition cursor-pointer"
-                            >
-                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-                                </svg>
-                            </button>
-                        </div>
-
-                        <!-- Info Ringkasan Kapasitas -->
-                        <div class="bg-slate-50 rounded-xl p-3.5 border border-slate-200/80 mb-4 grid grid-cols-2 gap-3 text-center">
-                            <div class="p-2 rounded-lg bg-white border border-slate-200/60 shadow-2xs">
-                                <span class="text-[11px] font-semibold text-slate-500 uppercase tracking-wider block">Kapasitas Maksimal</span>
-                                <span class="text-lg font-bold text-slate-800">{{ number_format($selectedShelterCapacity) }} <span class="text-xs font-normal text-slate-400">jiwa</span></span>
-                            </div>
-                            <div class="p-2 rounded-lg bg-white border border-slate-200/60 shadow-2xs">
-                                <span class="text-[11px] font-semibold text-slate-500 uppercase tracking-wider block">Okupansi Baru</span>
-                                <span class="text-lg font-bold text-blue-600">{{ number_format((int)$newOccupancy) }} <span class="text-xs font-normal text-slate-400">jiwa</span></span>
-                            </div>
-                        </div>
-
-                        <!-- Form Input Okupansi Baru -->
-                        <div class="space-y-4">
-                            <div>
-                                <label class="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1.5">
-                                    Jumlah Pengungsi Aktif (Jiwa) <span class="text-red-500">*</span>
-                                </label>
-                                <input 
-                                    type="number" 
-                                    min="0"
-                                    wire:model.live="newOccupancy" 
-                                    required 
-                                    placeholder="Contoh: 150" 
-                                    class="w-full py-2.5 px-3 text-sm font-semibold rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-transparent transition"
-                                />
-                                @error('newOccupancy') <span class="text-xs text-red-600 mt-1 block font-medium">{{ $message }}</span> @enderror
-                            </div>
-
-                            <!-- Live Dynamic Indicator Preview -->
-                            @php
-                                $cap = max(1, (int) $selectedShelterCapacity);
-                                $occ = max(0, (int) $newOccupancy);
-                                $previewPercent = round(($occ / $cap) * 100, 1);
-                                $previewBadge = match (true) {
-                                    $previewPercent >= 100 => ['label' => 'Penuh (100%)', 'color' => 'bg-red-50 text-red-700 border-red-200', 'bar' => 'bg-red-500'],
-                                    $previewPercent >= 80 => ['label' => 'Hampir Penuh (80-99%)', 'color' => 'bg-amber-50 text-amber-700 border-amber-200', 'bar' => 'bg-amber-500'],
-                                    default => ['label' => 'Tersedia (<80%)', 'color' => 'bg-emerald-50 text-emerald-700 border-emerald-200', 'bar' => 'bg-emerald-500'],
-                                };
-                            @endphp
-
-                            <div class="p-3.5 rounded-xl border border-slate-200/80 bg-slate-50/50 space-y-2">
-                                <div class="flex items-center justify-between text-xs">
-                                    <span class="font-medium text-slate-600">Simulasi Status Kapasitas:</span>
-                                    <span class="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-semibold border {{ $previewBadge['color'] }}">
-                                        {{ $previewBadge['label'] }} ({{ $previewPercent }}%)
-                                    </span>
-                                </div>
-                                <div class="w-full h-2 bg-slate-200 rounded-full overflow-hidden">
-                                    <div class="h-full {{ $previewBadge['bar'] }} rounded-full transition-all duration-300" style="width: {{ min(100, $previewPercent) }}%"></div>
-                                </div>
-                                <div class="flex items-center justify-between text-[11px] text-slate-500 pt-0.5">
-                                    <span>Sisa kuota: <strong>{{ max(0, $cap - $occ) }}</strong> jiwa</span>
-                                    @if ($occ >= $cap)
-                                        <span class="text-red-600 font-semibold flex items-center">
-                                            ⚠️ Posko akan otomatis diset Penuh
-                                        </span>
-                                    @endif
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Footer -->
-                    <div class="bg-slate-50 px-6 py-4 flex items-center justify-end space-x-2 border-t border-slate-100 rounded-b-2xl">
-                        <button 
-                            type="button" 
-                            @click="open = false; $wire.closeOccupancyModal()"
-                            class="px-4 py-2 text-xs sm:text-sm font-semibold text-slate-600 hover:text-slate-800 hover:bg-slate-100 rounded-xl transition cursor-pointer"
-                        >
-                            Batal
-                        </button>
-                        <button 
-                            type="submit"
-                            wire:loading.attr="disabled"
-                            class="inline-flex items-center space-x-1.5 px-5 py-2 bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white text-xs sm:text-sm font-semibold rounded-xl shadow-xs transition duration-150 disabled:opacity-50 cursor-pointer"
-                        >
-                            <span wire:loading.remove wire:target="updateOccupancy">Simpan Okupansi</span>
-                            <span wire:loading wire:target="updateOccupancy" class="inline-flex items-center space-x-1">
-                                <svg class="animate-spin h-4 w-4 text-white" fill="none" viewBox="0 0 24 24">
-                                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                                </svg>
-                                <span>Menyimpan...</span>
-                            </span>
-                        </button>
-                    </div>
-                </form>
-            </div>
-        </div>
-    </div>
-
     <!-- Modal Form Ubah Posko (SCRUM-55, SCRUM-56) -->
     <div 
         x-data="{ open: $wire.entangle('showEditModal') }"
         x-show="open"
         x-cloak
         x-effect="if (open) { setTimeout(() => window.dispatchEvent(new CustomEvent('render-shelter-edit-map')), 250); }"
-        @keydown.escape.window="open = false; $wire.closeEditModal()"
+        @keydown.escape.window="if (open) { open = false; $wire.closeEditModal() }"
         class="fixed inset-0 z-50 overflow-y-auto"
         role="dialog" 
         aria-modal="true"
@@ -1025,12 +863,12 @@
                                     Kejadian Bencana Terkait <span class="text-red-500">*</span>
                                 </label>
                                 <select 
-                                    wire:model="edit_disaster_event_id" 
-                                    required 
+                                    wire:model="edit_disaster_event_id"
+                                    required
                                     class="w-full py-2.5 px-3 text-xs sm:text-sm rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-transparent transition bg-slate-50 hover:bg-white focus:bg-white"
                                 >
                                     <option value="">-- Pilih Kejadian Bencana Aktif --</option>
-                                    @foreach ($activeEvents as $event)
+                                    @foreach ($editEvents as $event)
                                         <option value="{{ $event->id }}">
                                             {{ $event->name }} ({{ ucfirst($event->disaster_type) }} - {{ $event->regency }})
                                         </option>
@@ -1299,7 +1137,7 @@
         x-data="{ open: $wire.entangle('showDeleteModal') }"
         x-show="open"
         x-cloak
-        @keydown.escape.window="open = false; $wire.closeDeleteModal()"
+        @keydown.escape.window="if (open) { open = false; $wire.closeDeleteModal() }"
         class="fixed inset-0 z-50 overflow-y-auto"
         role="dialog" 
         aria-modal="true"
@@ -1384,7 +1222,7 @@
                             @foreach($deletingShelterBlockReasons as $reason)
                                 <div class="flex items-start space-x-2">
                                     <span class="text-amber-600 font-bold">•</span>
-                                    <span>Telah {{ $reason }}.</span>
+                                    <span>{{ ucfirst($reason) }}.</span>
                                 </div>
                             @endforeach
                         </div>
@@ -1403,7 +1241,7 @@
                             </button>
                             <button 
                                 type="button" 
-                                wire:click="closeDeleteModal(); openEditModal({{ $deletingShelterId }})"
+                                wire:click="closeShelterInstead"
                                 class="px-4 py-2 bg-amber-500 hover:bg-amber-600 text-white text-xs sm:text-sm font-semibold rounded-xl shadow-xs transition cursor-pointer"
                             >
                                 Tutup Posko Sebagai Gantinya
@@ -1420,7 +1258,7 @@
         x-data="{ open: $wire.entangle('showDetailModal') }"
         x-show="open"
         x-cloak
-        @keydown.escape.window="open = false; $wire.closeDetailModal()"
+        @keydown.escape.window="if (open) { open = false; $wire.closeDetailModal() }"
         class="fixed inset-0 z-50 overflow-y-auto"
         role="dialog" 
         aria-modal="true"
@@ -1887,7 +1725,7 @@
                     <!-- Modal Footer -->
                     <div class="bg-slate-50 px-6 py-3.5 border-t border-slate-200/80 flex items-center justify-between">
                         <span class="text-[11px] text-slate-500">
-                            PBI-05 Modul B &bull; Kelayakan Fasilitas Posko
+                            Kelayakan Fasilitas Posko
                         </span>
                         <button 
                             type="button" 
@@ -1922,6 +1760,12 @@
             getLatProp() { return this.prefix ? this.prefix + 'lat' : 'lat'; },
             getLngProp() { return this.prefix ? this.prefix + 'lng' : 'lng'; },
             getAddrProp() { return this.prefix ? this.prefix + 'address' : 'address'; },
+
+            // Nama tempat dari Nominatim adalah data eksternal, wajib di-escape sebelum masuk popup HTML
+            escapeHtml(value) {
+                const replacements = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' };
+                return String(value ?? '').replace(/[&<>"']/g, (char) => replacements[char]);
+            },
 
             init() {
                 const wireLat = this.$wire.get(this.getLatProp());
@@ -2101,7 +1945,7 @@
                 if (this.map && this.marker) {
                     this.map.flyTo([lat, lon], 16, { animate: true, duration: 1.0 });
                     this.marker.setLatLng([lat, lon]);
-                    this.marker.bindPopup(`<b>${item.display_name.split(',')[0]}</b><br>${item.display_name}`).openPopup();
+                    this.marker.bindPopup(`<b>${this.escapeHtml(item.display_name.split(',')[0])}</b><br>${this.escapeHtml(item.display_name)}`).openPopup();
                 }
 
                 this.updateCoordinates(lat, lon);
