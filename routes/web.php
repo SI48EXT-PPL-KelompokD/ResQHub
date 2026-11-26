@@ -8,6 +8,7 @@ use App\Http\Controllers\HealthCheckController;
 use App\Http\Controllers\RefugeeController;
 use App\Http\Controllers\Admin\AidNeedController;
 use App\Http\Controllers\Admin\ItemController;
+use App\Http\Controllers\Admin\AidPackageController;
 use App\Livewire\Auth\Register;
 use App\Livewire\Admin\Dashboard;
 use App\Livewire\Admin\HealthCheckManagement;
@@ -106,6 +107,8 @@ Route::middleware(['auth'])->prefix('admin')->name('admin.')->group(function () 
         Route::resource('needs', AidNeedController::class)
             ->except(['show'])
             ->parameters(['needs' => 'aid_need']);
+        Route::resource('packages', AidPackageController::class)
+            ->parameters(['packages' => 'aid_package']);
     });
 
     // Modul G: Tugas relawan (PBI-20)
