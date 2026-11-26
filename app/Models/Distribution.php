@@ -46,6 +46,11 @@ class Distribution extends Model
         return $this->belongsTo(Refugee::class, 'refugee_id')->withTrashed();
     }
 
+    public function aidPackage(): BelongsTo
+    {
+        return $this->belongsTo(AidPackage::class, 'aid_package_id');
+    }
+
     public function distributor(): BelongsTo
     {
         return $this->belongsTo(User::class, 'distributed_by');
