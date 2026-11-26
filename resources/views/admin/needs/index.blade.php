@@ -11,7 +11,10 @@
             </div>
             <div class="flex flex-wrap gap-3">
                 <a href="{{ route('needs.public') }}" class="rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-50">Lihat papan publik</a>
-                <a href="{{ route('admin.needs.create') }}" class="rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-blue-700">Tambah kebutuhan</a>
+                <div class="flex flex-wrap gap-2">
+                    <a href="{{ route('admin.packages.index') }}" class="rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-50">Paket standar</a>
+                    <a href="{{ route('admin.needs.create') }}" class="rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-blue-700">Tambah kebutuhan</a>
+                </div>
             </div>
         </div>
 
