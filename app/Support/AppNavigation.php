@@ -45,6 +45,7 @@ class AppNavigation
                 self::link('Posko', 'admin.shelters', 'building', ['admin.shelters*']),
                 self::link('Pengungsi', 'admin.refugees', 'users', ['admin.refugees*']),
                 self::link('Pemeriksaan', 'admin.health-checks', 'heart', ['admin.health-checks*']),
+                self::link('Rujukan Medis', 'admin.medical-referrals', 'cross', ['admin.medical-referrals*']),
                 self::link('Tugas Relawan', 'admin.tasks', 'clipboard', ['admin.tasks']),
             ]),
             self::section('Logistik dan Donasi', [
@@ -67,7 +68,7 @@ class AppNavigation
                 self::soon('Titik Kumpul', 'pin'),
                 self::link('Pengungsi', 'admin.refugees', 'users', ['admin.refugees*']),
                 self::link('Pemeriksaan', 'admin.health-checks', 'heart', ['admin.health-checks*']),
-                self::soon('Rujukan Medis', 'cross'),
+                self::link('Rujukan Medis', 'admin.medical-referrals', 'cross', ['admin.medical-referrals*']),
             ]),
             self::section('Logistik', [
                 self::link('Kebutuhan', 'admin.needs.index', 'box', ['admin.needs.*']),
@@ -89,7 +90,7 @@ class AppNavigation
             self::section('Layanan Kesehatan', [
                 self::link('Pengungsi', 'admin.refugees', 'users', ['admin.refugees*']),
                 self::link('Pemeriksaan', 'admin.health-checks', 'heart', ['admin.health-checks*']),
-                self::soon('Rujukan Medis', 'cross'),
+                self::link('Rujukan Medis', 'admin.medical-referrals', 'cross', ['admin.medical-referrals*']),
             ]),
             self::section('Penugasan', [
                 self::soon('Tugas Saya', 'clipboard'),

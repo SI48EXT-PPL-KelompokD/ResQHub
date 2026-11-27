@@ -51,17 +51,28 @@
     </dl>
 
     @if (! empty($triageSummary) && ($user->isAdmin() || $user->isKoordinator() || $user->isNakes()))
-        <section class="{{ $panel }} flex flex-col gap-3 px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
-            <div>
-                <h2 class="{{ $panelTitle }}">Triase hari ini</h2>
-                <p class="mt-0.5 text-sm text-slate-700">{{ $triageSummary['totals']['total'] }} pemeriksaan, {{ $triageSummary['unreferred_merah'] ?? 0 }} triase merah belum dirujuk.</p>
+        <section class="{{ $panel }} divide-y divide-slate-200">
+            <div class="flex flex-col gap-3 px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
+                <div>
+                    <h2 class="{{ $panelTitle }}">Triase hari ini</h2>
+                    <p class="mt-0.5 text-sm text-slate-700">{{ $triageSummary['totals']['total'] }} pemeriksaan, {{ $triageSummary['unreferred_merah'] ?? 0 }} triase merah belum dirujuk.</p>
+                </div>
+                <div class="flex flex-wrap items-center gap-x-5 gap-y-1 text-sm font-semibold">
+                    <span class="text-green-800">Hijau {{ $triageSummary['totals']['hijau'] }}</span>
+                    <span class="text-amber-800">Kuning {{ $triageSummary['totals']['kuning'] }}</span>
+                    <span class="text-red-800">Merah {{ $triageSummary['totals']['merah'] }}</span>
+                    <a href="{{ route('admin.health-checks') }}" wire:navigate class="rq-link">Kelola pemeriksaan</a>
+                </div>
             </div>
-            <div class="flex flex-wrap items-center gap-x-5 gap-y-1 text-sm font-semibold">
-                <span class="text-green-800">Hijau {{ $triageSummary['totals']['hijau'] }}</span>
-                <span class="text-amber-800">Kuning {{ $triageSummary['totals']['kuning'] }}</span>
-                <span class="text-red-800">Merah {{ $triageSummary['totals']['merah'] }}</span>
-                <a href="{{ route('admin.health-checks') }}" wire:navigate class="rq-link">Kelola pemeriksaan</a>
-            </div>
+            @if (! empty($referralSummary))
+                <div class="flex flex-col gap-2 bg-slate-50/60 px-5 py-3 sm:flex-row sm:items-center sm:justify-between text-sm">
+                    <p class="text-slate-700">
+                        <span class="font-semibold text-ink">Rujukan medis:</span>
+                        {{ $referralSummary['diajukan'] }} diajukan · {{ $referralSummary['dalam_perjalanan'] }} dalam perjalanan · {{ $referralSummary['diterima_faskes'] }} diterima faskes · {{ $referralSummary['selesai'] }} selesai
+                    </p>
+                    <a href="{{ route('admin.medical-referrals') }}" wire:navigate class="rq-link font-semibold shrink-0">Kelola rujukan</a>
+                </div>
+            @endif
         </section>
     @endif
 

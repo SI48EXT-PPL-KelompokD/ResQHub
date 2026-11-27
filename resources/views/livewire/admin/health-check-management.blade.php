@@ -466,11 +466,20 @@
 
                         <!-- Alert Box Triase Merah (Sesuai Mockup) -->
                         @if ($triage === 'merah')
-                            <div class="p-3.5 rounded-xl bg-red-50 border border-red-200/80 text-xs space-y-1">
+                            <div class="p-3.5 rounded-xl bg-red-50 border border-red-200/80 text-xs space-y-1.5">
                                 <p class="font-bold text-red-700">Triase Merah</p>
                                 <p class="text-red-700 leading-relaxed">
                                     Koordinator posko sudah dinotifikasi. Lanjutkan dengan membuat rujukan medis (PBI-09).
                                 </p>
+                                @if ($selectedCheck && ! $selectedCheck->referrals()->notCancelled()->exists())
+                                    <a
+                                        href="{{ route('admin.medical-referrals', ['health_check' => $selectedCheck->id]) }}"
+                                        wire:navigate
+                                        class="inline-flex items-center font-semibold text-red-800 hover:text-red-900 underline underline-offset-2"
+                                    >
+                                        Buat Rujukan Medis &rarr;
+                                    </a>
+                                @endif
                             </div>
                         @endif
 
@@ -780,11 +789,20 @@
 
                         <!-- Alert Box Triase Merah (Sesuai Mockup) -->
                         @if ($triage === 'merah')
-                            <div class="p-3.5 rounded-xl bg-red-50 border border-red-200/80 text-xs space-y-1">
+                            <div class="p-3.5 rounded-xl bg-red-50 border border-red-200/80 text-xs space-y-1.5">
                                 <p class="font-bold text-red-700">Triase Merah</p>
                                 <p class="text-red-700 leading-relaxed">
                                     Koordinator posko sudah dinotifikasi. Lanjutkan dengan membuat rujukan medis (PBI-09).
                                 </p>
+                                @if ($selectedCheck && ! $selectedCheck->referrals()->notCancelled()->exists())
+                                    <a
+                                        href="{{ route('admin.medical-referrals', ['health_check' => $selectedCheck->id]) }}"
+                                        wire:navigate
+                                        class="inline-flex items-center font-semibold text-red-800 hover:text-red-900 underline underline-offset-2"
+                                    >
+                                        Buat Rujukan Medis &rarr;
+                                    </a>
+                                @endif
                             </div>
                         @endif
 

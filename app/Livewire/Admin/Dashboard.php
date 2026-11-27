@@ -7,6 +7,7 @@ use App\Models\GoodsDonation;
 use App\Models\Shelter;
 use App\Models\User;
 use App\Services\HealthCheckService;
+use App\Services\MedicalReferralService;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -53,6 +54,7 @@ class Dashboard extends Component
             'urgentNeeds' => $this->urgentNeeds(),
             'lowStocks' => $this->lowStocks(),
             'triageSummary' => app(HealthCheckService::class)->getDailyTriageSummary($user),
+            'referralSummary' => app(MedicalReferralService::class)->getSummary($user),
             'mapPoints' => $this->mapPoints(),
         ];
     }
@@ -80,6 +82,7 @@ class Dashboard extends Component
             'urgentNeeds' => $this->urgentNeeds($shelterIds),
             'lowStocks' => $this->lowStocks($shelterIds),
             'triageSummary' => app(HealthCheckService::class)->getDailyTriageSummary($user),
+            'referralSummary' => app(MedicalReferralService::class)->getSummary($user),
             'mapPoints' => $this->mapPoints($shelterIds),
         ];
     }
@@ -87,16 +90,18 @@ class Dashboard extends Component
     private function medicView(User $user): array
     {
         $summary = app(HealthCheckService::class)->getDailyTriageSummary($user);
+        $referralSummary = app(MedicalReferralService::class)->getSummary($user);
         $tasks = $this->taskCounts($user);
 
         return [
             'metrics' => [
                 $this->metric('Pemeriksaan hari ini', $summary['totals']['total'] ?? 0, 'tercatat', route('admin.health-checks')),
-                $this->metric('Triase merah', $summary['unreferred_merah'] ?? 0, 'belum dirujuk', route('admin.health-checks')),
-                $this->metric('Tawaran tugas', $tasks['ditawarkan'], 'menunggu jawaban'),
-                $this->metric('Tugas berjalan', $tasks['diterima'], 'sudah diterima'),
+                $this->metric('Triase merah', $summary['unreferred_merah'] ?? 0, 'belum dirujuk', route('admin.medical-referrals')),
+                $this->metric('Rujukan aktif', $referralSummary['active'] ?? 0, "{$referralSummary['diajukan']} diajukan · {$referralSummary['dalam_perjalanan']} perjalanan", route('admin.medical-referrals')),
+                $this->metric('Tugas berjalan', $tasks['diterima'], "{$tasks['ditawarkan']} tawaran menunggu"),
             ],
             'triageSummary' => $summary,
+            'referralSummary' => $referralSummary,
             'myTasks' => $this->myTasks($user),
         ];
     }

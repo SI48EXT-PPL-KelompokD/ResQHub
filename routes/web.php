@@ -11,6 +11,7 @@ use App\Http\Controllers\Admin\AidNeedController;
 use App\Livewire\Auth\Register;
 use App\Livewire\Admin\Dashboard;
 use App\Livewire\Admin\HealthCheckManagement;
+use App\Livewire\Admin\MedicalReferralManagement;
 use App\Livewire\Admin\RefugeeManagement;
 use App\Livewire\Admin\UserManagement;
 use App\Livewire\Admin\ShelterManagement;
@@ -76,6 +77,7 @@ Route::middleware(['auth'])->prefix('admin')->name('admin.')->group(function () 
     Route::delete('/health-checks/{healthCheck}', [HealthCheckController::class, 'destroy'])->name('health-checks.destroy');
 
     // Modul C: Rujukan Medis Pengungsi (PBI-09)
+    Route::get('/medical-referrals', MedicalReferralManagement::class)->name('medical-referrals');
     Route::get('/medical-referrals/list', [MedicalReferralController::class, 'index'])->name('medical-referrals.index');
     Route::get('/medical-referrals/summary', [MedicalReferralController::class, 'summary'])->name('medical-referrals.summary');
     Route::get('/medical-referrals/{medicalReferral}', [MedicalReferralController::class, 'show'])->name('medical-referrals.show');
