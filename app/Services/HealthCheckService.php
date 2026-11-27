@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\ActivityLog;
 use App\Models\HealthCheck;
+use App\Models\MedicalReferral;
 use App\Models\Refugee;
 use App\Models\Shelter;
 use App\Models\User;
@@ -332,7 +333,9 @@ class HealthCheckService
             ->whereDate('checked_at', $day->toDateString())
             ->where('triage', 'merah')
             ->forShelters($shelters->pluck('id')->map(fn ($id) => (int) $id)->all())
-            ->whereDoesntHave('referrals')
+            ->whereDoesntHave('referrals', function (Builder $query) {
+                $query->where('status', '!=', MedicalReferral::STATUS_DIBATALKAN);
+            })
             ->count();
 
         return [
