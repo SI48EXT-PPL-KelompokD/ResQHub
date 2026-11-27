@@ -266,25 +266,20 @@
                                 @endphp
                                 <tr
                                     wire:key="referral-{{ $item->id }}"
-                                    class="transition {{ $isSelected ? 'bg-blue-50/75' : 'hover:bg-slate-50/60' }}"
+                                    wire:click="openDetailPanel({{ $item->id }})"
+                                    class="transition cursor-pointer group {{ $isSelected ? 'bg-blue-50/75' : 'hover:bg-slate-50/80' }}"
                                 >
                                     <!-- Pasien -->
                                     <td class="py-3.5 px-5">
-                                        <button
-                                            type="button"
-                                            wire:click="openDetailPanel({{ $item->id }})"
-                                            class="text-left group focus:outline-none cursor-pointer"
-                                        >
-                                            <span class="font-semibold text-slate-900 group-hover:text-blue-600 transition block leading-snug">
-                                                {{ $item->healthCheck?->refugee?->head_name ?? '-' }}
-                                            </span>
-                                            <span class="text-[11px] text-slate-400 block mt-0.5">
-                                                {{ $item->healthCheck?->refugee?->shelter?->name ?? '-' }}
-                                                @if ($item->healthCheck?->triage === 'merah')
-                                                    · <span class="text-red-600 font-semibold">Triase Merah</span>
-                                                @endif
-                                            </span>
-                                        </button>
+                                        <span class="font-semibold text-slate-900 group-hover:text-blue-600 transition block leading-snug">
+                                            {{ $item->healthCheck?->refugee?->head_name ?? '-' }}
+                                        </span>
+                                        <span class="text-[11px] text-slate-400 block mt-0.5">
+                                            {{ $item->healthCheck?->refugee?->shelter?->name ?? '-' }}
+                                            @if ($item->healthCheck?->triage === 'merah')
+                                                · <span class="text-red-600 font-semibold">Triase Merah</span>
+                                            @endif
+                                        </span>
                                     </td>
 
                                     <!-- Faskes -->
@@ -303,30 +298,30 @@
                                     </td>
 
                                     <!-- Aksi -->
-                                    <td class="py-3.5 px-5 text-right">
+                                    <td class="py-3.5 px-5 text-right" wire:click.stop>
                                         <div class="inline-flex items-center justify-end space-x-2">
+                                            <button
+                                                type="button"
+                                                wire:click.stop="openDetailPanel({{ $item->id }})"
+                                                class="px-3 py-1.5 bg-white hover:bg-slate-50 text-slate-700 text-xs font-semibold rounded-lg border border-slate-200 shadow-2xs transition cursor-pointer"
+                                            >
+                                                Detail
+                                            </button>
+
                                             @if ($canUpdate && $item->canUpdateStatus())
                                                 <button
                                                     type="button"
-                                                    wire:click="openEditPanel({{ $item->id }})"
-                                                    class="px-3 py-1.5 bg-white hover:bg-slate-50 text-slate-700 text-xs font-semibold rounded-lg border border-slate-200 shadow-2xs transition cursor-pointer"
+                                                    wire:click.stop="openEditPanel({{ $item->id }})"
+                                                    class="px-3 py-1.5 bg-white hover:bg-slate-50 text-blue-700 text-xs font-semibold rounded-lg border border-blue-200 shadow-2xs transition cursor-pointer"
                                                 >
                                                     Ubah
-                                                </button>
-                                            @else
-                                                <button
-                                                    type="button"
-                                                    wire:click="openDetailPanel({{ $item->id }})"
-                                                    class="px-3 py-1.5 bg-white hover:bg-slate-50 text-slate-700 text-xs font-semibold rounded-lg border border-slate-200 shadow-2xs transition cursor-pointer"
-                                                >
-                                                    Detail
                                                 </button>
                                             @endif
 
                                             @if ($canCancel && $item->canBeCancelled())
                                                 <button
                                                     type="button"
-                                                    wire:click="openCancelModal({{ $item->id }})"
+                                                    wire:click.stop="openCancelModal({{ $item->id }})"
                                                     class="px-3 py-1.5 bg-red-600 hover:bg-red-700 text-white text-xs font-semibold rounded-lg shadow-2xs transition cursor-pointer"
                                                 >
                                                     Batalkan

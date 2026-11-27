@@ -236,8 +236,10 @@ class MedicalReferralManagement extends Component
         );
     }
 
-    public function openDetailPanel(int $id, MedicalReferralService $referralService): void
+    public function openDetailPanel(int $id, ?MedicalReferralService $referralService = null): void
     {
+        $referralService ??= app(MedicalReferralService::class);
+
         $referral = $referralService->getReferralDetail($this->currentUser(), $id);
         $this->selectedReferral = $referral;
         $this->referralId = $referral->id;
