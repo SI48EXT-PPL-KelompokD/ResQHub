@@ -2,9 +2,9 @@
 
 namespace Database\Seeders;
 
+use Carbon\Carbon;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
-use Carbon\Carbon;
 
 class ShelterSeeder extends Seeder
 {
@@ -65,7 +65,7 @@ class ShelterSeeder extends Seeder
 
         DB::table('shelters')->upsert($shelters, ['id'], [
             'disaster_event_id', 'coordinator_id', 'name', 'address', 'lat', 'lng',
-            'capacity', 'occupancy', 'contact', 'status', 'close_reason', 'updated_at'
+            'capacity', 'occupancy', 'contact', 'status', 'close_reason', 'updated_at',
         ]);
     }
 }

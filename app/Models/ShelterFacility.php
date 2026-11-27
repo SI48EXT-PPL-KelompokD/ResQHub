@@ -17,47 +17,47 @@ class ShelterFacility extends Model
      * Daftar jenis fasilitas standar posko evakuasi sesuai PBI-05.
      */
     public const TYPES = [
-        'mck'           => 'MCK / Sanitasi',
-        'dapur_umum'    => 'Dapur Umum',
+        'mck' => 'MCK / Sanitasi',
+        'dapur_umum' => 'Dapur Umum',
         'pos_kesehatan' => 'Pos Kesehatan',
-        'listrik'       => 'Listrik & Penerangan',
-        'air_bersih'    => 'Air Bersih',
-        'laktasi'       => 'Ruang Laktasi',
-        'ramah_anak'    => 'Area Ramah Anak',
+        'listrik' => 'Listrik & Penerangan',
+        'air_bersih' => 'Air Bersih',
+        'laktasi' => 'Ruang Laktasi',
+        'ramah_anak' => 'Area Ramah Anak',
     ];
 
     /**
      * Daftar ikon representatif untuk tiap jenis fasilitas.
      */
     public const TYPE_ICONS = [
-        'mck'           => '🚿',
-        'dapur_umum'    => '🍲',
+        'mck' => '🚿',
+        'dapur_umum' => '🍲',
         'pos_kesehatan' => '🏥',
-        'listrik'       => '⚡',
-        'air_bersih'    => '💧',
-        'laktasi'       => '🤱',
-        'ramah_anak'    => '🧸',
+        'listrik' => '⚡',
+        'air_bersih' => '💧',
+        'laktasi' => '🤱',
+        'ramah_anak' => '🧸',
     ];
 
     /**
      * Daftar satuan layanan tiap jenis fasilitas untuk tampilan informatif.
      */
     public const TYPE_CAPACITY_UNITS = [
-        'mck'           => 'pengguna',
-        'dapur_umum'    => 'porsi/hari',
+        'mck' => 'pengguna',
+        'dapur_umum' => 'porsi/hari',
         'pos_kesehatan' => 'pasien',
-        'listrik'       => 'jiwa/titik',
-        'air_bersih'    => 'liter/hari',
-        'laktasi'       => 'ibu',
-        'ramah_anak'    => 'anak',
+        'listrik' => 'jiwa/titik',
+        'air_bersih' => 'liter/hari',
+        'laktasi' => 'ibu',
+        'ramah_anak' => 'anak',
     ];
 
     /**
      * Daftar kondisi kelayakan fasilitas posko.
      */
     public const CONDITIONS = [
-        'baik'            => 'Baik',
-        'rusak_ringan'    => 'Rusak Ringan',
+        'baik' => 'Baik',
+        'rusak_ringan' => 'Rusak Ringan',
         'tidak_berfungsi' => 'Tidak Berfungsi',
     ];
 
@@ -72,7 +72,7 @@ class ShelterFacility extends Model
     ];
 
     protected $casts = [
-        'units'    => 'integer',
+        'units' => 'integer',
         'capacity' => 'integer',
     ];
 
@@ -123,8 +123,8 @@ class ShelterFacility extends Model
     {
         return match ($this->condition) {
             'tidak_berfungsi' => 'bg-red-50 text-red-700 border-red-200',
-            'rusak_ringan'    => 'bg-amber-50 text-amber-700 border-amber-200',
-            default           => 'bg-emerald-50 text-emerald-700 border-emerald-200',
+            'rusak_ringan' => 'bg-amber-50 text-amber-700 border-amber-200',
+            default => 'bg-emerald-50 text-emerald-700 border-emerald-200',
         };
     }
 
@@ -135,8 +135,8 @@ class ShelterFacility extends Model
     {
         return match ($this->condition) {
             'tidak_berfungsi' => 'bg-red-500',
-            'rusak_ringan'    => 'bg-amber-500',
-            default           => 'bg-emerald-500',
+            'rusak_ringan' => 'bg-amber-500',
+            default => 'bg-emerald-500',
         };
     }
 
@@ -149,7 +149,7 @@ class ShelterFacility extends Model
             return null;
         }
 
-        return asset('storage/' . ltrim($this->photo_path, '/'));
+        return asset('storage/'.ltrim($this->photo_path, '/'));
     }
 
     /**

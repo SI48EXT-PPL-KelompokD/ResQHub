@@ -2,13 +2,13 @@
 
 namespace Tests\Feature;
 
-use Tests\TestCase;
-use App\Models\User;
-use App\Models\Shelter;
-use App\Models\DisasterEvent;
 use App\Livewire\Public\ShelterSearch;
-use Livewire\Livewire;
+use App\Models\DisasterEvent;
+use App\Models\Shelter;
+use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Livewire\Livewire;
+use Tests\TestCase;
 
 class PublicShelterSearchTest extends TestCase
 {
@@ -41,43 +41,43 @@ class PublicShelterSearchTest extends TestCase
         // 1. Posko Sangat Dekat (~0.5 km)
         $near = Shelter::create([
             'disaster_event_id' => $event->id,
-            'coordinator_id'    => $admin->id,
-            'name'              => 'Posko Alun-Alun Dekat',
-            'address'           => 'Jl. Asia Afrika No. 10',
-            'lat'               => -6.9210,
-            'lng'               => 107.6080,
-            'capacity'          => 100,
-            'occupancy'         => 20,
-            'contact'           => '08111',
-            'status'            => 'aktif',
+            'coordinator_id' => $admin->id,
+            'name' => 'Posko Alun-Alun Dekat',
+            'address' => 'Jl. Asia Afrika No. 10',
+            'lat' => -6.9210,
+            'lng' => 107.6080,
+            'capacity' => 100,
+            'occupancy' => 20,
+            'contact' => '08111',
+            'status' => 'aktif',
         ]);
 
         // 2. Posko Menengah (~4.5 km)
         $mid = Shelter::create([
             'disaster_event_id' => $event->id,
-            'coordinator_id'    => $admin->id,
-            'name'              => 'Posko Dago Menengah',
-            'address'           => 'Jl. Ir. H. Juanda No. 150',
-            'lat'               => -6.8820,
-            'lng'               => 107.6140,
-            'capacity'          => 150,
-            'occupancy'         => 50,
-            'contact'           => '08222',
-            'status'            => 'aktif',
+            'coordinator_id' => $admin->id,
+            'name' => 'Posko Dago Menengah',
+            'address' => 'Jl. Ir. H. Juanda No. 150',
+            'lat' => -6.8820,
+            'lng' => 107.6140,
+            'capacity' => 150,
+            'occupancy' => 50,
+            'contact' => '08222',
+            'status' => 'aktif',
         ]);
 
         // 3. Posko Jauh (~13 km)
         $far = Shelter::create([
             'disaster_event_id' => $event->id,
-            'coordinator_id'    => $admin->id,
-            'name'              => 'Posko Lembang Jauh',
-            'address'           => 'Jl. Raya Lembang No. 200',
-            'lat'               => -6.8150,
-            'lng'               => 107.6180,
-            'capacity'          => 200,
-            'occupancy'         => 70,
-            'contact'           => '08333',
-            'status'            => 'aktif',
+            'coordinator_id' => $admin->id,
+            'name' => 'Posko Lembang Jauh',
+            'address' => 'Jl. Raya Lembang No. 200',
+            'lat' => -6.8150,
+            'lng' => 107.6180,
+            'capacity' => 200,
+            'occupancy' => 70,
+            'contact' => '08333',
+            'status' => 'aktif',
         ]);
 
         Livewire::test(ShelterSearch::class)
@@ -97,43 +97,43 @@ class PublicShelterSearchTest extends TestCase
         // 1. Tersedia: okupansi < 80% (30 / 100 = 30%)
         $shelterTersedia = Shelter::create([
             'disaster_event_id' => $event->id,
-            'coordinator_id'    => $admin->id,
-            'name'              => 'Posko Kapasitas Tersedia',
-            'address'           => 'Jl. Merdeka No. 1',
-            'lat'               => -6.910,
-            'lng'               => 107.610,
-            'capacity'          => 100,
-            'occupancy'         => 30,
-            'contact'           => '08123',
-            'status'            => 'aktif',
+            'coordinator_id' => $admin->id,
+            'name' => 'Posko Kapasitas Tersedia',
+            'address' => 'Jl. Merdeka No. 1',
+            'lat' => -6.910,
+            'lng' => 107.610,
+            'capacity' => 100,
+            'occupancy' => 30,
+            'contact' => '08123',
+            'status' => 'aktif',
         ]);
 
         // 2. Hampir Penuh: okupansi 80% - 99% (85 / 100 = 85%)
         $shelterHampir = Shelter::create([
             'disaster_event_id' => $event->id,
-            'coordinator_id'    => $admin->id,
-            'name'              => 'Posko Kapasitas Hampir Penuh',
-            'address'           => 'Jl. Riau No. 2',
-            'lat'               => -6.912,
-            'lng'               => 107.612,
-            'capacity'          => 100,
-            'occupancy'         => 85,
-            'contact'           => '08124',
-            'status'            => 'aktif',
+            'coordinator_id' => $admin->id,
+            'name' => 'Posko Kapasitas Hampir Penuh',
+            'address' => 'Jl. Riau No. 2',
+            'lat' => -6.912,
+            'lng' => 107.612,
+            'capacity' => 100,
+            'occupancy' => 85,
+            'contact' => '08124',
+            'status' => 'aktif',
         ]);
 
         // 3. Penuh: okupansi 100% (100 / 100 = 100%)
         $shelterPenuh = Shelter::create([
             'disaster_event_id' => $event->id,
-            'coordinator_id'    => $admin->id,
-            'name'              => 'Posko Kapasitas Penuh Total',
-            'address'           => 'Jl. Cihampelas No. 3',
-            'lat'               => -6.914,
-            'lng'               => 107.614,
-            'capacity'          => 100,
-            'occupancy'         => 100,
-            'contact'           => '08125',
-            'status'            => 'penuh',
+            'coordinator_id' => $admin->id,
+            'name' => 'Posko Kapasitas Penuh Total',
+            'address' => 'Jl. Cihampelas No. 3',
+            'lat' => -6.914,
+            'lng' => 107.614,
+            'capacity' => 100,
+            'occupancy' => 100,
+            'contact' => '08125',
+            'status' => 'penuh',
         ]);
 
         // Uji filter 'tersedia'
@@ -169,29 +169,29 @@ class PublicShelterSearchTest extends TestCase
         // Dekat (~2 km)
         $near = Shelter::create([
             'disaster_event_id' => $event->id,
-            'coordinator_id'    => $admin->id,
-            'name'              => 'Posko Dalam Radius 5km',
-            'address'           => 'Jl. Diponegoro No. 1',
-            'lat'               => -6.9000,
-            'lng'               => 107.6180,
-            'capacity'          => 100,
-            'occupancy'         => 10,
-            'contact'           => '08111',
-            'status'            => 'aktif',
+            'coordinator_id' => $admin->id,
+            'name' => 'Posko Dalam Radius 5km',
+            'address' => 'Jl. Diponegoro No. 1',
+            'lat' => -6.9000,
+            'lng' => 107.6180,
+            'capacity' => 100,
+            'occupancy' => 10,
+            'contact' => '08111',
+            'status' => 'aktif',
         ]);
 
         // Jauh (~15 km)
         $far = Shelter::create([
             'disaster_event_id' => $event->id,
-            'coordinator_id'    => $admin->id,
-            'name'              => 'Posko Luar Radius 5km',
-            'address'           => 'Jl. Soreang No. 100',
-            'lat'               => -7.0300,
-            'lng'               => 107.5200,
-            'capacity'          => 100,
-            'occupancy'         => 10,
-            'contact'           => '08222',
-            'status'            => 'aktif',
+            'coordinator_id' => $admin->id,
+            'name' => 'Posko Luar Radius 5km',
+            'address' => 'Jl. Soreang No. 100',
+            'lat' => -7.0300,
+            'lng' => 107.5200,
+            'capacity' => 100,
+            'occupancy' => 10,
+            'contact' => '08222',
+            'status' => 'aktif',
         ]);
 
         Livewire::test(ShelterSearch::class)
@@ -208,16 +208,16 @@ class PublicShelterSearchTest extends TestCase
 
         $closedShelter = Shelter::create([
             'disaster_event_id' => $event->id,
-            'coordinator_id'    => $admin->id,
-            'name'              => 'Posko Sudah Ditutup BPBD',
-            'address'           => 'Jl. Pasir Kaliki No. 99',
-            'lat'               => -6.910,
-            'lng'               => 107.600,
-            'capacity'          => 50,
-            'occupancy'         => 0,
-            'contact'           => '08999',
-            'status'            => 'ditutup',
-            'close_reason'      => 'Operasional selesai dan warga telah pulang.',
+            'coordinator_id' => $admin->id,
+            'name' => 'Posko Sudah Ditutup BPBD',
+            'address' => 'Jl. Pasir Kaliki No. 99',
+            'lat' => -6.910,
+            'lng' => 107.600,
+            'capacity' => 50,
+            'occupancy' => 0,
+            'contact' => '08999',
+            'status' => 'ditutup',
+            'close_reason' => 'Operasional selesai dan warga telah pulang.',
         ]);
 
         Livewire::test(ShelterSearch::class)
@@ -242,7 +242,7 @@ class PublicShelterSearchTest extends TestCase
         Livewire::test(ShelterSearch::class)
             ->assertSet('userLat', (float) $event->lat)
             ->assertSet('userLng', (float) $event->lng)
-            ->assertSet('userLocationName', $event->name . ' (' . $event->regency . ')');
+            ->assertSet('userLocationName', $event->name.' ('.$event->regency.')');
     }
 
     public function test_sort_by_name_and_remaining_capacity_override_distance_order(): void

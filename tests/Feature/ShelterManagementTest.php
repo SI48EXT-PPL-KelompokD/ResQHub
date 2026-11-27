@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Livewire\Admin\ShelterManagement;
 use App\Models\DisasterEvent;
 use App\Models\Shelter;
 use App\Models\User;
@@ -9,7 +10,6 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use Livewire\Livewire;
 use Tests\TestCase;
-use App\Livewire\Admin\ShelterManagement;
 
 class ShelterManagementTest extends TestCase
 {
@@ -70,11 +70,11 @@ class ShelterManagementTest extends TestCase
             ->assertSet('showCreateModal', false);
 
         $this->assertDatabaseHas('shelters', [
-            'name'           => 'Posko Pengungsian Balai Warga RW 05',
+            'name' => 'Posko Pengungsian Balai Warga RW 05',
             'coordinator_id' => $koordinator->id,
-            'capacity'       => 120,
-            'occupancy'      => 0,
-            'status'         => 'aktif',
+            'capacity' => 120,
+            'occupancy' => 0,
+            'status' => 'aktif',
         ]);
     }
 
@@ -104,15 +104,15 @@ class ShelterManagementTest extends TestCase
         // 1. Posko dengan okupansi 50/100 (50% -> Tersedia)
         $shelterTersedia = Shelter::create([
             'disaster_event_id' => $event->id,
-            'coordinator_id'    => $koordinator->id,
-            'name'              => 'Posko A (Tersedia)',
-            'address'           => 'Alamat A',
-            'lat'               => -6.9,
-            'lng'               => 107.6,
-            'capacity'          => 100,
-            'occupancy'         => 50,
-            'contact'           => '08123',
-            'status'            => 'aktif',
+            'coordinator_id' => $koordinator->id,
+            'name' => 'Posko A (Tersedia)',
+            'address' => 'Alamat A',
+            'lat' => -6.9,
+            'lng' => 107.6,
+            'capacity' => 100,
+            'occupancy' => 50,
+            'contact' => '08123',
+            'status' => 'aktif',
         ]);
 
         $this->assertEquals(50.0, $shelterTersedia->occupancy_percentage);
@@ -122,15 +122,15 @@ class ShelterManagementTest extends TestCase
         // 2. Posko dengan okupansi 85/100 (85% -> Hampir Penuh)
         $shelterHampirPenuh = Shelter::create([
             'disaster_event_id' => $event->id,
-            'coordinator_id'    => $koordinator->id,
-            'name'              => 'Posko B (Hampir Penuh)',
-            'address'           => 'Alamat B',
-            'lat'               => -6.91,
-            'lng'               => 107.61,
-            'capacity'          => 100,
-            'occupancy'         => 85,
-            'contact'           => '08123',
-            'status'            => 'aktif',
+            'coordinator_id' => $koordinator->id,
+            'name' => 'Posko B (Hampir Penuh)',
+            'address' => 'Alamat B',
+            'lat' => -6.91,
+            'lng' => 107.61,
+            'capacity' => 100,
+            'occupancy' => 85,
+            'contact' => '08123',
+            'status' => 'aktif',
         ]);
 
         $this->assertEquals(85.0, $shelterHampirPenuh->occupancy_percentage);
@@ -140,15 +140,15 @@ class ShelterManagementTest extends TestCase
         // 3. Posko dengan okupansi 100/100 (100% -> Penuh)
         $shelterPenuh = Shelter::create([
             'disaster_event_id' => $event->id,
-            'coordinator_id'    => $koordinator->id,
-            'name'              => 'Posko C (Penuh)',
-            'address'           => 'Alamat C',
-            'lat'               => -6.92,
-            'lng'               => 107.62,
-            'capacity'          => 100,
-            'occupancy'         => 100,
-            'contact'           => '08123',
-            'status'            => 'penuh',
+            'coordinator_id' => $koordinator->id,
+            'name' => 'Posko C (Penuh)',
+            'address' => 'Alamat C',
+            'lat' => -6.92,
+            'lng' => 107.62,
+            'capacity' => 100,
+            'occupancy' => 100,
+            'contact' => '08123',
+            'status' => 'penuh',
         ]);
 
         $this->assertEquals(100.0, $shelterPenuh->occupancy_percentage);
@@ -163,15 +163,15 @@ class ShelterManagementTest extends TestCase
 
         $shelter = Shelter::create([
             'disaster_event_id' => $event->id,
-            'coordinator_id'    => $koordinator->id,
-            'name'              => 'Posko Uji Okupansi',
-            'address'           => 'Jl. Uji No. 1',
-            'lat'               => -6.93,
-            'lng'               => 107.63,
-            'capacity'          => 100,
-            'occupancy'         => 20,
-            'contact'           => '08123',
-            'status'            => 'aktif',
+            'coordinator_id' => $koordinator->id,
+            'name' => 'Posko Uji Okupansi',
+            'address' => 'Jl. Uji No. 1',
+            'lat' => -6.93,
+            'lng' => 107.63,
+            'capacity' => 100,
+            'occupancy' => 20,
+            'contact' => '08123',
+            'status' => 'aktif',
         ]);
 
         // Koordinator buka modal dan update okupansi menjadi 100 (mencapai kapasitas maksimal)
@@ -215,28 +215,28 @@ class ShelterManagementTest extends TestCase
 
         $shelter1 = Shelter::create([
             'disaster_event_id' => $event->id,
-            'coordinator_id'    => $koordinator->id,
-            'name'              => 'Posko Hijau Tersedia',
-            'address'           => 'Alamat 1',
-            'lat'               => -6.9,
-            'lng'               => 107.6,
-            'capacity'          => 100,
-            'occupancy'         => 30, // 30% -> Tersedia
-            'contact'           => '081',
-            'status'            => 'aktif',
+            'coordinator_id' => $koordinator->id,
+            'name' => 'Posko Hijau Tersedia',
+            'address' => 'Alamat 1',
+            'lat' => -6.9,
+            'lng' => 107.6,
+            'capacity' => 100,
+            'occupancy' => 30, // 30% -> Tersedia
+            'contact' => '081',
+            'status' => 'aktif',
         ]);
 
         $shelter2 = Shelter::create([
             'disaster_event_id' => $event->id,
-            'coordinator_id'    => $koordinator->id,
-            'name'              => 'Posko Kuning Hampir Penuh',
-            'address'           => 'Alamat 2',
-            'lat'               => -6.91,
-            'lng'               => 107.61,
-            'capacity'          => 100,
-            'occupancy'         => 90, // 90% -> Hampir Penuh
-            'contact'           => '082',
-            'status'            => 'aktif',
+            'coordinator_id' => $koordinator->id,
+            'name' => 'Posko Kuning Hampir Penuh',
+            'address' => 'Alamat 2',
+            'lat' => -6.91,
+            'lng' => 107.61,
+            'capacity' => 100,
+            'occupancy' => 90, // 90% -> Hampir Penuh
+            'contact' => '082',
+            'status' => 'aktif',
         ]);
 
         // Filter 'hampir_penuh'
@@ -261,15 +261,15 @@ class ShelterManagementTest extends TestCase
 
         $shelter = Shelter::create([
             'disaster_event_id' => $event->id,
-            'coordinator_id'    => $koordinator->id,
-            'name'              => 'Posko Awal',
-            'address'           => 'Jl. Awal No. 10',
-            'lat'               => -6.9900000,
-            'lng'               => 107.6200000,
-            'capacity'          => 150,
-            'occupancy'         => 30,
-            'contact'           => '081234567890',
-            'status'            => 'aktif',
+            'coordinator_id' => $koordinator->id,
+            'name' => 'Posko Awal',
+            'address' => 'Jl. Awal No. 10',
+            'lat' => -6.9900000,
+            'lng' => 107.6200000,
+            'capacity' => 150,
+            'occupancy' => 30,
+            'contact' => '081234567890',
+            'status' => 'aktif',
         ]);
 
         Livewire::actingAs($koordinator)
@@ -301,15 +301,15 @@ class ShelterManagementTest extends TestCase
         // Posko saat ini menampung 75 pengungsi aktif dengan kapasitas 100
         $shelter = Shelter::create([
             'disaster_event_id' => $event->id,
-            'coordinator_id'    => $koordinator->id,
-            'name'              => 'Posko Uji Batas Kapasitas',
-            'address'           => 'Jl. Batas No. 5',
-            'lat'               => -6.991,
-            'lng'               => 107.621,
-            'capacity'          => 100,
-            'occupancy'         => 75,
-            'contact'           => '08123',
-            'status'            => 'aktif',
+            'coordinator_id' => $koordinator->id,
+            'name' => 'Posko Uji Batas Kapasitas',
+            'address' => 'Jl. Batas No. 5',
+            'lat' => -6.991,
+            'lng' => 107.621,
+            'capacity' => 100,
+            'occupancy' => 75,
+            'contact' => '08123',
+            'status' => 'aktif',
         ]);
 
         // Koordinator mencoba mengubah kapasitas menjadi 50 (lebih kecil dari okupansi aktif 75 jiwa)
@@ -333,21 +333,21 @@ class ShelterManagementTest extends TestCase
 
         // Buat koordinator B
         $koordinatorB = User::factory()->create([
-            'role'  => 'koordinator',
+            'role' => 'koordinator',
             'email' => 'koordinator_b@example.com',
         ]);
 
         $shelterA = Shelter::create([
             'disaster_event_id' => $event->id,
-            'coordinator_id'    => $koordinatorA->id,
-            'name'              => 'Posko Milik Koordinator A',
-            'address'           => 'Jl. Koordinator A',
-            'lat'               => -6.992,
-            'lng'               => 107.622,
-            'capacity'          => 100,
-            'occupancy'         => 10,
-            'contact'           => '08123',
-            'status'            => 'aktif',
+            'coordinator_id' => $koordinatorA->id,
+            'name' => 'Posko Milik Koordinator A',
+            'address' => 'Jl. Koordinator A',
+            'lat' => -6.992,
+            'lng' => 107.622,
+            'capacity' => 100,
+            'occupancy' => 10,
+            'contact' => '08123',
+            'status' => 'aktif',
         ]);
 
         // Koordinator B mencoba mengakses posko milik Koordinator A
@@ -365,15 +365,15 @@ class ShelterManagementTest extends TestCase
 
         $shelter = Shelter::create([
             'disaster_event_id' => $event->id,
-            'coordinator_id'    => $koordinator->id,
-            'name'              => 'Posko Binaan Koordinator',
-            'address'           => 'Jl. Lapangan',
-            'lat'               => -6.993,
-            'lng'               => 107.623,
-            'capacity'          => 80,
-            'occupancy'         => 20,
-            'contact'           => '08111222',
-            'status'            => 'aktif',
+            'coordinator_id' => $koordinator->id,
+            'name' => 'Posko Binaan Koordinator',
+            'address' => 'Jl. Lapangan',
+            'lat' => -6.993,
+            'lng' => 107.623,
+            'capacity' => 80,
+            'occupancy' => 20,
+            'contact' => '08111222',
+            'status' => 'aktif',
         ]);
 
         // Admin dapat membuka dan mengubah data posko milik koordinator siapapun
@@ -397,15 +397,15 @@ class ShelterManagementTest extends TestCase
         // Posko masih menampung 40 jiwa pengungsi aktif
         $shelter = Shelter::create([
             'disaster_event_id' => $event->id,
-            'coordinator_id'    => $koordinator->id,
-            'name'              => 'Posko Masih Ada Pengungsi',
-            'address'           => 'Jl. Pengungsi No. 3',
-            'lat'               => -6.994,
-            'lng'               => 107.624,
-            'capacity'          => 100,
-            'occupancy'         => 40,
-            'contact'           => '081234',
-            'status'            => 'aktif',
+            'coordinator_id' => $koordinator->id,
+            'name' => 'Posko Masih Ada Pengungsi',
+            'address' => 'Jl. Pengungsi No. 3',
+            'lat' => -6.994,
+            'lng' => 107.624,
+            'capacity' => 100,
+            'occupancy' => 40,
+            'contact' => '081234',
+            'status' => 'aktif',
         ]);
 
         // Koordinator mencoba mengubah status menjadi 'ditutup'
@@ -432,15 +432,15 @@ class ShelterManagementTest extends TestCase
         // Posko dengan pengungsi 0 jiwa (sudah pulang / kosong)
         $shelter = Shelter::create([
             'disaster_event_id' => $event->id,
-            'coordinator_id'    => $koordinator->id,
-            'name'              => 'Posko Siap Ditutup',
-            'address'           => 'Jl. Evakuasi Selesai',
-            'lat'               => -6.995,
-            'lng'               => 107.625,
-            'capacity'          => 100,
-            'occupancy'         => 0,
-            'contact'           => '0812345',
-            'status'            => 'aktif',
+            'coordinator_id' => $koordinator->id,
+            'name' => 'Posko Siap Ditutup',
+            'address' => 'Jl. Evakuasi Selesai',
+            'lat' => -6.995,
+            'lng' => 107.625,
+            'capacity' => 100,
+            'occupancy' => 0,
+            'contact' => '0812345',
+            'status' => 'aktif',
         ]);
 
         Livewire::actingAs($koordinator)
@@ -465,15 +465,15 @@ class ShelterManagementTest extends TestCase
 
         $shelter = Shelter::create([
             'disaster_event_id' => $event->id,
-            'coordinator_id'    => $koordinator->id,
-            'name'              => 'Posko Tutup Tanpa Alasan',
-            'address'           => 'Jl. Tanpa Alasan',
-            'lat'               => -6.996,
-            'lng'               => 107.626,
-            'capacity'          => 80,
-            'occupancy'         => 0,
-            'contact'           => '08123',
-            'status'            => 'aktif',
+            'coordinator_id' => $koordinator->id,
+            'name' => 'Posko Tutup Tanpa Alasan',
+            'address' => 'Jl. Tanpa Alasan',
+            'lat' => -6.996,
+            'lng' => 107.626,
+            'capacity' => 80,
+            'occupancy' => 0,
+            'contact' => '08123',
+            'status' => 'aktif',
         ]);
 
         Livewire::actingAs($koordinator)
@@ -497,15 +497,15 @@ class ShelterManagementTest extends TestCase
         // Posko baru tanpa data historis pengungsi, kebutuhan, atau stok
         $shelter = Shelter::create([
             'disaster_event_id' => $event->id,
-            'coordinator_id'    => $koordinator->id,
-            'name'              => 'Posko Baru Salah Input',
-            'address'           => 'Jl. Salah Input',
-            'lat'               => -6.997,
-            'lng'               => 107.627,
-            'capacity'          => 50,
-            'occupancy'         => 0,
-            'contact'           => '08111',
-            'status'            => 'aktif',
+            'coordinator_id' => $koordinator->id,
+            'name' => 'Posko Baru Salah Input',
+            'address' => 'Jl. Salah Input',
+            'lat' => -6.997,
+            'lng' => 107.627,
+            'capacity' => 50,
+            'occupancy' => 0,
+            'contact' => '08111',
+            'status' => 'aktif',
         ]);
 
         Livewire::actingAs($koordinator)
@@ -529,27 +529,27 @@ class ShelterManagementTest extends TestCase
 
         $shelter = Shelter::create([
             'disaster_event_id' => $event->id,
-            'coordinator_id'    => $koordinator->id,
-            'name'              => 'Posko Bersejarah',
-            'address'           => 'Jl. Bersejarah No. 1',
-            'lat'               => -6.998,
-            'lng'               => 107.628,
-            'capacity'          => 100,
-            'occupancy'         => 0, // sedang 0 jiwa, tapi memiliki riwayat di tabel refugees
-            'contact'           => '08222',
-            'status'            => 'aktif',
+            'coordinator_id' => $koordinator->id,
+            'name' => 'Posko Bersejarah',
+            'address' => 'Jl. Bersejarah No. 1',
+            'lat' => -6.998,
+            'lng' => 107.628,
+            'capacity' => 100,
+            'occupancy' => 0, // sedang 0 jiwa, tapi memiliki riwayat di tabel refugees
+            'contact' => '08222',
+            'status' => 'aktif',
         ]);
 
         // Simulasikan riwayat pengungsi di database
         DB::table('refugees')->insert([
-            'shelter_id'    => $shelter->id,
-            'head_name'     => 'Bapak Supardi',
-            'nik'           => '3204123456780001',
-            'members'       => 4,
-            'status'        => 'pulang',
+            'shelter_id' => $shelter->id,
+            'head_name' => 'Bapak Supardi',
+            'nik' => '3204123456780001',
+            'members' => 4,
+            'status' => 'pulang',
             'checked_in_at' => now()->subDays(5),
-            'created_at'    => now()->subDays(5),
-            'updated_at'    => now()->subDays(1),
+            'created_at' => now()->subDays(5),
+            'updated_at' => now()->subDays(1),
         ]);
 
         // Koordinator mencoba menghapus posko ini
@@ -571,15 +571,15 @@ class ShelterManagementTest extends TestCase
     {
         return Shelter::create(array_merge([
             'disaster_event_id' => DisasterEvent::where('status', 'aktif')->first()->id,
-            'coordinator_id'    => $koordinator->id,
-            'name'              => 'Posko Regresi',
-            'address'           => 'Jl. Regresi No. 1',
-            'lat'               => -6.99,
-            'lng'               => 107.62,
-            'capacity'          => 100,
-            'occupancy'         => 10,
-            'contact'           => '08123456789',
-            'status'            => 'aktif',
+            'coordinator_id' => $koordinator->id,
+            'name' => 'Posko Regresi',
+            'address' => 'Jl. Regresi No. 1',
+            'lat' => -6.99,
+            'lng' => 107.62,
+            'capacity' => 100,
+            'occupancy' => 10,
+            'contact' => '08123456789',
+            'status' => 'aktif',
         ], $attributes));
     }
 
@@ -606,8 +606,8 @@ class ShelterManagementTest extends TestCase
     {
         $koordinator = User::where('role', 'koordinator')->first();
         $shelter = $this->makeShelter($koordinator, [
-            'occupancy'    => 0,
-            'status'       => 'ditutup',
+            'occupancy' => 0,
+            'status' => 'ditutup',
             'close_reason' => 'Operasional selesai.',
         ]);
 
@@ -640,9 +640,9 @@ class ShelterManagementTest extends TestCase
         $koordinator = User::factory()->create(['role' => 'koordinator']);
         $this->makeShelter($koordinator, ['capacity' => 100, 'occupancy' => 40]);
         $this->makeShelter($koordinator, [
-            'capacity'     => 500,
-            'occupancy'    => 0,
-            'status'       => 'ditutup',
+            'capacity' => 500,
+            'occupancy' => 0,
+            'status' => 'ditutup',
             'close_reason' => 'Operasional selesai.',
         ]);
 
@@ -717,13 +717,13 @@ class ShelterManagementTest extends TestCase
         $warga = User::where('role', 'warga')->first();
         $this->actingAs($warga)->get('/admin/dashboard')
             ->assertOk()
-            ->assertDontSee('href="' . route('admin.shelters') . '"', false)
+            ->assertDontSee('href="'.route('admin.shelters').'"', false)
             ->assertSee('Peta Posko');
 
         $koordinator = User::where('role', 'koordinator')->first();
         $this->actingAs($koordinator)->get('/admin/dashboard')
             ->assertOk()
-            ->assertSee('href="' . route('admin.shelters') . '"', false);
+            ->assertSee('href="'.route('admin.shelters').'"', false);
     }
 
     public function test_closing_error_disappears_after_switching_back_to_active(): void
@@ -774,7 +774,7 @@ class ShelterManagementTest extends TestCase
         $this->actingAs($donatur)->get('/admin/dashboard')
             ->assertOk()
             ->assertSee('Peta Posko')
-            ->assertDontSee('href="' . route('admin.shelters') . '"', false);
+            ->assertDontSee('href="'.route('admin.shelters').'"', false);
     }
 
     public function test_activity_log_seeder_keeps_every_row(): void
