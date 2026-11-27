@@ -320,7 +320,7 @@ class HealthCheckManagementTest extends TestCase
             ->call('openEditModal', $created->id)
             ->assertSet('panelMode', 'edit')
             ->assertSee('Ubah pemeriksaan: Ahmad Fauzi')
-            ->assertSee('Koordinator posko sudah dinotifikasi. Lanjutkan dengan membuat rujukan medis (PBI-09).')
+            ->assertSee('Koordinator posko telah dinotifikasi. Segera lanjutkan rujukan medis ke fasilitas kesehatan.')
             ->set('pulse', 98)
             ->call('updateHealthCheck')
             ->assertHasNoErrors();

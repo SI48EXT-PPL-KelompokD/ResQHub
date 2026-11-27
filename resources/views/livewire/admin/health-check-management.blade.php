@@ -258,19 +258,14 @@
                                 @endphp
                                 <tr 
                                     wire:key="health-check-{{ $check->id }}"
-                                    class="transition {{ $isSelected ? 'bg-blue-50/75' : 'hover:bg-slate-50/60' }}"
+                                    wire:click="openHistoryModal({{ $check->refugee_id }})"
+                                    class="transition cursor-pointer group {{ $isSelected || ($panelMode === 'history' && $historyRefugee?->id === $check->refugee_id) ? 'bg-blue-50/75' : 'hover:bg-slate-50/80' }}"
                                 >
                                     <!-- Pengungsi & Keluhan -->
                                     <td class="py-3.5 px-5">
-                                        <button 
-                                            type="button"
-                                            wire:click="openHistoryModal({{ $check->refugee_id }})"
-                                            class="text-left group focus:outline-none"
-                                        >
-                                            <span class="font-semibold text-slate-900 group-hover:text-blue-600 transition block leading-snug">
-                                                {{ $check->refugee?->head_name ?? '-' }} · {{ \Illuminate\Support\Str::limit($check->complaint, 38) }}
-                                            </span>
-                                        </button>
+                                        <span class="font-semibold text-slate-900 group-hover:text-blue-600 transition block leading-snug">
+                                            {{ $check->refugee?->head_name ?? '-' }} · {{ \Illuminate\Support\Str::limit($check->complaint, 38) }}
+                                        </span>
                                     </td>
 
                                     <!-- Waktu -->
@@ -286,30 +281,29 @@
                                     </td>
 
                                     <!-- Aksi -->
-                                    <td class="py-3.5 px-5 text-right">
+                                    <td class="py-3.5 px-5 text-right" wire:click.stop>
                                         <div class="inline-flex items-center justify-end space-x-2">
+                                            <button 
+                                                type="button"
+                                                wire:click.stop="openHistoryModal({{ $check->refugee_id }})"
+                                                class="px-3 py-1.5 bg-white hover:bg-slate-50 text-slate-700 text-xs font-semibold rounded-lg border border-slate-200 shadow-2xs transition cursor-pointer"
+                                            >
+                                                Detail
+                                            </button>
                                             @if ($canManage)
                                                 <button 
                                                     type="button"
-                                                    wire:click="openEditModal({{ $check->id }})"
-                                                    class="px-3 py-1.5 bg-white hover:bg-slate-50 text-slate-700 text-xs font-semibold rounded-lg border border-slate-200 shadow-2xs transition cursor-pointer"
+                                                    wire:click.stop="openEditModal({{ $check->id }})"
+                                                    class="px-3 py-1.5 bg-white hover:bg-slate-50 text-blue-700 text-xs font-semibold rounded-lg border border-blue-200 shadow-2xs transition cursor-pointer"
                                                 >
                                                     Ubah
                                                 </button>
                                                 <button 
                                                     type="button"
-                                                    wire:click="openDeleteModal({{ $check->id }})"
+                                                    wire:click.stop="openDeleteModal({{ $check->id }})"
                                                     class="px-3 py-1.5 bg-red-600 hover:bg-red-700 text-white text-xs font-semibold rounded-lg shadow-2xs transition cursor-pointer"
                                                 >
                                                     Hapus
-                                                </button>
-                                            @else
-                                                <button 
-                                                    type="button"
-                                                    wire:click="openHistoryModal({{ $check->refugee_id }})"
-                                                    class="px-3 py-1.5 bg-white hover:bg-slate-50 text-slate-700 text-xs font-semibold rounded-lg border border-slate-200 shadow-2xs transition cursor-pointer"
-                                                >
-                                                    Riwayat
                                                 </button>
                                             @endif
                                         </div>
@@ -464,12 +458,12 @@
                             @error('action') <span class="text-[11px] text-red-600 mt-1 block">{{ $message }}</span> @enderror
                         </div>
 
-                        <!-- Alert Box Triase Merah (Sesuai Mockup) -->
+                        <!-- Alert Box Triase Merah (Mode Ubah) -->
                         @if ($triage === 'merah')
                             <div class="p-3.5 rounded-xl bg-red-50 border border-red-200/80 text-xs space-y-1.5">
-                                <p class="font-bold text-red-700">Triase Merah</p>
+                                <p class="font-bold text-red-700">Triase Merah — Wajib Rujukan Medis</p>
                                 <p class="text-red-700 leading-relaxed">
-                                    Koordinator posko sudah dinotifikasi. Lanjutkan dengan membuat rujukan medis (PBI-09).
+                                    Koordinator posko telah dinotifikasi. Segera lanjutkan rujukan medis ke fasilitas kesehatan.
                                 </p>
                                 @if ($selectedCheck && ! $selectedCheck->referrals()->notCancelled()->exists())
                                     <a
@@ -479,6 +473,17 @@
                                     >
                                         Buat Rujukan Medis &rarr;
                                     </a>
+                                @elseif ($selectedCheck)
+                                    @php $activeReferral = $selectedCheck->referrals()->notCancelled()->latest('id')->first(); @endphp
+                                    @if ($activeReferral)
+                                        <a
+                                            href="{{ route('admin.medical-referrals', ['referral' => $activeReferral->id]) }}"
+                                            wire:navigate
+                                            class="inline-flex items-center font-semibold text-emerald-800 hover:text-emerald-900 underline underline-offset-2"
+                                        >
+                                            Rujukan aktif sudah dibuat ({{ $activeReferral->status_label }}) &rarr;
+                                        </a>
+                                    @endif
                                 @endif
                             </div>
                         @endif
@@ -553,6 +558,29 @@
                                         @if ($item->action)
                                             <p class="text-slate-500 text-[11px]">Catatan: {{ $item->action }}</p>
                                         @endif
+                                        @php
+                                            $activeItemReferral = $item->referrals->firstWhere('status', '!=', \App\Models\MedicalReferral::STATUS_DIBATALKAN);
+                                        @endphp
+                                        <div class="pt-1 flex items-center justify-between gap-2">
+                                            <span class="text-[11px] text-slate-400">Pemeriksa: {{ $item->nakes?->name ?? '-' }}</span>
+                                            @if ($activeItemReferral)
+                                                <a
+                                                    href="{{ route('admin.medical-referrals', ['referral' => $activeItemReferral->id]) }}"
+                                                    wire:navigate
+                                                    class="text-[11px] font-semibold text-emerald-700 hover:text-emerald-800 underline underline-offset-2"
+                                                >
+                                                    Rujukan: {{ $activeItemReferral->status_label }} &rarr;
+                                                </a>
+                                            @elseif ($canManage && $item->triage === 'merah')
+                                                <a
+                                                    href="{{ route('admin.medical-referrals', ['health_check' => $item->id]) }}"
+                                                    wire:navigate
+                                                    class="text-[11px] font-semibold text-red-700 hover:text-red-800 underline underline-offset-2"
+                                                >
+                                                    Buat Rujukan &rarr;
+                                                </a>
+                                            @endif
+                                        </div>
                                     </div>
                                 @empty
                                     <p class="text-xs text-slate-400">Belum ada riwayat pemeriksaan untuk pengungsi ini.</p>
@@ -787,22 +815,13 @@
                             @error('action') <span class="text-[11px] text-red-600 mt-1 block">{{ $message }}</span> @enderror
                         </div>
 
-                        <!-- Alert Box Triase Merah (Sesuai Mockup) -->
+                        <!-- Alert Box Triase Merah (Mode Tambah) -->
                         @if ($triage === 'merah')
-                            <div class="p-3.5 rounded-xl bg-red-50 border border-red-200/80 text-xs space-y-1.5">
-                                <p class="font-bold text-red-700">Triase Merah</p>
+                            <div class="p-3.5 rounded-xl bg-red-50 border border-red-200/80 text-xs space-y-1">
+                                <p class="font-bold text-red-700">Triase Merah — Wajib Rujukan Medis</p>
                                 <p class="text-red-700 leading-relaxed">
-                                    Koordinator posko sudah dinotifikasi. Lanjutkan dengan membuat rujukan medis (PBI-09).
+                                    Menyimpan pemeriksaan ini akan otomatis menotifikasi koordinator posko. Setelah disimpan, segera buat rujukan di menu Rujukan Medis.
                                 </p>
-                                @if ($selectedCheck && ! $selectedCheck->referrals()->notCancelled()->exists())
-                                    <a
-                                        href="{{ route('admin.medical-referrals', ['health_check' => $selectedCheck->id]) }}"
-                                        wire:navigate
-                                        class="inline-flex items-center font-semibold text-red-800 hover:text-red-900 underline underline-offset-2"
-                                    >
-                                        Buat Rujukan Medis &rarr;
-                                    </a>
-                                @endif
                             </div>
                         @endif
 

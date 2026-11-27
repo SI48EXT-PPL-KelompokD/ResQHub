@@ -208,8 +208,9 @@ class HealthCheckManagement extends Component
         $this->notify("Pemeriksaan {$updated->refugee?->head_name} berhasil diperbarui dan tercatat pada log aktivitas.");
     }
 
-    public function openHistoryModal(int $refugeeId, HealthCheckService $healthCheckService): void
+    public function openHistoryModal(int $refugeeId, ?HealthCheckService $healthCheckService = null): void
     {
+        $healthCheckService ??= app(HealthCheckService::class);
         $this->historyRefugee = $healthCheckService->getRefugeeHistory($this->currentUser(), $refugeeId);
         $this->panelMode = 'history';
     }
