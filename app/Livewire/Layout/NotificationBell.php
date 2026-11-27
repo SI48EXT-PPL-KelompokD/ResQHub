@@ -4,6 +4,7 @@ namespace App\Livewire\Layout;
 
 use Illuminate\Notifications\DatabaseNotification;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Route;
 use Livewire\Component;
 
 class NotificationBell extends Component
@@ -30,6 +31,8 @@ class NotificationBell extends Component
         $user = Auth::user();
 
         return match (true) {
+            isset($data['medical_referral_id']) && $user->canAccessModule('modul_c') && Route::has('admin.medical-referrals') => route('admin.medical-referrals', ['referral' => $data['medical_referral_id']]),
+            isset($data['health_check_id']) && $user->canAccessModule('modul_c') => route('admin.health-checks'),
             isset($data['disaster_report_id']) && $user->isWarga() => route('admin.reports.show', $data['disaster_report_id']),
             isset($data['task_id']) && $user->canAccessModule('modul_g') => route('admin.tasks'),
             default => null,

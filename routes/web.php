@@ -5,6 +5,7 @@ use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Auth\PasswordResetController;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\HealthCheckController;
+use App\Http\Controllers\MedicalReferralController;
 use App\Http\Controllers\RefugeeController;
 use App\Http\Controllers\Admin\AidNeedController;
 use App\Livewire\Auth\Register;
@@ -73,6 +74,14 @@ Route::middleware(['auth'])->prefix('admin')->name('admin.')->group(function () 
     Route::post('/health-checks', [HealthCheckController::class, 'store'])->name('health-checks.store');
     Route::put('/health-checks/{healthCheck}', [HealthCheckController::class, 'update'])->name('health-checks.update');
     Route::delete('/health-checks/{healthCheck}', [HealthCheckController::class, 'destroy'])->name('health-checks.destroy');
+
+    // Modul C: Rujukan Medis Pengungsi (PBI-09)
+    Route::get('/medical-referrals/list', [MedicalReferralController::class, 'index'])->name('medical-referrals.index');
+    Route::get('/medical-referrals/summary', [MedicalReferralController::class, 'summary'])->name('medical-referrals.summary');
+    Route::get('/medical-referrals/{medicalReferral}', [MedicalReferralController::class, 'show'])->name('medical-referrals.show');
+    Route::post('/medical-referrals', [MedicalReferralController::class, 'store'])->name('medical-referrals.store');
+    Route::put('/medical-referrals/{medicalReferral}', [MedicalReferralController::class, 'update'])->name('medical-referrals.update');
+    Route::delete('/medical-referrals/{medicalReferral}', [MedicalReferralController::class, 'destroy'])->name('medical-referrals.destroy');
 
     // Modul A - Laporan Kejadian (PBI-01) untuk warga
     Route::middleware('role:warga')->group(function () {
